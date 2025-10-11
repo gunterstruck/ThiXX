@@ -292,6 +292,7 @@ body[data-theme="customer-brand"] .nfc-badge.info {
 
 .tabs {
     display: flex;
+    justify-content: center; /* Zentriert die Tab-Buttons */
     gap: 1rem;
     margin-bottom: 1.5rem;
     padding: 0.5rem;
@@ -303,7 +304,7 @@ body[data-theme="customer-brand"] .nfc-badge.info {
 }
 
 .tab-link {
-    flex: 1 1 80px; /* Lässt den Button wachsen, erzwingt aber den Umbruch */
+    flex: 0 1 180px; /* Verhindert, dass die Buttons wachsen, und setzt eine Basisbreite */
     padding: 0.5rem;
     text-align: center;
     background: transparent;
@@ -815,6 +816,7 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
+
 
 
 
