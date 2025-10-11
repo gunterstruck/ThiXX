@@ -70,19 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Collapsible Bereiche aktivieren ---
     function initCollapsibles() {
-        // 1️⃣ Read-Tab: Container für gelesene Daten einklappbar machen
-        const readResultEl = document.getElementById('read-result');
-        if (readResultEl) {
-            makeCollapsible(readResultEl);
-            readResultEl.classList.remove('expanded'); // Start: eingeklappt
-        }
-
-        // 2️⃣ Write-Tab: Den Inhalts-Container einklappbar machen (nicht den Tab selbst)
-        const writeFormContainer = document.getElementById('write-form-container');
-        if (writeFormContainer) {
-            makeCollapsible(writeFormContainer);
-            writeFormContainer.classList.remove('expanded'); // Start: eingeklappt
-        }
+        document.querySelectorAll('.collapsible').forEach(el => {
+            makeCollapsible(el);
+            el.classList.remove('expanded'); // Start: eingeklappt
+        });
     }
 
 
@@ -335,8 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        // Nach dem Anzeigen neuer Daten den gesamten Container wieder einklappen
-        readResultContainer.classList.add('collapsible');
         readResultContainer.classList.remove('expanded');
     }
 
@@ -497,51 +486,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Collapsible helpers ---
     function makeCollapsible(el) {
-      if (!el) return;
-       // Verhindern, dass die Logik mehrfach auf dasselbe Element angewendet wird
-      if (el.dataset.collapsibleApplied) return;
-      el.dataset.collapsibleApplied = 'true';
+        if (!el || el.dataset.collapsibleApplied) return;
+        el.dataset.collapsibleApplied = 'true';
 
-      el.classList.add('collapsible');
+        const toggle = () => {
+            if (el.classList.contains('expanded')) return;
+            el.classList.add('expanded');
+            setTimeout(() => el.blur(), 0);
+        };
 
-      // Toggle-Handler: bei Tap/Enter/Space aufklappen
-      const toggle = () => {
-        // Wenn bereits expanded → NICHT wieder zuklappen
-        if (el.classList.contains('expanded')) return;
-        el.classList.add('expanded');
-        
-        // Use setTimeout to ensure blur() is called after the browser's
-        // default focus/scroll behavior has completed for the click event.
-        setTimeout(() => {
-            el.blur();
-        }, 0);
-      };
-
-      // Click nur zum Öffnen
-      el.addEventListener('click', (e) => {
-        // Klicks auf Eingabeelemente sollen nichts umschalten
-        const tag = (e.target.tagName || '').toLowerCase();
-        if (['input','select','textarea','button','label','summary','details'].includes(tag)) return;
-        toggle();
-      });
-
-      // Tastaturzugänglichkeit
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('role', 'button');
-      el.setAttribute('aria-expanded', 'false');
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggle();
-          el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
+        const overlay = el.querySelector('.collapsible-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggle();
+            });
         }
-      });
 
-      // Wenn per Script aufgeklappt wird, aria aktualisieren
-      const observer = new MutationObserver(() => {
-        el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
-      });
-      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+        // Click auf den Container selbst (Padding-Bereich etc.)
+        el.addEventListener('click', (e) => {
+            const tag = (e.target.tagName || '').toLowerCase();
+            if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) {
+                return;
+            }
+            toggle();
+        });
+
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-expanded', 'false');
+        
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle();
+            }
+        });
+
+        const observer = new MutationObserver(() => {
+            el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
+        });
+        observer.observe(el, { attributes: true, attributeFilter: ['class'] });
     }
 
     // --- Form & Data Handling ---
@@ -594,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         switchTab('write-tab');
+        document.getElementById('write-form-container').classList.add('expanded');
         showMessage('Daten in Formular übernommen.', 'ok');
     }
 

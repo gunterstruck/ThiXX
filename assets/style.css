@@ -1,636 +1,897 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' })
-                .then(reg => console.log('Service Worker registered successfully with scope:', reg.scope))
-                .catch(err => console.error('Service Worker registration failed:', err));
-        });
+/* Dark Theme (Default) */
+:root, body[data-theme="dark"] {
+    --primary-color: #f04e37;
+    --primary-dark: #d63820;
+    --primary-light: #ff6b52;
+    --secondary-color: #6c6b66;
+    --background-color: #0f172a;
+    --surface-color: #1e2d3b;
+    --surface-light: #334155;
+    --border-color: #475569;
+    --text-color: #f1f5f9;
+    --light-text-color: #94a3b8;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --disabled-color: #64748b;
+    --glow-color: rgba(240, 78, 55, 0.4);
+    --body-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* Light Theme (ThiXX) */
+body[data-theme="thixx"] {
+    --primary-color: #e45d45; 
+    --primary-dark: #c84a32;
+    --primary-light: #f47a65;
+    --secondary-color: #6c6b66; 
+    --background-color: #f8f9fa; 
+    --surface-color: #ffffff;
+    --surface-light: #e9ecef;
+    --border-color: #dee2e6;
+    --text-color: #212529; 
+    --light-text-color: #6c757d;
+    --success-color: #198754;
+    --error-color: #dc3545;
+    --disabled-color: #adb5bd;
+    --glow-color: rgba(228, 93, 69, 0.3);
+    --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Customer Brand Theme */
+body[data-theme="customer-brand"] {
+    --primary-color: #d54b2a; /* Customer Red-Orange */
+    --primary-dark: #B03D23;
+    --primary-light: #E56B51;
+    --secondary-color: #6c6b66; /* Customer Grey */
+    --background-color: #FCFCFD; /* Customer Off-White */
+    --surface-color: #FFFFFF;
+    --surface-light: #f0f0f0;
+    --border-color: #d1d1d1;
+    --text-color: #3d3d3d; /* Dark grey for better readability */
+    --light-text-color: #787771;
+    --success-color: #198754;
+    --error-color: #dc3545;
+    --disabled-color: #b5b5b5;
+    --glow-color: rgba(212, 74, 44, 0.3);
+    --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--body-gradient);
+    background-attachment: fixed;
+    color: var(--text-color);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(240, 78, 55, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+body[data-theme="customer-brand"]::before {
+    opacity: 0.3;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap; 
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: rgba(var(--surface-color-rgb, 30, 41, 59), 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(var(--border-color-rgb, 71, 85, 105), 0.3);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    margin-bottom: 1.5rem;
+    animation: slideDown 0.6s ease-out;
+}
+
+/* Helper for transparent colors */
+body[data-theme="dark"] { --surface-color-rgb: 30, 41, 59; --border-color-rgb: 71, 85, 105; }
+body[data-theme="thixx"] { --surface-color-rgb: 255, 255, 255; --border-color-rgb: 222, 226, 230; }
+body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border-color-rgb: 209, 209, 209; }
+
+
+.header-content {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; 
+}
+
+.theme-btn {
+    border: none;
+    background-color: transparent;
+    color: var(--light-text-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1.2rem; 
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+    opacity: 0.7; 
+}
+
+.theme-btn:hover {
+    opacity: 1; 
+    color: var(--text-color);
+}
+
+.theme-btn.active {
+    opacity: 1; 
+    color: var(--primary-color);
+    transform: scale(1.1); 
+    background-color: transparent;
+    box-shadow: none;
+}
+
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
     }
-
-    // --- DOM Element References ---
-    const tabs = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const writeNfcBtn = document.getElementById('write-nfc-btn');
-    const copyToFormBtn = document.getElementById('copy-to-form-btn');
-    const saveJsonBtn = document.getElementById('save-json-btn');
-    const loadJsonInput = document.getElementById('load-json-input');
-    const nfcStatusBadge = document.getElementById('nfc-status-badge');
-    const nfcFallback = document.getElementById('nfc-fallback');
-    const messageBanner = document.getElementById('message-banner');
-    const form = document.getElementById('nfc-write-form');
-    const payloadOutput = document.getElementById('payload-output');
-    const payloadSize = document.getElementById('payload-size');
-    const payloadContainer = document.getElementById('payload-container');
-    const readResultContainer = document.getElementById('read-result');
-    const protocolCard = document.getElementById('protocol-card');
-    const rawDataOutput = document.getElementById('raw-data-output');
-    const autoWriteToggle = document.getElementById('auto-write-toggle');
-    const autoWriteHint = document.getElementById('auto-write-hint');
-
-    // --- Constants and State ---
-    const MAX_PAYLOAD_BYTES = 880;
-    const READ_COOLDOWN_MS = 1500;
-    let scannedDataObject = null;
-    let isReading = false;
-    let readCooldown = false;
-    let currentScanAbort = null;
-    let isWriting = false;
-    let writeCooldown = false;
-    let autoWriteArmed = false;
-    let autoScanArmedOnce = false;
-
-    const fieldMap = {
-        'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R',
-        'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 'Wächter': 'Wäch', 'Projekt Nr.': 'Proj',
-        'Anzahl Heizkabeleinheiten': 'Anz', 'Trennkasten': 'TB', 'Heizkabeltyp': 'HKT', 'Schaltung': 'Sch',
-        'PT 100': 'PT100', 'NiCr-Ni': 'NiCr', 'geprüft von': 'Chk', 'am': 'Date'
-    };
-    const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
-
-    // --- Initialization ---
-    init();
-
-    function init() {
-        setupEventListeners();
-        setupTheme();
-        setTodaysDate();
-        checkNfcSupport();
-        initCollapsibles(); // Initialize collapsible sections
-
-        // Variante A: Wenn der Lesen-Tab aktiv ist, Scan sofort (oder beim ersten Tap) starten
-        const readTabActive = document
-            .querySelector('.tab-link[data-tab="read-tab"]')
-            ?.classList.contains('active');
-
-        if (readTabActive && 'NDEFReader' in window) {
-            armImmediateScan();
-        }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    // --- Collapsible Bereiche aktivieren ---
-    function initCollapsibles() {
-        // 1️⃣ Read-Tab: Container für gelesene Daten einklappbar machen
-        const readResultEl = document.getElementById('read-result');
-        if (readResultEl) {
-            makeCollapsible(readResultEl);
-            readResultEl.classList.remove('expanded'); // Start: eingeklappt
-        }
+/* Typographic Logo Styles */
+h1.logo {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.05em;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  text-shadow: none;
+}
 
-        // 2️⃣ Write-Tab: Den Inhalts-Container einklappbar machen (nicht den Tab selbst)
-        const writeFormContainer = document.getElementById('write-form-container');
-        if (writeFormContainer) {
-            makeCollapsible(writeFormContainer);
-            writeFormContainer.classList.remove('expanded'); // Start: eingeklappt
-        }
+.logo-orange {
+  color: var(--primary-color);
+}
+
+.logo-gray {
+  color: var(--secondary-color);
+}
+
+.i-letter {
+  position: relative;
+  width: 0.25em;
+  height: 1em;
+  background-color: var(--secondary-color); /* I-bar in Grey */
+  display: inline-block;
+  margin: 0 0.05em;
+  border-radius: 0.05em;
+}
+
+.i-letter .i-dot {
+  position: absolute;
+  top: -0.3em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.25em;
+  height: 0.25em;
+  background-color: var(--primary-color); /* I-dot in Orange-Red */
+  border-radius: 50%;
+}
+
+@media (max-width: 480px) {
+  h1.logo {
+    font-size: 1.8rem;
+  }
+}
+
+.nfc-badge {
+    background: var(--surface-light);
+    color: var(--text-color);
+    padding: 0.5rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    animation: none; /* Remove default pulse */
+    flex-shrink: 0;
+    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+    text-align: center;
+}
+
+.nfc-badge.ok {
+    background: linear-gradient(135deg, var(--success-color) 0%, #34d399 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.nfc-badge.err {
+    background: linear-gradient(135deg, var(--error-color) 0%, #e86a78 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.nfc-badge.info {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+body[data-theme="customer-brand"] .nfc-badge.info {
+    background: linear-gradient(135deg, #8e8d88 0%, #787771 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
-
-
-    function checkNfcSupport() {
-        if ('NDEFReader' in window) {
-            setNfcBadge('available');
-        } else {
-            setNfcBadge('unsupported');
-            nfcFallback.classList.remove('hidden');
-            writeNfcBtn.disabled = true;
-        }
+    50% {
+        box-shadow: 0 4px 25px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
+}
 
-    // --- Event Listeners Setup ---
-    function setupEventListeners() {
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-        });
+.tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+    background: rgba(var(--surface-color-rgb), 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(var(--border-color-rgb), 0.3);
+    border-radius: 16px;
+    animation: slideDown 0.6s ease-out 0.1s both;
+}
 
-        writeNfcBtn.addEventListener('click', writeNfcTag);
-        copyToFormBtn.addEventListener('click', populateFormFromScan);
-        saveJsonBtn.addEventListener('click', saveFormAsJson);
-        loadJsonInput.addEventListener('change', loadJsonIntoForm);
+.tab-link {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--light-text-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate; 
+}
 
-        autoWriteToggle.addEventListener('click', () => {
-            armAutoWrite(!autoWriteArmed);
-        });
+.tab-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 12px;
+    z-index: -1; 
+}
 
-        form.addEventListener('input', updatePayloadOnChange);
-        form.addEventListener('change', updatePayloadOnChange);
+.tab-link:hover::before {
+    opacity: 0.1;
+}
 
-        document.getElementById('has_PT100').addEventListener('change', (e) => {
-            document.getElementById('PT 100').disabled = !e.target.checked;
-        });
-        document.getElementById('has_NiCr-Ni').addEventListener('change', (e) => {
-            document.getElementById('NiCr-Ni').disabled = !e.target.checked;
-        });
+.tab-link.active {
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="thixx"] .tab-link.active,
+body[data-theme="customer-brand"] .tab-link.active {
+    color: white !important; 
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); 
+}
+
+
+.tab-link.active::before {
+    opacity: 1;
+}
+
+.tab-link span {
+    position: relative;
+    z-index: 1;
+}
+
+.tab-content {
+    display: none;
+    padding: 2rem;
+    background: rgba(var(--surface-color-rgb), 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(var(--border-color-rgb), 0.3);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
     }
-
-    // --- Theme Switcher Logic ---
-    function setupTheme() {
-        const themeButtons = document.querySelectorAll('.theme-btn');
-        const THEME_KEY = 'thixx-theme';
-
-        function applyTheme(themeName) {
-            document.body.setAttribute('data-theme', themeName);
-            localStorage.setItem(THEME_KEY, themeName);
-
-            themeButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === themeName);
-            });
-            
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                let color;
-                if (themeName === 'dark') color = '#0f172a';
-                else if (themeName === 'thixx') color = '#f8f9fa';
-                else if (themeName === 'customer-brand') color = '#f8f9fa';
-                metaThemeColor.setAttribute('content', color);
-            }
-        }
-
-        themeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                applyTheme(button.dataset.theme);
-            });
-        });
-
-        const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
-        applyTheme(savedTheme);
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
+}
 
-    // --- UI Functions ---
-    function switchTab(tabId) {
-        if (currentScanAbort) {
-            currentScanAbort.abort();
-            cleanupAfterRead(false);
-        }
+.tab-content.active {
+    display: block;
+}
 
-        tabs.forEach(tab => tab.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-        
-        if (tabId === 'read-tab') {
-            if (autoWriteArmed) armAutoWrite(false);
-            // Variante B: Immer automatisch neu scannen, sobald man in den Lesen-Tab wechselt
-            armImmediateScan();
-        } else if (tabId === 'write-tab') {
-            payloadContainer.classList.remove('hidden');
-            generateAndShowPayload();
-            autoWriteHint.textContent = 'Tipp: „Auto-Schreiben aktivieren“ starten und den Tag einfach an das Gerät halten.';
-        }
-    }
+.action-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
 
-    function showMessage(text, type = 'info', duration = 4000) {
-        messageBanner.textContent = text;
-        messageBanner.className = 'message-banner';
-        messageBanner.classList.add(type);
-        messageBanner.classList.remove('hidden');
-        setTimeout(() => messageBanner.classList.add('hidden'), duration);
-    }
+#auto-write-hint {
+    flex-basis: 100%;
+    text-align: center;
+    margin-top: 0.5rem;
+}
 
-    function setTodaysDate() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        document.getElementById('am').value = `${yyyy}-${mm}-${dd}`;
-    }
+.btn {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--surface-light);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
 
-    function setNfcBadge(state) {
-        nfcStatusBadge.classList.remove('hidden', 'ok', 'err', 'info');
-        switch (state) {
-            case 'unsupported':
-                nfcStatusBadge.textContent = 'NFC nicht unterstützt';
-                nfcStatusBadge.classList.add('err');
-                break;
-            case 'available':
-                nfcStatusBadge.textContent = 'NFC verfügbar';
-                nfcStatusBadge.classList.add('info');
-                break;
-            case 'on':
-                nfcStatusBadge.textContent = 'NFC aktiv';
-                nfcStatusBadge.classList.add('ok');
-                break;
-            case 'off':
-                nfcStatusBadge.textContent = 'NFC aus / Keine Berechtigung';
-                nfcStatusBadge.classList.add('err');
-                break;
-            case 'scanning':
-                nfcStatusBadge.textContent = 'Scannen...';
-                nfcStatusBadge.classList.add('info');
-                break;
-        }
-    }
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+body[data-theme="thixx"] .btn::before,
+body[data-theme="customer-brand"] .btn::before {
+    background: rgba(0, 0, 0, 0.05);
+}
 
-    // --- NFC Read Logic ---
-    function startReadCooldown() {
-        readCooldown = true;
-        setTimeout(() => { readCooldown = false; }, READ_COOLDOWN_MS);
-    }
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
 
-    function cleanupAfterRead(success) {
-        isReading = false;
-        startReadCooldown();
-        currentScanAbort = null;
-    }
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
 
-    async function readNfcTag() {
-        if (!('NDEFReader' in window)) return;
-        if (isReading || readCooldown) return;
+.btn:active {
+    transform: translateY(0);
+}
 
-        isReading = true;
-        setNfcBadge('scanning');
-        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
+.btn:disabled {
+    background: var(--disabled-color);
+    opacity: 0.5;
+    color: var(--text-color);
+    cursor: not-allowed;
+    transform: none;
+    border-color: transparent;
+}
 
-        const ndef = new NDEFReader();
-        currentScanAbort = ('AbortController' in window) ? new AbortController() : null;
+.btn:disabled:hover {
+    box-shadow: none;
+}
 
-        try {
-            await ndef.scan(currentScanAbort ? { signal: currentScanAbort.signal } : {});
+.btn.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 20px var(--glow-color);
+    font-weight: 700;
+}
 
-            ndef.onreadingerror = () => {
-                setNfcBadge('available');
-                showMessage('Fehler beim Lesen des NFC-Tags.', 'err');
-                cleanupAfterRead(false);
-            };
+.btn.primary-btn:hover {
+    box-shadow: 0 8px 30px var(--glow-color);
+}
 
-            ndef.onreading = (event) => {
-                setNfcBadge('on');
-                const firstRecord = event.message.records[0];
-                if (firstRecord && firstRecord.recordType === 'text') {
-                    const textDecoder = new TextDecoder(firstRecord.encoding);
-                    const text = textDecoder.decode(firstRecord.data);
-                    processNfcData(text);
-                    showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
-                } else {
-                    showMessage('Kein Text-Record auf dem Tag gefunden.', 'err');
-                }
-                if (currentScanAbort) currentScanAbort.abort();
-                cleanupAfterRead(true);
-            };
-        } catch (error) {
-            setNfcBadge('off');
-            showMessage(`Scan-Fehler: ${error.message}`, 'err');
-            cleanupAfterRead(false);
-        }
-    }
+.file-operations {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
 
-    function processNfcData(text) {
-        rawDataOutput.value = text;
-        try {
-            scannedDataObject = parseNfcText(text);
-            displayParsedData(scannedDataObject);
-            readResultContainer.classList.remove('hidden');
-        } catch(e) {
-            showMessage(`Fehler beim Verarbeiten der Daten: ${e.message}`, 'err');
-            readResultContainer.classList.add('hidden');
-            scannedDataObject = null;
-        }
-    }
+#copy-to-form-btn {
+    width: 100%;
+    margin-bottom: 0;
+}
 
-    function parseNfcText(text) {
-        const data = {};
-        text = text.trim();
-        if (text.startsWith('v1')) {
-            const content = text.substring(2).trim();
-            const regex = /(\w+):([^\n]*)/g;
-            let match;
-            while ((match = regex.exec(content)) !== null) {
-                const key = reverseFieldMap[match[1]] || match[1];
-                data[key] = match[2].trim();
-            }
-            return data;
-        }
-        if (Object.keys(data).length === 0) throw new Error("Kein bekanntes Format erkannt.");
-        return data;
-    }
+.action-box .btn,
+.file-operations .btn {
+    flex: 1 1 220px;
+    text-align: center;
+}
 
-    function displayParsedData(data) {
-        protocolCard.innerHTML = `
-            <div class="card-main">
-                ${createDataPair('HK.Nr.', data['HK.Nr.'])}
-                ${createDataPair('KKS', data['KKS'])}
-            </div>
-            <div class="card-section">
-                ${createDataPair('Leistung', data['Leistung'], 'kW')}
-                ${createDataPair('Strom', data['Strom'], 'A')}
-                ${createDataPair('Spannung', data['Spannung'], 'V')}
-                ${createDataPair('Widerstand', data['Widerstand'], 'Ω')}
-            </div>
-            <div class="card-section">
-                ${createDataPair('Anzahl Heizkabeleinheiten', data['Anzahl Heizkabeleinheiten'], 'Stk')}
-                ${createDataPair('Trennkasten', data['Trennkasten'], 'Stk')}
-                ${createDataPair('Heizkabeltyp', data['Heizkabeltyp'])}
-                ${createDataPair('Schaltung', data['Schaltung'])}
-                ${createDataPair('PT 100', data['PT 100'], 'Stk')}
-                ${createDataPair('NiCr-Ni', data['NiCr-Ni'], 'Stk')}
-            </div>
-            <div class="card-section">
-                 ${createDataPair('Regler', data['Regler'], '°C')}
-                 ${createDataPair('Sicherheitsregler/Begrenzer', data['Sicherheitsregler/Begrenzer'], '°C')}
-                 ${createDataPair('Wächter', data['Wächter'], '°C')}
-            </div>
-            <div class="card-footer">
-                ${createDataPair('Projekt Nr.', data['Projekt Nr.'])}
-                ${createDataPair('geprüft von', data['geprüft von'])}
-                ${createDataPair('am', data['am'])}
-            </div>
-        `;
-        
-        // Nach dem Anzeigen neuer Daten den gesamten Container wieder einklappen
-        readResultContainer.classList.add('collapsible');
-        readResultContainer.classList.remove('expanded');
-    }
+.file-input-label {
+    display: inline-block;
+}
 
-    function createDataPair(label, value, unit = '') {
-        if (!value) return '';
-        return `
-            <div class="data-pair">
-                <span class="data-pair-label">${label}</span>
-                <span class="data-pair-value">${value} ${unit}</span>
-            </div>
-        `;
-    }
+#read-result, #write-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
-    // --- NFC Write Logic ---
-    function updatePayloadOnChange() {
-        if (!payloadContainer.classList.contains('hidden')) {
-            generateAndShowPayload();
-        }
-    }
+#read-result.hidden, #payload-container.hidden {
+    display: none;
+}
 
-    function generateAndShowPayload() {
-        const formData = getFormData();
-        const payload = formatToCompact(formData);
-        payloadOutput.value = payload;
+h2 {
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-color);
+    opacity: 0.5;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
 
-        const byteCount = new TextEncoder().encode(payload).length;
-        payloadSize.textContent = `${byteCount} / ${MAX_PAYLOAD_BYTES} Bytes`;
-        
-        if (byteCount > MAX_PAYLOAD_BYTES) {
-            payloadSize.classList.add('limit-exceeded');
-            writeNfcBtn.disabled = true;
-            showMessage('Payload zu groß! Schreiben deaktiviert.', 'err');
-        } else {
-            payloadSize.classList.remove('limit-exceeded');
-            writeNfcBtn.disabled = false;
-        }
-    }
+.protocol-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--surface-light);
+    margin-bottom: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
 
-    function getFormData() {
-        const formData = new FormData(form);
-        const data = {};
-        for (const [key, value] of formData.entries()) {
-            if (value.trim()) {
-                data[key] = value.trim();
-            }
-        }
-        if(!document.getElementById('has_PT100').checked) delete data['PT 100'];
-        if(!document.getElementById('has_NiCr-Ni').checked) delete data['NiCr-Ni'];
-        delete data['has_PT100'];
-        delete data['has_NiCr-Ni'];
-        return data;
-    }
+.protocol-card .card-section,
+.protocol-card .data-pair {
+  transition: max-height 0.4s ease-in-out, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  overflow: hidden;
+  max-height: 500px; /* Large enough value to not clip content */
+  opacity: 1;
+}
 
-    function formatToCompact(data) {
-        let compactString = 'v1';
-        const parts = [];
-        
-        for (const [key, shortKey] of Object.entries(fieldMap)) {
-            if (data[key]) {
-                parts.push(`${shortKey}:${data[key]}`);
-            }
-        }
+.protocol-card .card-section:empty,
+.protocol-card .data-pair:empty {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border: none;
+}
 
-        if (parts.length > 0) {
-            compactString += '\n' + parts.join('\n');
-        }
-        
-        return compactString;
-    }
-    
-    function startWriteCooldown() {
-        writeCooldown = true;
-        setTimeout(() => { writeCooldown = false; }, READ_COOLDOWN_MS);
-    }
+.protocol-card .data-pair {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+}
 
-    async function writeNfcTag() {
-        if (!('NDEFReader' in window)) return;
-        if (isWriting || writeCooldown) return;
-        
-        isWriting = true;
-        generateAndShowPayload();
-        const payload = payloadOutput.value;
-        if (new TextEncoder().encode(payload).length > MAX_PAYLOAD_BYTES) {
-             showMessage('Payload ist zu groß zum Schreiben!', 'err');
-             isWriting = false;
-             return;
-        }
-        
-        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
-        writeNfcBtn.disabled = true;
+.protocol-card .data-pair:hover {
+    transform: translateX(4px);
+}
 
-        try {
-            const ndef = new NDEFReader();
-            await ndef.write(payload);
-            showMessage('Daten erfolgreich auf NFC-Tag geschrieben!', 'ok');
-        } catch (error) {
-            showMessage(`Schreibfehler: ${error.message}`, 'err');
-        } finally {
-            isWriting = false;
-            startWriteCooldown();
-            writeNfcBtn.disabled = false;
-            generateAndShowPayload();
-        }
-    }
+.protocol-card .data-pair-label {
+    font-weight: 500;
+    color: var(--light-text-color);
+    font-size: 0.95rem;
+}
 
-    // --- Auto Write Logic ---
-    function armAutoWrite(armed) {
-        autoWriteArmed = armed;
-        if (autoWriteArmed) {
-            autoWriteToggle.textContent = 'Auto-Schreiben stoppen';
-            autoWriteHint.textContent = 'Bereit zum Schreiben – halten Sie den Tag an das Gerät. Änderungen im Formular werden übernommen.';
-            autoWriteOnce();
-        } else {
-            autoWriteToggle.textContent = 'Auto-Schreiben aktivieren';
-            autoWriteHint.textContent = '';
-        }
-    }
+.protocol-card .data-pair-value {
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: right;
+    font-size: 1rem;
+}
 
-    async function autoWriteOnce() {
-        if (!autoWriteArmed || writeCooldown) return;
+.raw-data-details {
+    margin-bottom: 0;
+}
 
-        try {
-            generateAndShowPayload();
-            const payload = payloadOutput.value;
-            const ndef = new NDEFReader();
-            await ndef.write(payload);
-            showMessage('Daten geschrieben. Sie können den nächsten Tag anhalten …', 'ok');
-            startWriteCooldown();
-        } catch (err) {
-            showMessage(`Schreibfehler: ${err.message}`, 'err');
-            startWriteCooldown();
-        } finally {
-            if (autoWriteArmed) {
-                setTimeout(autoWriteOnce, 600);
-            }
-        }
-    }
+.raw-data-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--light-text-color);
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: var(--surface-light);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    list-style: none;
+}
 
-    // Startet den Scan direkt oder beim ersten Tap (wenn Browser es verlangt)
-    function armImmediateScan() {
-        // Versuch sofort zu starten
-        setTimeout(() => {
-            readNfcTag();
-        }, 150);
+.raw-data-details summary:hover {
+    background: var(--surface-color);
+    color: var(--text-color);
+}
 
-        // Fallback: Falls User-Gesture nötig ist, wird dieser nur einmalig registriert.
-        if (autoScanArmedOnce) return;
-        autoScanArmedOnce = true;
+.raw-data-details summary::-webkit-details-marker {
+    display: none;
+}
 
-        const startOnGesture = () => {
-            readNfcTag();
-            window.removeEventListener('pointerdown', startOnGesture, { capture: true });
-            window.removeEventListener('keydown', startOnGesture, { capture: true });
-        };
-        window.addEventListener('pointerdown', startOnGesture, { once: true, capture: true });
-        window.addEventListener('keydown', startOnGesture, { once: true, capture: true });
-    }
+.raw-data-details summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.3s ease;
+}
 
-    // --- Collapsible helpers ---
-    function makeCollapsible(el) {
-      if (!el) return;
-       // Verhindern, dass die Logik mehrfach auf dasselbe Element angewendet wird
-      if (el.dataset.collapsibleApplied) return;
-      el.dataset.collapsibleApplied = 'true';
+.raw-data-details[open] summary::before {
+    transform: rotate(90deg);
+}
 
-      el.classList.add('collapsible');
+textarea,
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 1rem;
+    background: var(--background-color);
+    color: var(--text-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+textarea {
+    min-height: 140px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+}
 
-      // Toggle-Handler: bei Tap/Enter/Space aufklappen
-      const toggle = () => {
-        // Wenn bereits expanded → NICHT wieder zuklappen
-        if (el.classList.contains('expanded')) return;
-        el.classList.add('expanded');
-        
-        // Use setTimeout to ensure blur() is called after the browser's
-        // default focus/scroll behavior has completed for the click event.
-        setTimeout(() => {
-            el.blur();
-        }, 0);
-      };
 
-      // Click nur zum Öffnen
-      el.addEventListener('click', (e) => {
-        // Klicks auf Eingabeelemente sollen nichts umschalten
-        const tag = (e.target.tagName || '').toLowerCase();
-        if (['input','select','textarea','button','label','summary','details'].includes(tag)) return;
-        toggle();
-      });
+textarea:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--glow-color);
+    background: var(--surface-color);
+}
 
-      // Tastaturzugänglichkeit
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('role', 'button');
-      el.setAttribute('aria-expanded', 'false');
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggle();
-          el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
-        }
-      });
+#nfc-write-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
 
-      // Wenn per Script aufgeklappt wird, aria aktualisieren
-      const observer = new MutationObserver(() => {
-        el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
-      });
-      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-    }
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    align-items: end;
+}
 
-    // --- Form & Data Handling ---
-    function populateFormFromScan() {
-        if (!scannedDataObject) {
-            showMessage('Keine Daten zum Übernehmen vorhanden.', 'err');
-            return;
-        }
-        form.reset();
-        setTodaysDate();
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
 
-        for (const [key, value] of Object.entries(scannedDataObject)) {
-            const input = form.elements[key];
-            if (input) {
-                if (input.type === 'radio') {
-                    const radioGroup = form.querySelectorAll(`input[name="${key}"]`);
-                    radioGroup.forEach(radio => {
-                        if (radio.value === value) {
-                            radio.checked = true;
-                        }
-                    });
-                } else if (input.type === 'checkbox') {
-                    input.checked = (value === 'true' || value === 'on');
-                } else {
-                    input.value = value;
-                }
-            }
-        }
-        
-        const pt100Input = document.getElementById('PT 100');
-        const hasPt100Checkbox = document.getElementById('has_PT100');
-        if (scannedDataObject['PT 100']) {
-            pt100Input.value = scannedDataObject['PT 100'];
-            pt100Input.disabled = false;
-            hasPt100Checkbox.checked = true;
-        } else {
-            pt100Input.disabled = true;
-            hasPt100Checkbox.checked = false;
-        }
+.form-group label, fieldset legend {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-        const niCrInput = document.getElementById('NiCr-Ni');
-        const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni');
-        if (scannedDataObject['NiCr-Ni']) {
-            niCrInput.value = scannedDataObject['NiCr-Ni'];
-            niCrInput.disabled = false;
-            hasNiCrCheckbox.checked = true;
-        } else {
-             niCrInput.disabled = true;
-            hasNiCrCheckbox.checked = false;
-        }
+fieldset {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: rgba(var(--surface-color-rgb), 0.2);
+}
 
-        switchTab('write-tab');
-        showMessage('Daten in Formular übernommen.', 'ok');
-    }
+fieldset legend {
+    padding: 0 0.75rem;
+    color: var(--primary-color);
+}
 
-    function saveFormAsJson() {
-        const data = getFormData();
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const fileName = data['HK.Nr.'] || data['KKS'] || `thixx-export-${Date.now()}`;
-        a.download = `${fileName}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showMessage('Daten als JSON gespeichert.', 'ok');
-    }
+.radio-group, .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+}
 
-    function loadJsonIntoForm(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+.radio-group label, .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                scannedDataObject = data;
-                populateFormFromScan();
-                showMessage('JSON-Datei erfolgreich geladen.', 'ok');
-            } catch (error) {
-                showMessage(`Fehler beim Laden der JSON-Datei: ${error.message}`, 'err');
-            } finally {
-                event.target.value = null;
-            }
-        };
-        reader.readAsText(file);
-    }
-});
+.radio-group label:hover, .checkbox-group label:hover {
+    color: var(--primary-light);
+}
+
+.radio-group input[type="radio"],
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-group input[type="number"] {
+    width: 90px;
+}
+
+.checkbox-group input[type="number"]:disabled {
+    background: var(--surface-light);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+#payload-size {
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--light-text-color);
+    margin-top: 0.75rem;
+    font-weight: 600;
+}
+
+#payload-size.limit-exceeded {
+    color: var(--error-color);
+    font-weight: bold;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+footer {
+    padding: 1.5rem 0;
+    text-align: center;
+}
+
+.message-banner {
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(20px);
+    backdrop-filter: blur(10px);
+    border: 1px solid;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.message-banner:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.message-banner.ok {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+}
+body[data-theme="thixx"] .message-banner.ok,
+body[data-theme="customer-brand"] .message-banner.ok { 
+    color: var(--success-color); 
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+}
+
+.message-banner.err {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+}
+body[data-theme="thixx"] .message-banner.err,
+body[data-theme="customer-brand"] .message-banner.err { 
+    color: var(--error-color);
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+
+.message-banner.info {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+}
+body[data-theme="thixx"] .message-banner.info,
+body[data-theme="customer-brand"] .message-banner.info { 
+    color: #0c5460;
+    background-color: #cce5ff;
+    border-color: #b8daff;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--surface-light);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+}
+
+/* BORDER AND COLOR CONSISTENCY STYLES FOR CUSTOMER THEME */
+body[data-theme="customer-brand"] header,
+body[data-theme="customer-brand"] .tabs,
+body[data-theme="customer-brand"] .tab-content {
+    border: 4px solid var(--secondary-color); /* Inner grey border */
+}
+
+body[data-theme="customer-brand"] header {
+     box-shadow: 0 0 0 4px var(--primary-color), /* Outer Red-Orange Border */
+                 0 8px 32px rgba(0, 0, 0, 0.15),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="customer-brand"] .tabs {
+     box-shadow: 0 0 0 4px var(--primary-color); /* Outer Red-Orange Border */
+}
+
+body[data-theme="customer-brand"] .tab-content {
+     box-shadow: 0 0 0 4px var(--primary-color), /* Outer Red-Orange Border */
+                 0 8px 32px rgba(0, 0, 0, 0.1),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="customer-brand"] .tab-link::before,
+body[data-theme="customer-brand"] .btn.primary-btn {
+    background: var(--primary-color); /* Solid Corporate Color */
+}
+
+/* Collapsible preview */
+.collapsible {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  max-height: 12rem; /* Erhöht, um Titel + 2 Felder sicher anzuzeigen */
+  transition: max-height 350ms ease-in-out;
+}
+
+.collapsible.expanded {
+  max-height: 3000px;
+  cursor: default;
+  transition: max-height 500ms ease-in-out;
+}
+
+/* Klickbarer Bereich zum Öffnen */
+.collapsible-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4rem;
+  
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 0.75rem;
+
+  color: var(--light-text-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+  user-select: none;
+  
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(var(--surface-color-rgb), 0.9) 50%,
+    rgba(var(--surface-color-rgb), 1) 100%
+  );
+  transition: opacity 200ms ease;
+}
+
+/* Overlay ausblenden, wenn der Container geöffnet ist */
+.collapsible.expanded .collapsible-overlay {
+  opacity: 0;
+  pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
+}
 
