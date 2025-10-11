@@ -168,6 +168,14 @@ body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border
     box-shadow: none;
 }
 
+/* --- Theme-aware logo colors --- */
+.logo-icon { 
+    display:inline-block; 
+    vertical-align:middle; 
+}
+.logo-arc-primary   { stroke: var(--primary-color); }
+.logo-arc-secondary { stroke: var(--secondary-color); }
+
 
 @keyframes slideDown {
     from {
