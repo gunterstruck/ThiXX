@@ -103,7 +103,7 @@ body[data-theme="customer-brand"]::before {
 
 header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap; 
     gap: 1rem;
@@ -126,10 +126,11 @@ body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border
 
 
 .header-content {
+    width: 100%;
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 1.5rem;
-    flex-grow: 1;
 }
 
 .theme-switcher {
@@ -474,7 +475,7 @@ body[data-theme="customer-brand"] .btn::before {
 
 #copy-to-form-btn {
     width: 100%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
 }
 
 .action-box .btn,
@@ -485,6 +486,12 @@ body[data-theme="customer-brand"] .btn::before {
 
 .file-input-label {
     display: inline-block;
+}
+
+#read-result {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 #read-result.hidden, #payload-container.hidden {
@@ -509,7 +516,7 @@ h2 {
     border: 1px solid var(--border-color);
     border-radius: 16px;
     background: var(--surface-light);
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
 }
@@ -560,7 +567,7 @@ h2 {
 }
 
 .raw-data-details {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
 }
 
 .raw-data-details summary {
@@ -839,4 +846,5 @@ body[data-theme="customer-brand"] .tab-link::before,
 body[data-theme="customer-brand"] .btn.primary-btn {
     background: var(--primary-color); /* Solid Corporate Color */
 }
+
 
