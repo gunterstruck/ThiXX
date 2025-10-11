@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const readResultContainer = document.getElementById('read-result');
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
+    const autoWriteToggle = document.getElementById('auto-write-toggle');
+    const autoWriteHint = document.getElementById('auto-write-hint');
 
     // --- Constants and State ---
     const MAX_PAYLOAD_BYTES = 880;
@@ -35,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentScanAbort = null;
     let isWriting = false;
     let writeCooldown = false;
+    let autoWriteArmed = false;
 
     const fieldMap = {
         'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R',
@@ -74,6 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
+
+        autoWriteToggle.addEventListener('click', () => {
+            armAutoWrite(!autoWriteArmed);
+        });
 
         form.addEventListener('input', updatePayloadOnChange);
         form.addEventListener('change', updatePayloadOnChange);
@@ -130,12 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContents.forEach(content => content.classList.remove('active'));
         document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
-
+        
         if (tabId === 'read-tab') {
+            if (autoWriteArmed) armAutoWrite(false);
             readNfcTag();
         } else if (tabId === 'write-tab') {
             payloadContainer.classList.remove('hidden');
             generateAndShowPayload();
+            autoWriteHint.textContent = 'Tipp: „Auto-Schreiben aktivieren“ starten und den Tag einfach an das Gerät halten.';
         }
     }
 
@@ -396,6 +405,39 @@ document.addEventListener('DOMContentLoaded', () => {
             startWriteCooldown();
             writeNfcBtn.disabled = false;
             generateAndShowPayload();
+        }
+    }
+
+    // --- Auto Write Logic ---
+    function armAutoWrite(armed) {
+        autoWriteArmed = armed;
+        if (autoWriteArmed) {
+            autoWriteToggle.textContent = 'Auto-Schreiben stoppen';
+            autoWriteHint.textContent = 'Bereit zum Schreiben – halten Sie den Tag an das Gerät. Änderungen im Formular werden übernommen.';
+            autoWriteOnce();
+        } else {
+            autoWriteToggle.textContent = 'Auto-Schreiben aktivieren';
+            autoWriteHint.textContent = '';
+        }
+    }
+
+    async function autoWriteOnce() {
+        if (!autoWriteArmed || writeCooldown) return;
+
+        try {
+            generateAndShowPayload();
+            const payload = payloadOutput.value;
+            const ndef = new NDEFReader();
+            await ndef.write(payload);
+            showMessage('Daten geschrieben. Sie können den nächsten Tag anhalten …', 'ok');
+            startWriteCooldown();
+        } catch (err) {
+            showMessage(`Schreibfehler: ${err.message}`, 'err');
+            startWriteCooldown();
+        } finally {
+            if (autoWriteArmed) {
+                setTimeout(autoWriteOnce, 600);
+            }
         }
     }
 
