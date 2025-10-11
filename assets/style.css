@@ -853,7 +853,7 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  max-height: 12rem; /* Erhöht, um Titel + 2 Felder sicher anzuzeigen */
+  max-height: 8rem; /* Erhöht, um Titel + 2 Felder sicher anzuzeigen */
   transition: max-height 350ms ease-in-out;
 }
 
