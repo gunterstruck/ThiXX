@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupTheme();
         setTodaysDate();
         checkNfcSupport();
+        initCollapsibles(); // Initialize collapsible sections
 
         // Variante A: Wenn der Lesen-Tab aktiv ist, Scan sofort (oder beim ersten Tap) starten
         const readTabActive = document
@@ -65,11 +66,39 @@ document.addEventListener('DOMContentLoaded', () => {
         if (readTabActive && 'NDEFReader' in window) {
             armImmediateScan();
         }
-
-        // Collapsible-Previews aktivieren (Protokollkarte + Formular)
-        makeCollapsible(document.getElementById('protocol-card'));
-        makeCollapsible(document.getElementById('nfc-write-form'));
     }
+
+    // --- Collapsible Bereiche aktivieren ---
+    function initCollapsibles() {
+        // 1️⃣ Abnahmeprotokollkarte
+        const protocolCardEl = document.getElementById('protocol-card');
+        if (protocolCardEl) {
+            makeCollapsible(protocolCardEl);
+            protocolCardEl.classList.remove('expanded'); // Start: eingeklappt
+        }
+
+        // 2️⃣ Schreiben-Tab komplett einklappbar machen
+        const writeTab = document.getElementById('write-tab');
+        const wrapperId = 'write-collapsible';
+        let wrapper = document.getElementById(wrapperId);
+
+        if (writeTab && !wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.id = wrapperId;
+            wrapper.classList.add('collapsible'); // <<< Wichtig: direkt collapsible
+            // Bestehende Inhalte verschieben
+            while (writeTab.firstChild) {
+                wrapper.appendChild(writeTab.firstChild);
+            }
+            writeTab.appendChild(wrapper);
+        }
+
+        if (wrapper) {
+            makeCollapsible(wrapper);
+            wrapper.classList.remove('expanded'); // Start: eingeklappt
+        }
+    }
+
 
     function checkNfcSupport() {
         if ('NDEFReader' in window) {
@@ -319,6 +348,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createDataPair('am', data['am'])}
             </div>
         `;
+        
+        const oldHint = protocolCard.querySelector('.collapsible-hint');
+        if (oldHint) oldHint.remove();
+
+        // Collapsible nach Rendern reaktivieren
+        protocolCard.removeAttribute('data-collapsible-applied');
+        makeCollapsible(protocolCard);
+        protocolCard.classList.remove('expanded');
     }
 
     function createDataPair(label, value, unit = '') {
@@ -479,22 +516,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Collapsible helpers ---
     function makeCollapsible(el) {
       if (!el) return;
+       // Verhindern, dass die Logik mehrfach auf dasselbe Element angewendet wird
+      if (el.dataset.collapsibleApplied) return;
+      el.dataset.collapsibleApplied = 'true';
+
       el.classList.add('collapsible');
 
       // Hinweis-Badge einfügen (nur im eingeklappten Zustand sichtbar)
-      const hint = document.createElement('div');
-      hint.className = 'collapsible-hint';
-      hint.textContent = 'Tippen zum Öffnen';
-      el.appendChild(hint);
+      let hint = el.querySelector('.collapsible-hint');
+      if (!hint) {
+          hint = document.createElement('div');
+          hint.className = 'collapsible-hint';
+          hint.textContent = 'Tippen zum Öffnen';
+          el.appendChild(hint);
+      }
 
-      // Toggle-Handler: bei Tap/Enter/Space aufklappen/zusammenklappen
+
+      // Toggle-Handler: bei Tap/Enter/Space aufklappen
       const toggle = () => {
-        // Wenn bereits expanded UND es ist ein Form-Element-Klick → NICHT wieder zuklappen
+        // Wenn bereits expanded → NICHT wieder zuklappen
         if (el.classList.contains('expanded')) return;
         el.classList.add('expanded');
       };
 
-      // Click nur zum Öffnen (kein Schließen über generischen Klick)
+      // Click nur zum Öffnen
       el.addEventListener('click', (e) => {
         // Klicks auf Eingabeelemente sollen nichts umschalten
         const tag = (e.target.tagName || '').toLowerCase();
@@ -610,5 +655,4 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 });
-
 
