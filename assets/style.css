@@ -488,7 +488,7 @@ body[data-theme="customer-brand"] .btn::before {
     display: inline-block;
 }
 
-#read-result {
+#read-result, #write-form-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -852,14 +852,15 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  max-height: 4rem; /* Angepasst für eine kompaktere Ansicht */
-  transition: max-height 280ms ease;
+  max-height: 9.5rem; /* Angepasst für eine kompaktere Ansicht mit ca. 2 Feldern */
+  transition: max-height 350ms ease-in-out;
 }
 
 /* Wenn aufgeklappt – genug Platz geben */
 .collapsible.expanded {
   max-height: 3000px; /* groß genug für gesamten Inhalt */
   cursor: default;
+  transition: max-height: 500ms ease-in-out;
 }
 
 /* Weicher Fade unten als „Mehr“-Hinweis */
@@ -876,7 +877,7 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  height: 3rem;
+  height: 4rem;
   pointer-events: none;
   background: linear-gradient(
     to bottom,
@@ -893,3 +894,4 @@ body[data-theme="customer-brand"] .btn.primary-btn {
 .collapsible.expanded::after {
   opacity: 0;
 }
+
