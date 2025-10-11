@@ -19,21 +19,40 @@
 
 /* Light Theme (ThiXX) */
 body[data-theme="thixx"] {
-    --primary-color: #e45d45; /* Rot-Orange from Logo */
+    --primary-color: #e45d45; 
     --primary-dark: #c84a32;
     --primary-light: #f47a65;
-    --secondary-color: #6c757d; /* Grey from Logo */
-    --background-color: #f8f9fa; /* Light Grey/White */
+    --secondary-color: #6c757d; 
+    --background-color: #f8f9fa; 
     --surface-color: #ffffff;
     --surface-light: #e9ecef;
     --border-color: #dee2e6;
-    --text-color: #212529; /* Dark Grey for text */
+    --text-color: #212529; 
     --light-text-color: #6c757d;
     --success-color: #198754;
     --error-color: #dc3545;
     --disabled-color: #adb5bd;
     --glow-color: rgba(228, 93, 69, 0.3);
     --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Customer Brand Theme */
+body[data-theme="customer-brand"] {
+    --primary-color: #D44A2C; /* Customer Red-Orange */
+    --primary-dark: #B03D23;
+    --primary-light: #E56B51;
+    --secondary-color: #787771; /* Customer Grey */
+    --background-color: #FCFCFD; /* Customer Off-White */
+    --surface-color: #FFFFFF;
+    --surface-light: #f0f0f0;
+    --border-color: #d1d1d1;
+    --text-color: #3d3d3d; /* Dark grey for better readability */
+    --light-text-color: #787771; /* Customer Grey */
+    --success-color: #198754;
+    --error-color: #dc3545;
+    --disabled-color: #b5b5b5;
+    --glow-color: rgba(212, 74, 44, 0.3);
+    --body-gradient: linear-gradient(135deg, #FCFCFD 0%, #F0F0F0 100%);
 }
 
 
@@ -67,6 +86,11 @@ body::before {
         radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
+    opacity: 0.5;
+}
+
+body[data-theme="customer-brand"]::before {
+    opacity: 0.3;
 }
 
 .container {
@@ -98,6 +122,7 @@ header {
 /* Helper for transparent colors */
 body[data-theme="dark"] { --surface-color-rgb: 30, 41, 59; --border-color-rgb: 71, 85, 105; }
 body[data-theme="thixx"] { --surface-color-rgb: 255, 255, 255; --border-color-rgb: 222, 226, 230; }
+body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border-color-rgb: 209, 209, 209; }
 
 
 .header-content {
@@ -263,7 +288,8 @@ header h1 {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-body[data-theme="thixx"] .tab-link.active {
+body[data-theme="thixx"] .tab-link.active,
+body[data-theme="customer-brand"] .tab-link.active {
     color: white !important; 
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); 
 }
@@ -340,7 +366,8 @@ body[data-theme="thixx"] .tab-link.active {
     transform: translate(-50%, -50%);
     transition: width 0.6s, height 0.6s;
 }
-body[data-theme="thixx"] .btn::before {
+body[data-theme="thixx"] .btn::before,
+body[data-theme="customer-brand"] .btn::before {
     background: rgba(0, 0, 0, 0.05);
 }
 
@@ -442,6 +469,7 @@ h2 {
 }
 body[data-theme="dark"] { --primary-color-rgb: 240, 78, 55; }
 body[data-theme="thixx"] { --primary-color-rgb: 228, 93, 69; }
+body[data-theme="customer-brand"] { --primary-color-rgb: 212, 74, 44; }
 
 
 .protocol-card .card-footer {
@@ -528,7 +556,6 @@ textarea,
     font-size: 1rem;
     background: var(--background-color);
     color: var(--text-color);
-    backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 textarea {
@@ -677,7 +704,12 @@ footer {
     border-color: rgba(16, 185, 129, 0.3);
     box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
 }
-body[data-theme="thixx"] .message-banner.ok { color: var(--success-color); }
+body[data-theme="thixx"] .message-banner.ok,
+body[data-theme="customer-brand"] .message-banner.ok { 
+    color: var(--success-color); 
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+}
 
 .message-banner.err {
     background: rgba(239, 68, 68, 0.2);
@@ -685,7 +717,12 @@ body[data-theme="thixx"] .message-banner.ok { color: var(--success-color); }
     border-color: rgba(239, 68, 68, 0.3);
     box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
 }
-body[data-theme="thixx"] .message-banner.err { color: var(--error-color); }
+body[data-theme="thixx"] .message-banner.err,
+body[data-theme="customer-brand"] .message-banner.err { 
+    color: var(--error-color);
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
 
 
 .message-banner.info {
@@ -694,7 +731,12 @@ body[data-theme="thixx"] .message-banner.err { color: var(--error-color); }
     border-color: rgba(59, 130, 246, 0.3);
     box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
 }
-body[data-theme="thixx"] .message-banner.info { color: #0d6efd; }
+body[data-theme="thixx"] .message-banner.info,
+body[data-theme="customer-brand"] .message-banner.info { 
+    color: #0c5460;
+    background-color: #cce5ff;
+    border-color: #b8daff;
+}
 
 .hidden {
     display: none !important;

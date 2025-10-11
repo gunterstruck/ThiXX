@@ -137,7 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
-                metaThemeColor.setAttribute('content', themeName === 'dark' ? '#0f172a' : '#e45d45');
+                let color = '#0f172a'; // default dark
+                if (themeName === 'thixx') color = '#f8f9fa';
+                if (themeName === 'customer-brand') color = '#D44A2C';
+                metaThemeColor.setAttribute('content', color);
             }
         }
 
