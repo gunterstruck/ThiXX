@@ -33,10 +33,6 @@
         <main>
             <!-- Tab A: NFC lesen -->
             <div id="read-tab" class="tab-content active">
-                <div class="action-box">
-                    <button id="read-nfc-btn" class="btn primary-btn">NFC-Tag lesen</button>
-                </div>
-
                 <div id="read-result" class="hidden">
                     <h2>Abnahmeprotokoll-Karte</h2>
                     <div id="protocol-card" class="protocol-card">
@@ -95,14 +91,13 @@
                     </div>
                 </form>
 
-                <div class="action-box">
-                    <button id="show-payload-btn" class="btn">Payload anzeigen</button>
-                    <button id="write-nfc-btn" class="btn primary-btn" disabled>Auf NFC-Tag schreiben</button>
-                </div>
-
                 <div id="payload-container" class="hidden">
                     <textarea id="payload-output" readonly></textarea>
                     <div id="payload-size" class="payload-size">0 / 880 Bytes</div>
+                </div>
+
+                <div class="action-box">
+                    <button id="write-nfc-btn" class="btn primary-btn" disabled>Auf NFC-Tag schreiben</button>
                 </div>
 
                 <div class="file-operations">
