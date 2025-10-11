@@ -70,11 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Collapsible Bereiche aktivieren ---
     function initCollapsibles() {
-        // 1️⃣ Abnahmeprotokollkarte
-        const protocolCardEl = document.getElementById('protocol-card');
-        if (protocolCardEl) {
-            makeCollapsible(protocolCardEl);
-            protocolCardEl.classList.remove('expanded'); // Start: eingeklappt
+        // 1️⃣ Gesamten "gelesenen" Container einklappbar machen
+        const readResultEl = document.getElementById('read-result');
+        if (readResultEl) {
+            makeCollapsible(readResultEl);
+            readResultEl.classList.remove('expanded'); // Start: eingeklappt
         }
 
         // 2️⃣ Schreiben-Tab komplett einklappbar machen
@@ -349,13 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        const oldHint = protocolCard.querySelector('.collapsible-hint');
-        if (oldHint) oldHint.remove();
-
-        // Collapsible nach Rendern reaktivieren
-        protocolCard.removeAttribute('data-collapsible-applied');
-        makeCollapsible(protocolCard);
-        protocolCard.classList.remove('expanded');
+        // Nach dem Anzeigen neuer Daten den Container wieder einklappen
+        readResultContainer.classList.remove('expanded');
     }
 
     function createDataPair(label, value, unit = '') {
