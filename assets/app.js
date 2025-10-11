@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawDataOutput = document.getElementById('raw-data-output');
     const autoWriteToggle = document.getElementById('auto-write-toggle');
     const autoWriteHint = document.getElementById('auto-write-hint');
-    const container = document.querySelector('.container');
 
     // --- Constants and State ---
     const MAX_PAYLOAD_BYTES = 880;
@@ -50,13 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentScanController = null;
     let autoWriteArmed = false;
 
-    // --- Color values for dynamic header ---
-    const themeRgbs = {
-        dark: '30, 41, 59',
-        thixx: '255, 255, 255',
-        'customer-brand': '255, 255, 255'
-    };
-
     // --- Initialization ---
     init();
 
@@ -72,9 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
         setupTheme();
         setTodaysDate();
-        setHeaderHeight(); // Set initial header height
-        handleHeaderScroll(); // Set initial header background
-        setupIntersectionObserver(); // Setup reveal-on-scroll animations
     }
 
     // --- Event Listeners Setup ---
@@ -98,40 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('has_NiCr-Ni').addEventListener('change', (e) => {
             document.getElementById('NiCr-Ni').disabled = !e.target.checked;
         });
-        
-        window.addEventListener('resize', setHeaderHeight);
-        container.addEventListener("scroll", handleHeaderScroll);
-    }
-    
-    // --- Header Height and Style Calculation ---
-    function setHeaderHeight() {
-      const header = document.getElementById('app-header');
-      if (header) {
-        const headerHeight = header.offsetHeight;
-        document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
-      }
-    }
-
-    function handleHeaderScroll() {
-        const header = document.getElementById("app-header");
-        if (!header || !container) return;
-
-        const scrollTop = container.scrollTop;
-        const maxFade = 200; // Scroll distance for full opacity
-
-        const currentTheme = document.body.dataset.theme || 'dark';
-        const rgb = themeRgbs[currentTheme];
-        
-        // Interpolate opacity from 0.8 to 0.95
-        const opacity = 0.8 + Math.min(scrollTop / maxFade, 1) * 0.15;
-        header.style.background = `rgba(${rgb}, ${opacity})`;
-
-        // Add/remove scrolled class for shadow effect
-        if (scrollTop > 10) {
-            header.classList.add("scrolled");
-        } else {
-            header.classList.remove("scrolled");
-        }
     }
 
     // --- Theme Switcher Logic ---
@@ -158,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 metaThemeColor.setAttribute('content', color);
             }
-            handleHeaderScroll(); // Update header style for new theme
         }
 
         themeButtons.forEach(button => {
@@ -305,11 +259,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseNfcText(text) {
-        // ... (parsing logic remains the same)
+        const data = {};
+        text = text.trim();
+
+        if (text.startsWith('v1')) {
+            const content = text.substring(2).trim();
+            const regex = /(\w+):([^\n]*)/g;
+            let match;
+            while ((match = regex.exec(content)) !== null) {
+                const key = reverseFieldMap[match[1]] || match[1];
+                data[key] = match[2].trim();
+            }
+            return data;
+        }
+        
+        if (text.includes('|') && text.includes('---')) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('|') && !l.includes('---'));
+            lines.forEach(line => {
+                const parts = line.split('|').map(p => p.trim()).filter(Boolean);
+                if (parts.length === 2) {
+                    data[parts[0]] = parts[1];
+                }
+            });
+            delete data['Merkmal'];
+            return data;
+        }
+
+        const lines = text.split('\n');
+        lines.forEach(line => {
+            const parts = line.split(':');
+            if (parts.length >= 2) {
+                const key = parts[0].trim();
+                const value = parts.slice(1).join(':').trim();
+                data[key] = value;
+            }
+        });
+
+        if(Object.keys(data).length === 0) throw new Error("Kein bekanntes Format erkannt.");
+        return data;
     }
 
     function displayParsedData(data) {
-        // ... (display logic remains the same)
+        protocolCard.innerHTML = `
+            <div class="card-main">
+                ${createDataPair('HK.Nr.', data['HK.Nr.'])}
+                ${createDataPair('KKS', data['KKS'])}
+            </div>
+            <div class="card-section">
+                ${createDataPair('Leistung', data['Leistung'], 'kW')}
+                ${createDataPair('Strom', data['Strom'], 'A')}
+                ${createDataPair('Spannung', data['Spannung'], 'V')}
+                ${createDataPair('Widerstand', data['Widerstand'], 'Ω')}
+            </div>
+            <div class="card-section">
+                ${createDataPair('Anzahl Heizkabeleinheiten', data['Anzahl Heizkabeleinheiten'], 'Stk')}
+                ${createDataPair('Trennkasten', data['Trennkasten'], 'Stk')}
+                ${createDataPair('Heizkabeltyp', data['Heizkabeltyp'])}
+                ${createDataPair('Schaltung', data['Schaltung'])}
+                ${createDataPair('PT 100', data['PT 100'], 'Stk')}
+                ${createDataPair('NiCr-Ni', data['NiCr-Ni'], 'Stk')}
+            </div>
+            <div class="card-section">
+                 ${createDataPair('Regler', data['Regler'], '°C')}
+                 ${createDataPair('Sicherheitsregler/Begrenzer', data['Sicherheitsregler/Begrenzer'], '°C')}
+                 ${createDataPair('Wächter', data['Wächter'], '°C')}
+            </div>
+            <div class="card-footer">
+                ${createDataPair('Projekt Nr.', data['Projekt Nr.'])}
+                ${createDataPair('geprüft von', data['geprüft von'])}
+                ${createDataPair('am', data['am'])}
+            </div>
+        `;
     }
 
     function createDataPair(label, value, unit = '') {
@@ -348,11 +368,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getFormData() {
-        // ... (form data logic remains the same)
+        const formData = new FormData(form);
+        const data = {};
+        for (const [key, value] of formData.entries()) {
+            if (value.trim()) {
+                data[key] = value.trim();
+            }
+        }
+        if(!document.getElementById('has_PT100').checked) delete data['PT 100'];
+        if(!document.getElementById('has_NiCr-Ni').checked) delete data['NiCr-Ni'];
+        delete data['has_PT100'];
+        delete data['has_NiCr-Ni'];
+        return data;
     }
 
     function formatToCompact(data) {
-        // ... (formatting logic remains the same)
+        let compactString = 'v1';
+        const parts = [];
+        
+        for (const [key, shortKey] of Object.entries(fieldMap)) {
+            if (data[key]) {
+                parts.push(`${shortKey}:${data[key]}`);
+            }
+        }
+
+        if (parts.length > 0) {
+            compactString += '\n' + parts.join('\n');
+        }
+        
+        return compactString;
     }
     
     async function writeNfcTag() {
@@ -432,15 +476,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Form & Data Handling ---
     function populateFormFromScan() {
-        // ... (population logic remains the same)
+        if (!scannedDataObject) {
+            showMessage('Keine Daten zum Übernehmen vorhanden.', 'err');
+            return;
+        }
+        form.reset();
+        setTodaysDate();
+
+        for (const [key, value] of Object.entries(scannedDataObject)) {
+            const input = form.elements[key];
+            if (input) {
+                if (input.type === 'radio') {
+                    const radioGroup = form.querySelectorAll(`input[name="${key}"]`);
+                    radioGroup.forEach(radio => {
+                        if (radio.value === value) {
+                            radio.checked = true;
+                        }
+                    });
+                } else if (input.type === 'checkbox') {
+                    input.checked = (value === 'true' || value === 'on');
+                } else {
+                    input.value = value;
+                }
+            }
+        }
+        
+        const pt100Input = document.getElementById('PT 100');
+        const hasPt100Checkbox = document.getElementById('has_PT100');
+        if (scannedDataObject['PT 100']) {
+            pt100Input.value = scannedDataObject['PT 100'];
+            pt100Input.disabled = false;
+            hasPt100Checkbox.checked = true;
+        } else {
+            pt100Input.disabled = true;
+            hasPt100Checkbox.checked = false;
+        }
+
+        const niCrInput = document.getElementById('NiCr-Ni');
+        const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni');
+        if (scannedDataObject['NiCr-Ni']) {
+            niCrInput.value = scannedDataObject['NiCr-Ni'];
+            niCrInput.disabled = false;
+            hasNiCrCheckbox.checked = true;
+        } else {
+             niCrInput.disabled = true;
+            hasNiCrCheckbox.checked = false;
+        }
+
+        switchTab('write-tab');
+        showMessage('Daten in Formular übernommen.', 'ok');
     }
 
     function saveFormAsJson() {
-        // ... (save logic remains the same)
+        const data = getFormData();
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fileName = data['HK.Nr.'] || data['KKS'] || `thixx-export-${Date.now()}`;
+        a.download = `${fileName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage('Daten als JSON gespeichert.', 'ok');
     }
 
     function loadJsonIntoForm(event) {
-        // ... (load logic remains the same)
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                scannedDataObject = data;
+                populateFormFromScan();
+                showMessage('JSON-Datei erfolgreich geladen.', 'ok');
+            } catch (error) {
+                showMessage(`Fehler beim Laden der JSON-Datei: ${error}`, 'err');
+            } finally {
+                event.target.value = null;
+            }
+        };
+        reader.readAsText(file);
     }
 });
 
