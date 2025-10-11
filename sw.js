@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thixx-v2'; // Version erhöht, um den Cache zu erneuern
+const CACHE_NAME = 'thixx-v3'; // Version erhöht, um den Cache zu erneuern und neue Logik zu erzwingen
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
@@ -37,20 +37,45 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event: serve from network, fall back to cache, then to offline page for navigation.
+// Fetch event: Apply different caching strategies based on the request.
 self.addEventListener('fetch', (event) => {
-    // We only want to handle GET requests.
-    if (event.request.method !== 'GET') {
+    const { request } = event;
+
+    // Only handle GET requests.
+    if (request.method !== 'GET') {
         return;
     }
 
-    // For navigation requests (loading a page).
-    if (event.request.mode === 'navigate') {
+    const url = new URL(request.url);
+
+    // --- STRATEGY 1: Network First (for critical, frequently updated files) ---
+    // For app.js and style.css, always try the network first.
+    if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/style.css')) {
         event.respondWith(
-            fetch(event.request)
+            fetch(request)
+                .then((networkResponse) => {
+                    // If successful, update the cache with the new version.
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                    return networkResponse;
+                })
+                .catch(() => {
+                    // If the network fails, serve the file from the cache.
+                    return caches.match(request);
+                })
+        );
+        return;
+    }
+
+    // --- STRATEGY 2: Network falling back to Cache (for the main page) ---
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request)
                 .catch(() => {
                     // If network fails, try to serve from cache.
-                    return caches.match(event.request)
+                    return caches.match(request)
                         .then((response) => {
                             // If not in cache, serve the offline fallback page.
                             return response || caches.match('/ThiXX/offline.html');
@@ -60,24 +85,24 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // For all other requests (CSS, JS, images), use a cache-first strategy.
+    // --- STRATEGY 3: Cache First (for static assets that rarely change) ---
+    // For all other requests (images, manifest), serve from cache for performance.
     event.respondWith(
-        caches.match(event.request)
+        caches.match(request)
             .then((response) => {
                 // If the resource is in the cache, serve it.
                 if (response) {
                     return response;
                 }
-                // Otherwise, fetch from the network.
-                return fetch(event.request).then((networkResponse) => {
-                    // Optionally, you can cache the new resource here if needed.
-                    // Be careful with what you cache dynamically.
+                // Otherwise, fetch from the network and cache it for next time.
+                return fetch(request).then((networkResponse) => {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
                     return networkResponse;
                 });
             })
-            .catch(() => {
-                // This is a generic fallback, but for non-navigation requests,
-                // it might be better to just fail than to return the offline page.
-            })
     );
 });
+
