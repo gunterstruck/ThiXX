@@ -234,7 +234,7 @@ h1.logo {
 .nfc-badge {
     background: var(--surface-light);
     color: var(--text-color);
-    padding: 0.8rem 1.5rem; /* Höhe angepasst */
+    padding: 1.6rem 1.5rem; /* Höhe verdoppelt für mehr Präsenz */
     border-radius: 16px; /* Abrundung an Tabs angepasst */
     font-size: 1rem; /* Schriftgröße an Tabs angepasst */
     font-weight: 700;
@@ -303,8 +303,8 @@ body[data-theme="customer-brand"] .nfc-badge.info {
 }
 
 .tab-link {
-    flex: 1;
-    padding: 1rem 1.5rem;
+    flex: 1 1 80px; /* Lässt den Button wachsen, erzwingt aber den Umbruch */
+    padding: 0.5rem;
     text-align: center;
     background: transparent;
     border: none;
@@ -317,6 +317,11 @@ body[data-theme="customer-brand"] .nfc-badge.info {
     position: relative;
     overflow: hidden;
     isolation: isolate; 
+    min-height: 4.5rem; /* Stellt eine einheitliche Höhe sicher */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.3;
 }
 
 .tab-link::before {
@@ -897,6 +902,8 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
+
+
 
 
 
