@@ -25,21 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const readResultContainer = document.getElementById('read-result');
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
-    const autoWriteToggle = document.getElementById('auto-write-toggle');
-    const autoWriteHint = document.getElementById('auto-write-hint');
 
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
     const READ_COOLDOWN_MS = 1500;
     const WRITE_COOLDOWN_MS = 2000;
     const SCAN_TIMEOUT_MS = 30000;
-    const DEBUG_MODE = true; // Für detaillierte Fehlerausgaben
+    const DEBUG_MODE = false; // Für detaillierte Fehlerausgaben
 
     let scannedDataObject = null;
-    let autoWriteArmed = false;
     let autoScanArmedOnce = false;
 
-    // --- Enhanced NFC Manager mit Write-Validierung ---
+    // --- Enhanced NFC Manager ---
     const nfcManager = {
         reader: null,
         abortController: null,
@@ -138,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
-        autoWriteToggle.addEventListener('click', () => armAutoWrite(!autoWriteArmed));
 
         form.addEventListener('input', updatePayloadOnChange);
         form.addEventListener('change', updatePayloadOnChange);
@@ -177,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Functions ---
     function switchTab(tabId) {
         nfcManager.abort();
-        if (autoWriteArmed) armAutoWrite(false);
 
         tabs.forEach(tab => tab.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
@@ -189,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (tabId === 'write-tab') {
             payloadContainer.classList.remove('hidden');
             generateAndShowPayload();
-            autoWriteHint.textContent = 'Tipp: "Auto-Schreiben aktivieren" starten und den Tag einfach an das Gerät halten.';
         }
     }
 
@@ -367,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // --- NFC Write Logic (FIXED) ---
+    // --- NFC Write Logic ---
     function updatePayloadOnChange() {
         if (!payloadContainer.classList.contains('hidden')) {
             generateAndShowPayload();
@@ -434,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return errorMap[error.name] || error.message || 'Unbekannter Fehler';
     }
 
-    // KORRIGIERTE WRITE-FUNKTION
     async function writeNfcTag() {
         const ndef = nfcManager.initializeReader();
         if (!ndef || nfcManager.isWriting || nfcManager.writeCooldown) return;
@@ -454,9 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
         writeNfcBtn.disabled = true;
 
         try {
-            // KRITISCH: Korrektes Write-Format für Web NFC API
-            await ndef.write(payload); // String wird automatisch als text/plain behandelt
-            
+            await ndef.write(payload);
             showMessage('✓ Daten erfolgreich geschrieben!', 'ok', 3000);
             if (DEBUG_MODE) console.log('Write successful. Payload:', payload);
             
@@ -473,49 +464,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nfcManager.isWriting = false;
             startWriteCooldown();
             writeNfcBtn.disabled = false;
-        }
-    }
-
-    // --- Auto Write Logic (FIXED) ---
-    function armAutoWrite(armed) {
-        autoWriteArmed = armed;
-        if (autoWriteArmed) {
-            autoWriteToggle.textContent = 'Auto-Schreiben stoppen';
-            autoWriteHint.textContent = 'Bereit – halten Sie Tags nacheinander an das Gerät.';
-            autoWriteOnce();
-        } else {
-            autoWriteToggle.textContent = 'Auto-Schreiben aktivieren';
-            autoWriteHint.textContent = '';
-        }
-    }
-
-    async function autoWriteOnce() {
-        if (!autoWriteArmed) return;
-        
-        const ndef = nfcManager.initializeReader();
-        if (!ndef || nfcManager.isWriting || nfcManager.writeCooldown) {
-            if (autoWriteArmed) setTimeout(autoWriteOnce, 600);
-            return;
-        }
-
-        nfcManager.isWriting = true;
-        try {
-            generateAndShowPayload();
-            const payload = payloadOutput.value;
-            
-            await ndef.write(payload);
-            
-            showMessage('✓ Tag geschrieben. Nächsten Tag anhalten...', 'ok', 2000);
-            startWriteCooldown();
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                nfcManager.logError('AutoWrite', err);
-                showMessage(`✗ ${getReadableError(err)}`, 'err', 3000);
-                startWriteCooldown();
-            }
-        } finally {
-            nfcManager.isWriting = false;
-            if (autoWriteArmed) setTimeout(autoWriteOnce, 600);
         }
     }
 
