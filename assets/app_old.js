@@ -166,10 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Compact Format (v1...)
         if (text.startsWith('v1')) {
-            const content = text.substring(2).trim(); // Remove "v1" and trim whitespace
+            text = text.substring(2);
             const regex = /(\w+):([^\n]*)/g;
             let match;
-            while ((match = regex.exec(content)) !== null) {
+            while ((match = regex.exec(text)) !== null) {
                 const key = reverseFieldMap[match[1]] || match[1];
                 data[key] = match[2].trim();
             }
@@ -292,24 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatToCompact(data) {
-        // Start with the version identifier.
-        // Each key-value pair will be on a new line for clear separation.
         let compactString = 'v1';
-        const parts = [];
-        
-        // Iterate over the defined fields to maintain a consistent order.
         for (const [key, shortKey] of Object.entries(fieldMap)) {
-            // Only include fields that have a value.
             if (data[key]) {
-                parts.push(`${shortKey}:${data[key]}`);
+                compactString += `${shortKey}:${data[key]}`;
             }
         }
-
-        // If there are any parts to add, join them with newlines and append to the main string.
-        if (parts.length > 0) {
-            compactString += '\n' + parts.join('\n');
-        }
-        
         return compactString;
     }
 
