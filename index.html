@@ -29,7 +29,8 @@
                     </button>
                 </div>
             </div>
-            <div id="nfc-status-badge" class="nfc-badge hidden"></div>
+            <!-- Das bisherige Anzeigefeld ist jetzt ein interaktiver Button -->
+            <button id="nfc-status-badge" class="nfc-badge"></button>
         </header>
 
         <div class="tabs">
@@ -105,10 +106,9 @@
                         <div id="payload-size" class="payload-size">0 / 880 Bytes</div>
                     </div>
 
+                    <!-- Der Haupt-Aktionsbutton wurde in den Header verschoben -->
                     <div class="action-box">
-                        <button id="write-nfc-btn" class="btn primary-btn" disabled>Auf NFC-Tag schreiben</button>
-                        <button id="auto-write-toggle" class="btn">Auto-Schreiben aktivieren</button>
-                        <p id="auto-write-hint" class="light-text"></p>
+                        <!-- Dieser Bereich ist nun leer, da der Button oben ist. -->
                     </div>
 
                     <div class="file-operations">
@@ -133,3 +133,4 @@
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
+
