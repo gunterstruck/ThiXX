@@ -852,8 +852,7 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  /* ca. 4 Zeilen + etwas Luft – nach Bedarf feinjustieren */
-  max-height: 7.5rem;
+  max-height: 4rem; /* Angepasst für eine kompaktere Ansicht */
   transition: max-height 280ms ease;
 }
 

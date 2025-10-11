@@ -349,7 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        // Nach dem Anzeigen neuer Daten den Container wieder einklappen
+        // Nach dem Anzeigen neuer Daten den gesamten Container wieder einklappen
+        readResultContainer.classList.add('collapsible');
         readResultContainer.classList.remove('expanded');
     }
 
