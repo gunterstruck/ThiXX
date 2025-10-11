@@ -504,25 +504,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       el.classList.add('collapsible');
 
-      // Hinweis-Badge einfügen (nur im eingeklappten Zustand sichtbar)
-      let hint = el.querySelector('.collapsible-hint');
-      if (!hint) {
-          hint = document.createElement('div');
-          hint.className = 'collapsible-hint';
-          hint.textContent = 'Tippen zum Öffnen';
-          el.appendChild(hint);
-      }
-
-
       // Toggle-Handler: bei Tap/Enter/Space aufklappen
       const toggle = () => {
         // Wenn bereits expanded → NICHT wieder zuklappen
         if (el.classList.contains('expanded')) return;
         el.classList.add('expanded');
         
-        // Entfernt den Fokus vom Container direkt nach dem Öffnen.
-        // Das verhindert, dass der Browser automatisch zum ersten Formularfeld springt.
-        el.blur();
+        // Use setTimeout to ensure blur() is called after the browser's
+        // default focus/scroll behavior has completed for the click event.
+        setTimeout(() => {
+            el.blur();
+        }, 0);
       };
 
       // Click nur zum Öffnen
