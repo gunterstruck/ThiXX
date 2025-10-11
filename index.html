@@ -29,7 +29,6 @@
                     </button>
                 </div>
             </div>
-            <!-- Das bisherige Anzeigefeld ist jetzt ein interaktiver Button -->
             <button id="nfc-status-badge" class="nfc-badge"></button>
         </header>
 
@@ -60,6 +59,7 @@
                 <div id="write-form-container" class="collapsible">
                     <h2>Abnahmeprotokoll</h2>
                     <form id="nfc-write-form">
+                        <!-- ... form fields ... -->
                         <div class="form-grid">
                             <div class="form-group"><label for="HK.Nr.">HK.Nr.</label><input type="text" id="HK.Nr." name="HK.Nr."></div>
                             <div class="form-group"><label for="KKS">KKS</label><input type="text" id="KKS" name="KKS"></div>
@@ -102,19 +102,21 @@
                     </form>
 
                     <div id="payload-container" class="hidden">
-                        <textarea id="payload-output" readonly></textarea>
-                        <div id="payload-size" class="payload-size">0 / 880 Bytes</div>
+                        <details class="raw-data-details">
+                            <summary>Rohdaten anzeigen</summary>
+                            <textarea id="payload-output" readonly></textarea>
+                            <div id="payload-size" class="payload-size">0 / 880 Bytes</div>
+                        </details>
                     </div>
 
-                    <!-- Der Haupt-Aktionsbutton wurde in den Header verschoben -->
                     <div class="action-box">
-                        <!-- Dieser Bereich ist nun leer, da der Button oben ist. -->
+                        <button id="write-nfc-btn-bottom" class="btn primary-btn">Auf NFC schreiben</button>
                     </div>
 
                     <div class="file-operations">
-                         <button id="save-json-btn" class="btn">Als JSON speichern</button>
+                         <button id="save-json-btn" class="btn">Auf Smartphone speichern</button>
                          <label class="btn file-input-label">
-                             JSON laden
+                             Daten von Smartphone laden
                              <input type="file" id="load-json-input" accept=".json" style="display:none;">
                          </label>
                     </div>
@@ -133,4 +135,5 @@
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
+
 
