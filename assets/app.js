@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     function init() {
-        // Check for Web NFC support
         if ('NDEFReader' in window) {
             nfcStatusBadge.classList.remove('hidden');
         } else {
@@ -53,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setupEventListeners();
+        setupTheme(); // Setup theme switcher
         setTodaysDate();
     }
 
@@ -69,11 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
 
-        // Form listeners for payload generation
         form.addEventListener('input', updatePayloadOnChange);
         form.addEventListener('change', updatePayloadOnChange);
 
-        // Checkbox listeners for enabling/disabling number inputs
         document.getElementById('has_PT100').addEventListener('change', (e) => {
             document.getElementById('PT 100').disabled = !e.target.checked;
         });
@@ -82,11 +80,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Theme Switcher Logic (as per your fix) ---
+    function setupTheme() {
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const THEME_KEY = 'thixx-theme';
+
+        function applyTheme(themeName) {
+            document.body.setAttribute('data-theme', themeName);
+            localStorage.setItem(THEME_KEY, themeName);
+
+            themeButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === themeName);
+            });
+            
+            // Update meta theme-color for mobile browser chrome
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', themeName === 'dark' ? '#0f172a' : '#e45d45');
+            }
+        }
+
+        // Register click handlers
+        themeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                applyTheme(button.dataset.theme);
+            });
+        });
+
+        // Apply saved theme on initial load
+        const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        applyTheme(savedTheme);
+    }
+
     // --- UI Functions ---
     function switchTab(tabId) {
         tabs.forEach(tab => tab.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
-
         document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
     }
@@ -164,9 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {};
         text = text.trim();
 
-        // 1. Compact Format (v1...)
         if (text.startsWith('v1')) {
-            const content = text.substring(2).trim(); // Remove "v1" and trim whitespace
+            const content = text.substring(2).trim();
             const regex = /(\w+):([^\n]*)/g;
             let match;
             while ((match = regex.exec(content)) !== null) {
@@ -176,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return data;
         }
         
-        // 2. Markdown Table
         if (text.includes('|') && text.includes('---')) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('|') && !l.includes('---'));
             lines.forEach(line => {
@@ -185,12 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     data[parts[0]] = parts[1];
                 }
             });
-            // Remove header if it was accidentally parsed
             delete data['Merkmal'];
             return data;
         }
 
-        // 3. Line Format (Merkmal: Wert)
         const lines = text.split('\n');
         lines.forEach(line => {
             const parts = line.split(':');
@@ -283,7 +308,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 data[key] = value.trim();
             }
         }
-        // Handle checkboxes and associated counts
         if(!document.getElementById('has_PT100').checked) delete data['PT 100'];
         if(!document.getElementById('has_NiCr-Ni').checked) delete data['NiCr-Ni'];
         delete data['has_PT100'];
@@ -292,20 +316,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatToCompact(data) {
-        // Start with the version identifier.
-        // Each key-value pair will be on a new line for clear separation.
         let compactString = 'v1';
         const parts = [];
         
-        // Iterate over the defined fields to maintain a consistent order.
         for (const [key, shortKey] of Object.entries(fieldMap)) {
-            // Only include fields that have a value.
             if (data[key]) {
                 parts.push(`${shortKey}:${data[key]}`);
             }
         }
 
-        // If there are any parts to add, join them with newlines and append to the main string.
         if (parts.length > 0) {
             compactString += '\n' + parts.join('\n');
         }
@@ -334,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage(`Schreibfehler: ${error}`, 'err');
         } finally {
             disableButtons(false);
-            // Re-check payload size to set write button state correctly
             generateAndShowPayload();
         }
     }
@@ -346,13 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         form.reset();
-        setTodaysDate(); // Reset date after form reset
+        setTodaysDate();
 
         for (const [key, value] of Object.entries(scannedDataObject)) {
             const input = form.elements[key];
             if (input) {
                 if (input.type === 'radio') {
-                    // This handles radio groups by name
                     const radioGroup = form.querySelectorAll(`input[name="${key}"]`);
                     radioGroup.forEach(radio => {
                         if (radio.value === value) {
@@ -360,7 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 } else if (input.type === 'checkbox') {
-                    // Not used directly, but good practice
                     input.checked = (value === 'true' || value === 'on');
                 } else {
                     input.value = value;
@@ -368,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Handle PT100 and NiCr-Ni special cases
         const pt100Input = document.getElementById('PT 100');
         const hasPt100Checkbox = document.getElementById('has_PT100');
         if (scannedDataObject['PT 100']) {
@@ -419,13 +434,12 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                scannedDataObject = data; // Use the same object as scanning
+                scannedDataObject = data;
                 populateFormFromScan();
                 showMessage('JSON-Datei erfolgreich geladen.', 'ok');
             } catch (error) {
                 showMessage(`Fehler beim Laden der JSON-Datei: ${error}`, 'err');
             } finally {
-                // Reset input to allow loading the same file again
                 event.target.value = null;
             }
         };
@@ -433,3 +447,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
