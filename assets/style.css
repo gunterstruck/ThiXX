@@ -107,13 +107,12 @@ body[data-theme="thixx"] { --surface-color-rgb: 255, 255, 255; --border-color-rg
     flex-grow: 1;
 }
 
+/* FIX 2: Cleaner, more minimalist theme switcher design */
 .theme-switcher {
     display: flex;
-    background-color: rgba(var(--background-color-rgb, 15, 23, 42), 0.5);
-    border-radius: 50px;
-    padding: 4px;
+    align-items: center;
+    gap: 0.5rem; /* Adds a little space between the buttons */
 }
-body[data-theme="thixx"] { --background-color-rgb: 248, 249, 250; }
 
 .theme-btn {
     border: none;
@@ -121,24 +120,28 @@ body[data-theme="thixx"] { --background-color-rgb: 248, 249, 250; }
     color: var(--light-text-color);
     cursor: pointer;
     padding: 0.5rem;
-    font-size: 1rem;
+    font-size: 1.2rem; /* Made icons slightly larger for easier tapping */
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: all 0.3s ease;
+    opacity: 0.7; /* Inactive buttons are slightly faded */
 }
 
 .theme-btn:hover {
+    opacity: 1; /* Button becomes fully visible on hover */
     color: var(--text-color);
 }
 
 .theme-btn.active {
-    background-color: var(--surface-color);
+    opacity: 1; /* Active button is fully visible */
     color: var(--primary-color);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transform: scale(1.1); /* Slightly enlarge the active icon */
+    background-color: transparent;
+    box-shadow: none;
 }
 
 
@@ -236,14 +239,14 @@ header h1 {
 
 .tab-link.active {
     color: white;
-    /* FIX 2: Add text shadow for better readability on light backgrounds */
+    /* Add text shadow for better readability on light backgrounds */
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
+/* FIX 1: Ensure active tab text is always readable in the light theme */
 body[data-theme="thixx"] .tab-link.active {
-    color: var(--text-color);
-    /* In the light theme, the text color is already dark, so no shadow is needed */
-    text-shadow: none; 
+    color: white; /* Force white text for high contrast on orange */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); /* Add subtle shadow for clarity */
 }
 
 
