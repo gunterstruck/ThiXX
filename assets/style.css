@@ -5,7 +5,7 @@
     --primary-light: #ff6b52;
     --secondary-color: #2d3748;
     --background-color: #0f172a;
-    --surface-color: #1e293b;
+    --surface-color: #1e2d3b;
     --surface-light: #334155;
     --border-color: #475569;
     --text-color: #f1f5f9;
@@ -52,7 +52,7 @@ body[data-theme="customer-brand"] {
     --error-color: #dc3545;
     --disabled-color: #b5b5b5;
     --glow-color: rgba(212, 74, 44, 0.3);
-    --body-gradient: linear-gradient(135deg, #FFFFFF 0%, #FCFCFD 100%); /* White Background */
+    --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); /* Light Grey Background */
 }
 
 
