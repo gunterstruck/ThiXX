@@ -41,18 +41,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization ---
     init();
+    
+    // --- NFC Badge Logic ---
+    function setNfcBadge(state) {
+      nfcStatusBadge.classList.remove('hidden', 'ok', 'err', 'info');
+      switch (state) {
+        case 'unsupported':
+          nfcStatusBadge.textContent = 'NFC nicht verfügbar';
+          nfcStatusBadge.classList.add('err');
+          break;
+        case 'on':
+          nfcStatusBadge.textContent = 'NFC aktiv';
+          nfcStatusBadge.classList.add('ok');
+          break;
+        case 'off':
+          nfcStatusBadge.textContent = 'NFC aus / Keine Berechtigung';
+          nfcStatusBadge.classList.add('err');
+          break;
+        case 'scanning':
+          nfcStatusBadge.textContent = 'Scannen...';
+          nfcStatusBadge.classList.add('info');
+          break;
+        default: // 'available'
+          nfcStatusBadge.textContent = 'NFC verfügbar';
+          nfcStatusBadge.classList.add('info');
+      }
+    }
 
     function init() {
         if ('NDEFReader' in window) {
-            nfcStatusBadge.classList.remove('hidden');
+            setNfcBadge('available');
         } else {
+            setNfcBadge('unsupported');
             nfcFallback.classList.remove('hidden');
             readNfcBtn.disabled = true;
             writeNfcBtn.disabled = true;
         }
 
         setupEventListeners();
-        setupTheme(); // Setup theme switcher
+        setupTheme();
         setTodaysDate();
     }
 
@@ -80,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Theme Switcher Logic (as per your fix) ---
+    // --- Theme Switcher Logic ---
     function setupTheme() {
         const themeButtons = document.querySelectorAll('.theme-btn');
         const THEME_KEY = 'thixx-theme';
@@ -93,21 +120,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.classList.toggle('active', btn.dataset.theme === themeName);
             });
             
-            // Update meta theme-color for mobile browser chrome
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', themeName === 'dark' ? '#0f172a' : '#e45d45');
             }
         }
 
-        // Register click handlers
         themeButtons.forEach(button => {
             button.addEventListener('click', () => {
                 applyTheme(button.dataset.theme);
             });
         });
 
-        // Apply saved theme on initial load
         const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
         applyTheme(savedTheme);
     }
@@ -138,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function disableButtons(disabled = true) {
         readNfcBtn.disabled = disabled;
-        writeNfcBtn.disabled = disabled;
         showPayloadBtn.disabled = disabled;
     }
 
@@ -146,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function readNfcTag() {
         if (!('NDEFReader' in window)) return;
         
+        setNfcBadge('scanning');
         showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
         disableButtons();
 
@@ -156,9 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ndef.onreadingerror = () => {
                 showMessage('Fehler beim Lesen des NFC-Tags.', 'err');
                 disableButtons(false);
+                setNfcBadge('available');
             };
 
             ndef.onreading = event => {
+                setNfcBadge('on'); // Set status to 'on' ONLY on successful read
                 showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
                 disableButtons(false);
                 const firstRecord = event.message.records[0];
@@ -171,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         } catch (error) {
+            setNfcBadge('off');
             showMessage(`Scan-Fehler: ${error}`, 'err');
             disableButtons(false);
         }
@@ -342,14 +369,18 @@ document.addEventListener('DOMContentLoaded', () => {
              return;
         }
         
+        setNfcBadge('scanning');
         showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
-        disableButtons();
+        disableButtons(true);
+        writeNfcBtn.disabled = true;
 
         try {
             const ndef = new NDEFReader();
             await ndef.write(payload);
+            setNfcBadge('on');
             showMessage('Daten erfolgreich auf NFC-Tag geschrieben!', 'ok');
         } catch (error) {
+            setNfcBadge('off');
             showMessage(`Schreibfehler: ${error}`, 'err');
         } finally {
             disableButtons(false);
@@ -445,6 +476,5 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
     }
-
 });
 
