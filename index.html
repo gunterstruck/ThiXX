@@ -7,19 +7,19 @@
     <link rel="manifest" href="/ThiXX/manifest.webmanifest">
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
     <link rel="apple-touch-icon" href="/ThiXX/assets/icon-192.png">
-    <meta name="theme-color" content="#f04e37">
+    <meta name="theme-color" content="#0f172a"> <!-- Start with dark theme color -->
 </head>
-<body>
+<body data-theme="dark"> <!-- Default theme -->
     <div class="container">
         <header>
-            <h1>ThiXX</h1>
-            <div class="header-controls">
+            <div class="header-content">
+                <h1>ThiXX</h1>
                 <div class="theme-switcher">
-                    <button data-theme="dark" class="theme-btn" title="Dunkles Design"></button>
-                    <button data-theme="thixx" class="theme-btn" title="Helles Design (ThiXX)"></button>
+                    <button class="theme-btn" data-theme="dark" title="Dunkles Design">🌙</button>
+                    <button class="theme-btn" data-theme="thixx" title="Helles Design (ThiXX)">☀️</button>
                 </div>
-                <div id="nfc-status-badge" class="nfc-badge hidden">NFC aktiv</div>
             </div>
+            <div id="nfc-status-badge" class="nfc-badge hidden">NFC aktiv</div>
         </header>
 
         <div class="tabs">
@@ -122,3 +122,4 @@
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
+
