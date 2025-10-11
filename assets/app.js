@@ -31,14 +31,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Constants and State ---
     const MAX_PAYLOAD_BYTES = 880;
     const READ_COOLDOWN_MS = 1500;
+    const WRITE_COOLDOWN_MS = 1500;
+    const SCAN_TIMEOUT_MS = 30000; // 30 seconds
+
     let scannedDataObject = null;
-    let isReading = false;
-    let readCooldown = false;
-    let currentScanAbort = null;
-    let isWriting = false;
-    let writeCooldown = false;
     let autoWriteArmed = false;
     let autoScanArmedOnce = false;
+
+    // --- Robust NFC State Manager ---
+    const nfcManager = {
+        reader: null,
+        abortController: null,
+        isReading: false,
+        isWriting: false,
+        readCooldown: false,
+        writeCooldown: false,
+        readTimeout: null,
+
+        initializeReader: function() {
+            if (!this.reader && 'NDEFReader' in window) {
+                this.reader = new NDEFReader();
+            }
+            return this.reader;
+        },
+
+        abort: function() {
+            if (this.abortController) {
+                this.abortController.abort();
+                this.abortController = null;
+            }
+            if (this.readTimeout) {
+                clearTimeout(this.readTimeout);
+                this.readTimeout = null;
+            }
+            this.isReading = false;
+            // Do not reset isWriting here, as a write operation should complete or fail.
+        }
+    };
 
     const fieldMap = {
         'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R',
@@ -56,13 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setupTheme();
         setTodaysDate();
         checkNfcSupport();
-        initCollapsibles(); // Initialize collapsible sections
+        initCollapsibles();
 
-        // Variante A: Wenn der Lesen-Tab aktiv ist, Scan sofort (oder beim ersten Tap) starten
-        const readTabActive = document
-            .querySelector('.tab-link[data-tab="read-tab"]')
-            ?.classList.contains('active');
-
+        const readTabActive = document.querySelector('.tab-link[data-tab="read-tab"]')?.classList.contains('active');
         if (readTabActive && 'NDEFReader' in window) {
             armImmediateScan();
         }
@@ -148,9 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI Functions ---
     function switchTab(tabId) {
-        if (currentScanAbort) {
-            currentScanAbort.abort();
-            cleanupAfterRead(false);
+        nfcManager.abort();
+        if (autoWriteArmed) {
+            armAutoWrite(false);
         }
 
         tabs.forEach(tab => tab.classList.remove('active'));
@@ -159,8 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(tabId).classList.add('active');
         
         if (tabId === 'read-tab') {
-            if (autoWriteArmed) armAutoWrite(false);
-            // Variante B: Immer automatisch neu scannen, sobald man in den Lesen-Tab wechselt
             armImmediateScan();
         } else if (tabId === 'write-tab') {
             payloadContainer.classList.remove('hidden');
@@ -213,34 +236,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NFC Read Logic ---
     function startReadCooldown() {
-        readCooldown = true;
-        setTimeout(() => { readCooldown = false; }, READ_COOLDOWN_MS);
+        nfcManager.readCooldown = true;
+        setTimeout(() => { nfcManager.readCooldown = false; }, READ_COOLDOWN_MS);
     }
 
-    function cleanupAfterRead(success) {
-        isReading = false;
+    function cleanupAfterRead() {
+        nfcManager.isReading = false;
+        if (nfcManager.readTimeout) {
+            clearTimeout(nfcManager.readTimeout);
+            nfcManager.readTimeout = null;
+        }
         startReadCooldown();
-        currentScanAbort = null;
     }
 
     async function readNfcTag() {
-        if (!('NDEFReader' in window)) return;
-        if (isReading || readCooldown) return;
+        const ndef = nfcManager.initializeReader();
+        if (!ndef) return;
+        if (nfcManager.isReading || nfcManager.readCooldown) return;
 
-        isReading = true;
+        nfcManager.isReading = true;
         setNfcBadge('scanning');
         showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
 
-        const ndef = new NDEFReader();
-        currentScanAbort = ('AbortController' in window) ? new AbortController() : null;
+        nfcManager.abort(); // Abort any previous operation
+        nfcManager.abortController = new AbortController();
 
         try {
-            await ndef.scan(currentScanAbort ? { signal: currentScanAbort.signal } : {});
+            nfcManager.readTimeout = setTimeout(() => {
+                 showMessage('Scan-Timeout: Kein Tag gefunden.', 'err');
+                 nfcManager.abort();
+                 cleanupAfterRead();
+                 setNfcBadge('available');
+            }, SCAN_TIMEOUT_MS);
+
+            await ndef.scan({ signal: nfcManager.abortController.signal });
 
             ndef.onreadingerror = () => {
-                setNfcBadge('available');
                 showMessage('Fehler beim Lesen des NFC-Tags.', 'err');
-                cleanupAfterRead(false);
+                nfcManager.abort();
+                cleanupAfterRead();
+                setNfcBadge('available');
             };
 
             ndef.onreading = (event) => {
@@ -254,13 +289,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     showMessage('Kein Text-Record auf dem Tag gefunden.', 'err');
                 }
-                if (currentScanAbort) currentScanAbort.abort();
-                cleanupAfterRead(true);
+                nfcManager.abort();
+                cleanupAfterRead();
             };
         } catch (error) {
+             if (error.name !== 'AbortError') {
+                showMessage(`Scan-Fehler: ${error.message}`, 'err');
+            }
+            cleanupAfterRead();
             setNfcBadge('off');
-            showMessage(`Scan-Fehler: ${error.message}`, 'err');
-            cleanupAfterRead(false);
         }
     }
 
@@ -282,16 +319,18 @@ document.addEventListener('DOMContentLoaded', () => {
         text = text.trim();
         if (text.startsWith('v1')) {
             const content = text.substring(2).trim();
-            const regex = /([^:]+):([^\n]*)/g; // Robustere Regex
+            const regex = /([^:]+):([^\n]*)/g; // Robust regex
             let match;
             while ((match = regex.exec(content)) !== null) {
                 const key = reverseFieldMap[match[1]] || match[1];
                 data[key] = match[2].trim();
             }
+            if (Object.keys(data).length === 0) {
+                 throw new Error("v1-Format erkannt, aber keine validen Daten gefunden.");
+            }
             return data;
         }
-        if (Object.keys(data).length === 0) throw new Error("Kein bekanntes Format erkannt.");
-        return data;
+        throw new Error("Kein bekanntes Format erkannt.");
     }
 
     function displayParsedData(data) {
@@ -397,20 +436,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function startWriteCooldown() {
-        writeCooldown = true;
-        setTimeout(() => { writeCooldown = false; }, READ_COOLDOWN_MS);
+        nfcManager.writeCooldown = true;
+        setTimeout(() => { nfcManager.writeCooldown = false; }, WRITE_COOLDOWN_MS);
     }
 
     async function writeNfcTag() {
-        if (!('NDEFReader' in window)) return;
-        if (isWriting || writeCooldown) return;
+        const ndef = nfcManager.initializeReader();
+        if (!ndef) return;
+        if (nfcManager.isWriting || nfcManager.writeCooldown) return;
         
-        isWriting = true;
+        nfcManager.isWriting = true;
         generateAndShowPayload();
         const payload = payloadOutput.value;
         if (new TextEncoder().encode(payload).length > MAX_PAYLOAD_BYTES) {
              showMessage('Payload ist zu groß zum Schreiben!', 'err');
-             isWriting = false;
+             nfcManager.isWriting = false;
              return;
         }
         
@@ -418,7 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
         writeNfcBtn.disabled = true;
 
         try {
-            const ndef = new NDEFReader();
             await ndef.write({
                 records: [{ recordType: "text", data: payload, lang: 'de' }]
             });
@@ -426,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showMessage(`Schreibfehler: ${error.message}`, 'err');
         } finally {
-            isWriting = false;
+            nfcManager.isWriting = false;
             startWriteCooldown();
             writeNfcBtn.disabled = false;
             generateAndShowPayload();
@@ -447,35 +486,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function autoWriteOnce() {
-        if (!autoWriteArmed || writeCooldown) return;
+        if (!autoWriteArmed) return;
+        
+        const ndef = nfcManager.initializeReader();
+        if (!ndef || nfcManager.isWriting || nfcManager.writeCooldown) {
+            if (autoWriteArmed) setTimeout(autoWriteOnce, 600);
+            return;
+        }
 
+        nfcManager.isWriting = true;
         try {
             generateAndShowPayload();
             const payload = payloadOutput.value;
-            const ndef = new NDEFReader();
             await ndef.write({
                 records: [{ recordType: "text", data: payload, lang: 'de' }]
             });
             showMessage('Daten geschrieben. Sie können den nächsten Tag anhalten …', 'ok');
             startWriteCooldown();
         } catch (err) {
-            showMessage(`Schreibfehler: ${err.message}`, 'err');
-            startWriteCooldown();
+            // Ignore AbortErrors which can happen on tab switch
+            if (err.name !== 'AbortError') {
+                 showMessage(`Schreibfehler: ${err.message}`, 'err');
+                 startWriteCooldown();
+            }
         } finally {
+            nfcManager.isWriting = false;
             if (autoWriteArmed) {
                 setTimeout(autoWriteOnce, 600);
             }
         }
     }
 
-    // Startet den Scan direkt oder beim ersten Tap (wenn Browser es verlangt)
+    // --- Scan Initiators ---
     function armImmediateScan() {
-        // Versuch sofort zu starten
         setTimeout(() => {
             readNfcTag();
         }, 150);
 
-        // Fallback: Falls User-Gesture nötig ist, wird dieser nur einmalig registriert.
         if (autoScanArmedOnce) return;
         autoScanArmedOnce = true;
 
@@ -508,7 +555,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Click auf den Container selbst (Padding-Bereich etc.)
         el.addEventListener('click', (e) => {
             const tag = (e.target.tagName || '').toLowerCase();
             if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) {
