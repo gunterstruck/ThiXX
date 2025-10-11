@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isWriting = false;
     let writeCooldown = false;
     let autoWriteArmed = false;
+    let autoScanArmedOnce = false;
 
     const fieldMap = {
         'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R',
@@ -55,6 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
         setupTheme();
         setTodaysDate();
         checkNfcSupport();
+
+        // Variante A: Wenn der Lesen-Tab aktiv ist, Scan sofort (oder beim ersten Tap) starten
+        const readTabActive = document
+            .querySelector('.tab-link[data-tab="read-tab"]')
+            ?.classList.contains('active');
+
+        if (readTabActive && 'NDEFReader' in window) {
+            armImmediateScan();
+        }
     }
 
     function checkNfcSupport() {
@@ -140,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (tabId === 'read-tab') {
             if (autoWriteArmed) armAutoWrite(false);
-            readNfcTag();
+            // Variante B: Immer automatisch neu scannen, sobald man in den Lesen-Tab wechselt
+            armImmediateScan();
         } else if (tabId === 'write-tab') {
             payloadContainer.classList.remove('hidden');
             generateAndShowPayload();
@@ -439,6 +450,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(autoWriteOnce, 600);
             }
         }
+    }
+
+    // Startet den Scan direkt oder beim ersten Tap (wenn Browser es verlangt)
+    function armImmediateScan() {
+        // Versuch sofort zu starten
+        setTimeout(() => {
+            readNfcTag();
+        }, 150);
+
+        // Fallback: Falls User-Gesture nötig ist, wird dieser nur einmalig registriert.
+        if (autoScanArmedOnce) return;
+        autoScanArmedOnce = true;
+
+        const startOnGesture = () => {
+            readNfcTag();
+            window.removeEventListener('pointerdown', startOnGesture, { capture: true });
+            window.removeEventListener('keydown', startOnGesture, { capture: true });
+        };
+        window.addEventListener('pointerdown', startOnGesture, { once: true, capture: true });
+        window.addEventListener('keydown', startOnGesture, { once: true, capture: true });
     }
 
     // --- Form & Data Handling ---
