@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' })
-                .then(reg => console.log('Service Worker registered successfully with scope:', reg.scope))
+                .then(reg => console.log('Service Worker registered:', reg.scope))
                 .catch(err => console.error('Service Worker registration failed:', err));
         });
     }
@@ -28,17 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoWriteToggle = document.getElementById('auto-write-toggle');
     const autoWriteHint = document.getElementById('auto-write-hint');
 
-    // --- Constants and State ---
+    // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
     const READ_COOLDOWN_MS = 1500;
-    const WRITE_COOLDOWN_MS = 1500;
-    const SCAN_TIMEOUT_MS = 30000; // 30 seconds
+    const WRITE_COOLDOWN_MS = 2000;
+    const SCAN_TIMEOUT_MS = 30000;
+    const DEBUG_MODE = true; // Für detaillierte Fehlerausgaben
 
     let scannedDataObject = null;
     let autoWriteArmed = false;
     let autoScanArmedOnce = false;
 
-    // --- Robust NFC State Manager ---
+    // --- Enhanced NFC Manager mit Write-Validierung ---
     const nfcManager = {
         reader: null,
         abortController: null,
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         readCooldown: false,
         writeCooldown: false,
         readTimeout: null,
+        lastError: null,
 
         initializeReader: function() {
             if (!this.reader && 'NDEFReader' in window) {
@@ -57,7 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         abort: function() {
             if (this.abortController) {
-                this.abortController.abort();
+                try {
+                    this.abortController.abort();
+                } catch(e) {
+                    console.warn('Abort failed:', e);
+                }
                 this.abortController = null;
             }
             if (this.readTimeout) {
@@ -65,14 +71,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.readTimeout = null;
             }
             this.isReading = false;
-            // Do not reset isWriting here, as a write operation should complete or fail.
+        },
+
+        logError: function(context, error) {
+            this.lastError = { context, error, timestamp: Date.now() };
+            console.error(`[NFC ${context}]`, error);
+            if (DEBUG_MODE) {
+                console.log('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
         }
     };
 
     const fieldMap = {
-        'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R',
-        'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 'Wächter': 'Wäch', 'Projekt Nr.': 'Proj',
-        'Anzahl Heizkabeleinheiten': 'Anz', 'Trennkasten': 'TB', 'Heizkabeltyp': 'HKT', 'Schaltung': 'Sch',
+        'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 
+        'Widerstand': 'R', 'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 
+        'Wächter': 'Wäch', 'Projekt Nr.': 'Proj', 'Anzahl Heizkabeleinheiten': 'Anz', 
+        'Trennkasten': 'TB', 'Heizkabeltyp': 'HKT', 'Schaltung': 'Sch',
         'PT 100': 'PT100', 'NiCr-Ni': 'NiCr', 'geprüft von': 'Chk', 'am': 'Date'
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
@@ -93,14 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Collapsible Bereiche aktivieren ---
     function initCollapsibles() {
         document.querySelectorAll('.collapsible').forEach(el => {
             makeCollapsible(el);
-            el.classList.remove('expanded'); // Start: eingeklappt
+            el.classList.remove('expanded');
         });
     }
-
 
     function checkNfcSupport() {
         if ('NDEFReader' in window) {
@@ -112,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Event Listeners Setup ---
+    // --- Event Listeners ---
     function setupEventListeners() {
         tabs.forEach(tab => {
             tab.addEventListener('click', () => switchTab(tab.dataset.tab));
@@ -122,10 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
-
-        autoWriteToggle.addEventListener('click', () => {
-            armAutoWrite(!autoWriteArmed);
-        });
+        autoWriteToggle.addEventListener('click', () => armAutoWrite(!autoWriteArmed));
 
         form.addEventListener('input', updatePayloadOnChange);
         form.addEventListener('change', updatePayloadOnChange);
@@ -138,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Theme Switcher Logic ---
+    // --- Theme Switcher ---
     function setupTheme() {
         const themeButtons = document.querySelectorAll('.theme-btn');
         const THEME_KEY = 'thixx-theme';
@@ -146,37 +159,25 @@ document.addEventListener('DOMContentLoaded', () => {
         function applyTheme(themeName) {
             document.body.setAttribute('data-theme', themeName);
             localStorage.setItem(THEME_KEY, themeName);
-
             themeButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.theme === themeName);
             });
             
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
-                let color;
-                if (themeName === 'dark') color = '#0f172a';
-                else if (themeName === 'thixx') color = '#f8f9fa';
-                else if (themeName === 'customer-brand') color = '#f8f9fa';
-                metaThemeColor.setAttribute('content', color);
+                const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#f8f9fa' };
+                metaThemeColor.setAttribute('content', colors[themeName] || '#0f172a');
             }
         }
 
-        themeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                applyTheme(button.dataset.theme);
-            });
-        });
-
-        const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
-        applyTheme(savedTheme);
+        themeButtons.forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)));
+        applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
     }
 
     // --- UI Functions ---
     function switchTab(tabId) {
         nfcManager.abort();
-        if (autoWriteArmed) {
-            armAutoWrite(false);
-        }
+        if (autoWriteArmed) armAutoWrite(false);
 
         tabs.forEach(tab => tab.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (tabId === 'write-tab') {
             payloadContainer.classList.remove('hidden');
             generateAndShowPayload();
-            autoWriteHint.textContent = 'Tipp: „Auto-Schreiben aktivieren“ starten und den Tag einfach an das Gerät halten.';
+            autoWriteHint.textContent = 'Tipp: "Auto-Schreiben aktivieren" starten und den Tag einfach an das Gerät halten.';
         }
     }
 
@@ -210,27 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setNfcBadge(state) {
         nfcStatusBadge.classList.remove('hidden', 'ok', 'err', 'info');
-        switch (state) {
-            case 'unsupported':
-                nfcStatusBadge.textContent = 'NFC nicht unterstützt';
-                nfcStatusBadge.classList.add('err');
-                break;
-            case 'available':
-                nfcStatusBadge.textContent = 'NFC verfügbar';
-                nfcStatusBadge.classList.add('info');
-                break;
-            case 'on':
-                nfcStatusBadge.textContent = 'NFC aktiv';
-                nfcStatusBadge.classList.add('ok');
-                break;
-            case 'off':
-                nfcStatusBadge.textContent = 'NFC aus / Keine Berechtigung';
-                nfcStatusBadge.classList.add('err');
-                break;
-            case 'scanning':
-                nfcStatusBadge.textContent = 'Scannen...';
-                nfcStatusBadge.classList.add('info');
-                break;
+        const states = {
+            unsupported: ['NFC nicht unterstützt', 'err'],
+            available: ['NFC verfügbar', 'info'],
+            on: ['NFC aktiv', 'ok'],
+            off: ['NFC aus / Keine Berechtigung', 'err'],
+            scanning: ['Scannen...', 'info']
+        };
+        if (states[state]) {
+            nfcStatusBadge.textContent = states[state][0];
+            nfcStatusBadge.classList.add(states[state][1]);
         }
     }
 
@@ -251,22 +241,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function readNfcTag() {
         const ndef = nfcManager.initializeReader();
-        if (!ndef) return;
-        if (nfcManager.isReading || nfcManager.readCooldown) return;
+        if (!ndef || nfcManager.isReading || nfcManager.readCooldown) return;
 
         nfcManager.isReading = true;
         setNfcBadge('scanning');
         showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
 
-        nfcManager.abort(); // Abort any previous operation
+        nfcManager.abort();
         nfcManager.abortController = new AbortController();
 
         try {
             nfcManager.readTimeout = setTimeout(() => {
-                 showMessage('Scan-Timeout: Kein Tag gefunden.', 'err');
-                 nfcManager.abort();
-                 cleanupAfterRead();
-                 setNfcBadge('available');
+                showMessage('Scan-Timeout: Kein Tag gefunden.', 'err');
+                nfcManager.abort();
+                cleanupAfterRead();
+                setNfcBadge('available');
             }, SCAN_TIMEOUT_MS);
 
             await ndef.scan({ signal: nfcManager.abortController.signal });
@@ -282,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setNfcBadge('on');
                 const firstRecord = event.message.records[0];
                 if (firstRecord && firstRecord.recordType === 'text') {
-                    const textDecoder = new TextDecoder(firstRecord.encoding);
+                    const textDecoder = new TextDecoder(firstRecord.encoding || 'utf-8');
                     const text = textDecoder.decode(firstRecord.data);
                     processNfcData(text);
                     showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
@@ -293,8 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 cleanupAfterRead();
             };
         } catch (error) {
-             if (error.name !== 'AbortError') {
-                showMessage(`Scan-Fehler: ${error.message}`, 'err');
+            if (error.name !== 'AbortError') {
+                nfcManager.logError('Read', error);
+                showMessage(`Scan-Fehler: ${getReadableError(error)}`, 'err');
             }
             cleanupAfterRead();
             setNfcBadge('off');
@@ -308,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayParsedData(scannedDataObject);
             readResultContainer.classList.remove('hidden');
         } catch(e) {
-            showMessage(`Fehler beim Verarbeiten der Daten: ${e.message}`, 'err');
+            showMessage(`Fehler beim Verarbeiten: ${e.message}`, 'err');
             readResultContainer.classList.add('hidden');
             scannedDataObject = null;
         }
@@ -319,14 +309,14 @@ document.addEventListener('DOMContentLoaded', () => {
         text = text.trim();
         if (text.startsWith('v1')) {
             const content = text.substring(2).trim();
-            const regex = /([^:]+):([^\n]*)/g; // Robust regex
+            const regex = /([^:\n]+):([^\n]*)/g;
             let match;
             while ((match = regex.exec(content)) !== null) {
-                const key = reverseFieldMap[match[1]] || match[1];
+                const key = reverseFieldMap[match[1].trim()] || match[1].trim();
                 data[key] = match[2].trim();
             }
             if (Object.keys(data).length === 0) {
-                 throw new Error("v1-Format erkannt, aber keine validen Daten gefunden.");
+                throw new Error("v1-Format erkannt, aber keine Daten gefunden.");
             }
             return data;
         }
@@ -354,9 +344,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createDataPair('NiCr-Ni', data['NiCr-Ni'], 'Stk')}
             </div>
             <div class="card-section">
-                 ${createDataPair('Regler', data['Regler'], '°C')}
-                 ${createDataPair('Sicherheitsregler/Begrenzer', data['Sicherheitsregler/Begrenzer'], '°C')}
-                 ${createDataPair('Wächter', data['Wächter'], '°C')}
+                ${createDataPair('Regler', data['Regler'], '°C')}
+                ${createDataPair('Sicherheitsregler/Begrenzer', data['Sicherheitsregler/Begrenzer'], '°C')}
+                ${createDataPair('Wächter', data['Wächter'], '°C')}
             </div>
             <div class="card-footer">
                 ${createDataPair('Projekt Nr.', data['Projekt Nr.'])}
@@ -364,7 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createDataPair('am', data['am'])}
             </div>
         `;
-        
         readResultContainer.classList.remove('expanded');
     }
 
@@ -378,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // --- NFC Write Logic ---
+    // --- NFC Write Logic (FIXED) ---
     function updatePayloadOnChange() {
         if (!payloadContainer.classList.contains('hidden')) {
             generateAndShowPayload();
@@ -396,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (byteCount > MAX_PAYLOAD_BYTES) {
             payloadSize.classList.add('limit-exceeded');
             writeNfcBtn.disabled = true;
-            showMessage('Payload zu groß! Schreiben deaktiviert.', 'err');
         } else {
             payloadSize.classList.remove('limit-exceeded');
             writeNfcBtn.disabled = false;
@@ -407,12 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(form);
         const data = {};
         for (const [key, value] of formData.entries()) {
-            if (value.trim()) {
-                data[key] = value.trim();
-            }
+            if (value.trim()) data[key] = value.trim();
         }
-        if(!document.getElementById('has_PT100').checked) delete data['PT 100'];
-        if(!document.getElementById('has_NiCr-Ni').checked) delete data['NiCr-Ni'];
+        if (!document.getElementById('has_PT100').checked) delete data['PT 100'];
+        if (!document.getElementById('has_NiCr-Ni').checked) delete data['NiCr-Ni'];
         delete data['has_PT100'];
         delete data['has_NiCr-Ni'];
         return data;
@@ -423,15 +409,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const parts = [];
         
         for (const [key, shortKey] of Object.entries(fieldMap)) {
-            if (data[key]) {
-                parts.push(`${shortKey}:${data[key]}`);
-            }
+            if (data[key]) parts.push(`${shortKey}:${data[key]}`);
         }
 
-        if (parts.length > 0) {
-            compactString += '\n' + parts.join('\n');
-        }
-        
+        if (parts.length > 0) compactString += '\n' + parts.join('\n');
         return compactString;
     }
     
@@ -440,44 +421,67 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { nfcManager.writeCooldown = false; }, WRITE_COOLDOWN_MS);
     }
 
+    function getReadableError(error) {
+        const errorMap = {
+            'NotAllowedError': 'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.',
+            'NotSupportedError': 'NFC wird nicht unterstützt.',
+            'NotReadableError': 'Tag konnte nicht gelesen werden.',
+            'NetworkError': 'Netzwerkfehler beim NFC-Zugriff.',
+            'InvalidStateError': 'Ungültiger Zustand. Bitte App neu laden.',
+            'DataError': 'Daten konnten nicht verarbeitet werden.',
+            'AbortError': 'Vorgang abgebrochen.'
+        };
+        return errorMap[error.name] || error.message || 'Unbekannter Fehler';
+    }
+
+    // KORRIGIERTE WRITE-FUNKTION
     async function writeNfcTag() {
         const ndef = nfcManager.initializeReader();
-        if (!ndef) return;
-        if (nfcManager.isWriting || nfcManager.writeCooldown) return;
+        if (!ndef || nfcManager.isWriting || nfcManager.writeCooldown) return;
         
         nfcManager.isWriting = true;
         generateAndShowPayload();
         const payload = payloadOutput.value;
-        if (new TextEncoder().encode(payload).length > MAX_PAYLOAD_BYTES) {
-             showMessage('Payload ist zu groß zum Schreiben!', 'err');
-             nfcManager.isWriting = false;
-             return;
+        
+        const byteCount = new TextEncoder().encode(payload).length;
+        if (byteCount > MAX_PAYLOAD_BYTES) {
+            showMessage('Payload zu groß zum Schreiben!', 'err');
+            nfcManager.isWriting = false;
+            return;
         }
         
-        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
+        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info', 6000);
         writeNfcBtn.disabled = true;
 
         try {
-            await ndef.write({
-                records: [{ recordType: "text", data: payload, lang: 'de' }]
-            });
-            showMessage('Daten erfolgreich auf NFC-Tag geschrieben!', 'ok');
+            // KRITISCH: Korrektes Write-Format für Web NFC API
+            await ndef.write(payload); // String wird automatisch als text/plain behandelt
+            
+            showMessage('✓ Daten erfolgreich geschrieben!', 'ok', 3000);
+            if (DEBUG_MODE) console.log('Write successful. Payload:', payload);
+            
         } catch (error) {
-            showMessage(`Schreibfehler: ${error.message}`, 'err');
+            nfcManager.logError('Write', error);
+            const readableError = getReadableError(error);
+            showMessage(`✗ Schreibfehler: ${readableError}`, 'err', 5000);
+            
+            if (DEBUG_MODE) {
+                console.log('Payload that failed:', payload);
+                console.log('Payload size:', byteCount, 'bytes');
+            }
         } finally {
             nfcManager.isWriting = false;
             startWriteCooldown();
             writeNfcBtn.disabled = false;
-            generateAndShowPayload();
         }
     }
 
-    // --- Auto Write Logic ---
+    // --- Auto Write Logic (FIXED) ---
     function armAutoWrite(armed) {
         autoWriteArmed = armed;
         if (autoWriteArmed) {
             autoWriteToggle.textContent = 'Auto-Schreiben stoppen';
-            autoWriteHint.textContent = 'Bereit zum Schreiben – halten Sie den Tag an das Gerät. Änderungen im Formular werden übernommen.';
+            autoWriteHint.textContent = 'Bereit – halten Sie Tags nacheinander an das Gerät.';
             autoWriteOnce();
         } else {
             autoWriteToggle.textContent = 'Auto-Schreiben aktivieren';
@@ -498,30 +502,26 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             generateAndShowPayload();
             const payload = payloadOutput.value;
-            await ndef.write({
-                records: [{ recordType: "text", data: payload, lang: 'de' }]
-            });
-            showMessage('Daten geschrieben. Sie können den nächsten Tag anhalten …', 'ok');
+            
+            await ndef.write(payload);
+            
+            showMessage('✓ Tag geschrieben. Nächsten Tag anhalten...', 'ok', 2000);
             startWriteCooldown();
         } catch (err) {
-            // Ignore AbortErrors which can happen on tab switch
             if (err.name !== 'AbortError') {
-                 showMessage(`Schreibfehler: ${err.message}`, 'err');
-                 startWriteCooldown();
+                nfcManager.logError('AutoWrite', err);
+                showMessage(`✗ ${getReadableError(err)}`, 'err', 3000);
+                startWriteCooldown();
             }
         } finally {
             nfcManager.isWriting = false;
-            if (autoWriteArmed) {
-                setTimeout(autoWriteOnce, 600);
-            }
+            if (autoWriteArmed) setTimeout(autoWriteOnce, 600);
         }
     }
 
     // --- Scan Initiators ---
     function armImmediateScan() {
-        setTimeout(() => {
-            readNfcTag();
-        }, 150);
+        setTimeout(readNfcTag, 150);
 
         if (autoScanArmedOnce) return;
         autoScanArmedOnce = true;
@@ -557,9 +557,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         el.addEventListener('click', (e) => {
             const tag = (e.target.tagName || '').toLowerCase();
-            if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) {
-                return;
-            }
+            if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || 
+                e.target.closest('.collapsible-overlay')) return;
             toggle();
         });
 
@@ -593,11 +592,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = form.elements[key];
             if (input) {
                 if (input.type === 'radio') {
-                    const radioGroup = form.querySelectorAll(`input[name="${key}"]`);
-                    radioGroup.forEach(radio => {
-                        if (radio.value === value) {
-                            radio.checked = true;
-                        }
+                    form.querySelectorAll(`input[name="${key}"]`).forEach(radio => {
+                        if (radio.value === value) radio.checked = true;
                     });
                 } else if (input.type === 'checkbox') {
                     input.checked = (value === 'true' || value === 'on');
@@ -625,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
             niCrInput.disabled = false;
             hasNiCrCheckbox.checked = true;
         } else {
-             niCrInput.disabled = true;
+            niCrInput.disabled = true;
             hasNiCrCheckbox.checked = false;
         }
 
@@ -662,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 populateFormFromScan();
                 showMessage('JSON-Datei erfolgreich geladen.', 'ok');
             } catch (error) {
-                showMessage(`Fehler beim Laden der JSON-Datei: ${error.message}`, 'err');
+                showMessage(`Fehler beim Laden: ${error.message}`, 'err');
             } finally {
                 event.target.value = null;
             }
@@ -670,4 +666,3 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 });
-
