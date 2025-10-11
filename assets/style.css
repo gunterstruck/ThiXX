@@ -234,19 +234,20 @@ h1.logo {
 .nfc-badge {
     background: var(--surface-light);
     color: var(--text-color);
-    padding: 0.5rem 1.2rem;
-    border-radius: 50px;
-    font-size: 0.85rem;
+    padding: 0.8rem 1.5rem; /* Höhe angepasst */
+    border-radius: 16px; /* Abrundung an Tabs angepasst */
+    font-size: 1rem; /* Schriftgröße an Tabs angepasst */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     animation: none; /* Remove default pulse */
     flex-shrink: 0;
-    transition: all 0.3s ease; /* changed from background-color, color, box-shadow */
+    transition: all 0.3s ease;
     text-align: center;
     cursor: pointer;
     border: none;
+    width: 100%; /* Nimmt die volle Breite im Header ein */
 }
 
 .nfc-badge:disabled {
@@ -507,6 +508,7 @@ h2 {
     opacity: 0.5;
     font-size: 1.5rem;
     font-weight: 700;
+    text-align: center; /* Überschrift zentriert */
 }
 
 .protocol-card {
@@ -853,7 +855,7 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  max-height: 8rem; /* Erhöht, um Titel + 2 Felder sicher anzuzeigen */
+  max-height: 8rem; /* Höhe für eine kompaktere Vorschau angepasst */
   transition: max-height 350ms ease-in-out;
 }
 
@@ -895,4 +897,6 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
+
+
 
