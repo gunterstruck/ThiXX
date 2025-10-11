@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (readTabActive && 'NDEFReader' in window) {
             armImmediateScan();
         }
+
+        // Collapsible-Previews aktivieren (Protokollkarte + Formular)
+        makeCollapsible(document.getElementById('protocol-card'));
+        makeCollapsible(document.getElementById('nfc-write-form'));
     }
 
     function checkNfcSupport() {
@@ -472,6 +476,51 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('keydown', startOnGesture, { once: true, capture: true });
     }
 
+    // --- Collapsible helpers ---
+    function makeCollapsible(el) {
+      if (!el) return;
+      el.classList.add('collapsible');
+
+      // Hinweis-Badge einfügen (nur im eingeklappten Zustand sichtbar)
+      const hint = document.createElement('div');
+      hint.className = 'collapsible-hint';
+      hint.textContent = 'Tippen zum Öffnen';
+      el.appendChild(hint);
+
+      // Toggle-Handler: bei Tap/Enter/Space aufklappen/zusammenklappen
+      const toggle = () => {
+        // Wenn bereits expanded UND es ist ein Form-Element-Klick → NICHT wieder zuklappen
+        if (el.classList.contains('expanded')) return;
+        el.classList.add('expanded');
+      };
+
+      // Click nur zum Öffnen (kein Schließen über generischen Klick)
+      el.addEventListener('click', (e) => {
+        // Klicks auf Eingabeelemente sollen nichts umschalten
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (['input','select','textarea','button','label','summary','details'].includes(tag)) return;
+        toggle();
+      });
+
+      // Tastaturzugänglichkeit
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-expanded', 'false');
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+          el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
+        }
+      });
+
+      // Wenn per Script aufgeklappt wird, aria aktualisieren
+      const observer = new MutationObserver(() => {
+        el.setAttribute('aria-expanded', el.classList.contains('expanded') ? 'true' : 'false');
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+    }
+
     // --- Form & Data Handling ---
     function populateFormFromScan() {
         if (!scannedDataObject) {
@@ -561,4 +610,5 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 });
+
 

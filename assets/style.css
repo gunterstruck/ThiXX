@@ -847,3 +847,60 @@ body[data-theme="customer-brand"] .btn.primary-btn {
     background: var(--primary-color); /* Solid Corporate Color */
 }
 
+/* Collapsible preview (4-Zeilen-Look + Fade) */
+.collapsible {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  /* ca. 4 Zeilen + etwas Luft – nach Bedarf feinjustieren */
+  max-height: 7.5rem;
+  transition: max-height 280ms ease;
+}
+
+/* Wenn aufgeklappt – genug Platz geben */
+.collapsible.expanded {
+  max-height: 3000px; /* groß genug für gesamten Inhalt */
+  cursor: default;
+}
+
+/* Weicher Fade unten als „Mehr“-Hinweis */
+.collapsible::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2.5rem;
+  pointer-events: none;
+  /* von transparent in den Container-Hintergrund überblenden */
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0%,
+    rgba(var(--surface-color-rgb, 30,41,59), 0.85) 80%,
+    rgba(var(--surface-color-rgb, 30,41,59), 1) 100%
+  );
+  transition: opacity 200ms ease;
+}
+
+/* Im hellen/corporate Theme ist surface-RGB bereits gesetzt (siehe bestehende CSS) */
+
+/* Kein Fade, wenn aufgeklappt */
+.collapsible.expanded::after {
+  opacity: 0;
+}
+
+/* Kleiner visueller Hinweis: „Tippen zum Öffnen“ */
+.collapsible-hint {
+  position: absolute;
+  bottom: 0.35rem;
+  right: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.7;
+  user-select: none;
+  pointer-events: none;
+  color: var(--light-text-color);
+}
+
+.collapsible.expanded .collapsible-hint {
+  display: none;
+}
+
