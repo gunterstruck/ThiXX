@@ -519,9 +519,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Wenn bereits expanded → NICHT wieder zuklappen
         if (el.classList.contains('expanded')) return;
         el.classList.add('expanded');
-        // Hinzugefügt: Entfernt den Fokus vom Container direkt nach dem Öffnen.
-        // Das verhindert, dass der Browser automatisch zum ersten Formularfeld springt.
-        el.blur();
+        
+        // Defer blur until the next animation frame. This reliably prevents
+        // the browser's focus-scroll behavior on animated containers.
+        requestAnimationFrame(() => {
+            el.blur();
+        });
       };
 
       // Click nur zum Öffnen
@@ -640,3 +643,4 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 });
+
