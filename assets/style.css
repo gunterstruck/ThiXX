@@ -3,7 +3,7 @@
     --primary-color: #f04e37;
     --primary-dark: #d63820;
     --primary-light: #ff6b52;
-    --secondary-color: #2d3748;
+    --secondary-color: #6c6b66;
     --background-color: #0f172a;
     --surface-color: #1e2d3b;
     --surface-light: #334155;
@@ -22,7 +22,7 @@ body[data-theme="thixx"] {
     --primary-color: #e45d45; 
     --primary-dark: #c84a32;
     --primary-light: #f47a65;
-    --secondary-color: #6c757d; 
+    --secondary-color: #6c6b66; 
     --background-color: #f8f9fa; 
     --surface-color: #ffffff;
     --surface-light: #e9ecef;
@@ -38,21 +38,21 @@ body[data-theme="thixx"] {
 
 /* Customer Brand Theme */
 body[data-theme="customer-brand"] {
-    --primary-color: #D44A2C; /* Customer Red-Orange */
+    --primary-color: #d54b2a; /* Customer Red-Orange */
     --primary-dark: #B03D23;
     --primary-light: #E56B51;
-    --secondary-color: #787771; /* Customer Grey */
+    --secondary-color: #6c6b66; /* Customer Grey */
     --background-color: #FCFCFD; /* Customer Off-White */
     --surface-color: #FFFFFF;
     --surface-light: #f0f0f0;
     --border-color: #d1d1d1;
     --text-color: #3d3d3d; /* Dark grey for better readability */
-    --light-text-color: #787771; /* Customer Grey */
+    --light-text-color: #787771;
     --success-color: #198754;
     --error-color: #dc3545;
     --disabled-color: #b5b5b5;
     --glow-color: rgba(212, 74, 44, 0.3);
-    --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); /* Light Grey Background */
+    --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
 
@@ -168,14 +168,6 @@ body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border
     box-shadow: none;
 }
 
-/* --- Theme-aware logo colors --- */
-.logo-icon { 
-    display:inline-block; 
-    vertical-align:middle; 
-}
-.logo-arc-primary   { stroke: var(--primary-color); }
-.logo-arc-secondary { stroke: var(--secondary-color); }
-
 
 @keyframes slideDown {
     from {
@@ -188,15 +180,54 @@ body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border
     }
 }
 
-header h1 {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    text-shadow: 0 0 30px var(--glow-color);
+/* Typographic Logo Styles */
+h1.logo {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.05em;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  text-shadow: none;
+}
+
+.logo-orange {
+  color: var(--primary-color);
+}
+
+.logo-gray {
+  color: var(--secondary-color);
+}
+
+.i-letter {
+  position: relative;
+  width: 0.25em;
+  height: 1em;
+  background-color: var(--secondary-color); /* Balken in Grau */
+  display: inline-block;
+  margin: 0 0.05em;
+  border-radius: 0.05em;
+}
+
+.i-letter .i-dot {
+  position: absolute;
+  top: -0.3em;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.25em;
+  height: 0.25em;
+  background-color: var(--primary-color); /* Punkt in Orange-Rot */
+  border-radius: 50%;
+}
+
+@media (max-width: 480px) {
+  h1.logo {
+    font-size: 1.8rem;
+  }
 }
 
 .nfc-badge {
@@ -796,14 +827,6 @@ body[data-theme="customer-brand"] .tab-content {
      box-shadow: 0 0 0 4px var(--primary-color), /* Outer Red-Orange Border */
                  0 8px 32px rgba(0, 0, 0, 0.1),
                  inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-body[data-theme="customer-brand"] header h1 {
-    background: none;
-    -webkit-background-clip: initial;
-    -webkit-text-fill-color: initial;
-    color: var(--primary-color);
-    text-shadow: none;
 }
 
 body[data-theme="customer-brand"] .tab-link::before,
