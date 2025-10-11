@@ -387,12 +387,6 @@ body[data-theme="customer-brand"] .tab-link.active {
     margin-bottom: 1.5rem;
 }
 
-#auto-write-hint {
-    flex-basis: 100%;
-    text-align: center;
-    margin-top: 0.5rem;
-}
-
 .btn {
     padding: 1rem 2rem;
     border: none;
@@ -894,4 +888,3 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
-
