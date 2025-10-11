@@ -472,6 +472,11 @@ body[data-theme="customer-brand"] .btn::before {
     flex-wrap: wrap;
 }
 
+#copy-to-form-btn {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
 .action-box .btn,
 .file-operations .btn {
     flex: 1 1 220px;
@@ -834,3 +839,4 @@ body[data-theme="customer-brand"] .tab-link::before,
 body[data-theme="customer-brand"] .btn.primary-btn {
     background: var(--primary-color); /* Solid Corporate Color */
 }
+
