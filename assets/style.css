@@ -105,13 +105,16 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap; /* Allow items to wrap */
+    flex-wrap: wrap; 
+    gap: 1rem;
     padding: 1rem 1.5rem;
     background: rgba(var(--surface-color-rgb, 30, 41, 59), 0.6);
+    backdrop-filter: blur(20px);
     border: 1px solid rgba(var(--border-color-rgb, 71, 85, 105), 0.3);
     border-radius: 20px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     margin-bottom: 1.5rem;
     animation: slideDown 0.6s ease-out;
 }
@@ -122,14 +125,11 @@ body[data-theme="thixx"] { --surface-color-rgb: 255, 255, 255; --border-color-rg
 body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border-color-rgb: 209, 209, 209; }
 
 
-.header-left {
-    flex-grow: 1; /* Allow left side to take up space */
-}
-
-.header-right {
+.header-content {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1.5rem;
+    flex-grow: 1;
 }
 
 .theme-switcher {
@@ -241,10 +241,9 @@ h1.logo {
     letter-spacing: 0.5px;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     animation: none; /* Remove default pulse */
+    flex-shrink: 0;
     transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
     text-align: center;
-    width: 100%; /* Take full width to center */
-    margin-top: 0.75rem; /* Space from the top row */
 }
 
 .nfc-badge.ok {
@@ -541,8 +540,7 @@ h2 {
 }
 
 .raw-data-details {
-    margin-top: 1.5rem;
-    margin-bottom: 0;
+    margin-bottom: 1.5rem;
 }
 
 .raw-data-details summary {
