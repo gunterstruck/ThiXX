@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
     const readNfcBtn = document.getElementById('read-nfc-btn');
     const writeNfcBtn = document.getElementById('write-nfc-btn');
+    // ... (rest of DOM references are the same)
     const showPayloadBtn = document.getElementById('show-payload-btn');
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
 
+
     // --- Constants and State ---
     const MAX_PAYLOAD_BYTES = 880;
     let scannedDataObject = null;
@@ -39,9 +41,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 
+    // --- NFC operation lock & cooldown ---
+    const OPERATION_COOLDOWN_MS = 1500;
+    let isReading = false;
+    let isWriting = false;
+    let operationCooldown = false;
+    let currentScanController = null;
+
+    function startOperationCooldown() {
+        operationCooldown = true;
+        setTimeout(() => { operationCooldown = false; }, OPERATION_COOLDOWN_MS);
+    }
+
     // --- Initialization ---
     init();
     
+    // ... (rest of the functions like setNfcBadge, init, setupEventListeners, etc. are the same)
     // --- NFC Badge Logic ---
     function setNfcBadge(state) {
       nfcStatusBadge.classList.remove('hidden', 'ok', 'err', 'info');
@@ -166,40 +181,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- NFC Read Logic ---
+    function cleanupAfterRead() {
+        isReading = false;
+        startOperationCooldown();
+        disableButtons(false);
+        currentScanController = null;
+    }
+
     async function readNfcTag() {
         if (!('NDEFReader' in window)) return;
-        
+
+        if (isReading || operationCooldown) {
+            showMessage('Bitte kurz warten...', 'info', 1500);
+            return;
+        }
+        isReading = true;
+
         setNfcBadge('scanning');
-        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
-        disableButtons();
+        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info', 10000);
+        disableButtons(true);
+
+        const ndef = new NDEFReader();
+        if ('AbortController' in window) {
+            currentScanController = new AbortController();
+        }
 
         try {
-            const ndef = new NDEFReader();
-            await ndef.scan();
-
+            await ndef.scan(currentScanController ? { signal: currentScanController.signal } : undefined);
+            
             ndef.onreadingerror = () => {
-                showMessage('Fehler beim Lesen des NFC-Tags.', 'err');
-                disableButtons(false);
                 setNfcBadge('available');
+                showMessage('Fehler beim Lesen des NFC-Tags.', 'err');
+                cleanupAfterRead();
             };
 
-            ndef.onreading = event => {
-                setNfcBadge('on'); // Set status to 'on' ONLY on successful read
-                showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
-                disableButtons(false);
+            ndef.onreading = (event) => {
+                setNfcBadge('on');
+                
                 const firstRecord = event.message.records[0];
                 if (firstRecord && firstRecord.recordType === 'text') {
                     const textDecoder = new TextDecoder(firstRecord.encoding);
                     const text = textDecoder.decode(firstRecord.data);
                     processNfcData(text);
+                    showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
                 } else {
-                     showMessage('Kein Text-Record auf dem Tag gefunden.', 'err');
+                    showMessage('Kein Text-Record auf dem Tag gefunden.', 'err');
                 }
+
+                if (currentScanController) {
+                    currentScanController.abort();
+                }
+                cleanupAfterRead();
             };
+
         } catch (error) {
             setNfcBadge('off');
             showMessage(`Scan-Fehler: ${error}`, 'err');
-            disableButtons(false);
+            cleanupAfterRead();
         }
     }
 
@@ -231,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return data;
         }
         
+        // ... (rest of parsing logic is the same)
         if (text.includes('|') && text.includes('---')) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('|') && !l.includes('---'));
             lines.forEach(line => {
@@ -301,6 +340,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- NFC Write Logic ---
+    function cleanupAfterWrite() {
+        isWriting = false;
+        startOperationCooldown();
+        disableButtons(false);
+        generateAndShowPayload();
+    }
+
     function updatePayloadOnChange() {
         if (!payloadContainer.classList.contains('hidden')) {
             generateAndShowPayload();
@@ -361,16 +407,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function writeNfcTag() {
         if (!('NDEFReader' in window)) return;
+
+        if (isWriting || operationCooldown) {
+            showMessage('Bitte kurz warten...', 'info', 1500);
+            return;
+        }
+        isWriting = true;
         
         generateAndShowPayload();
         const payload = payloadOutput.value;
         if (new TextEncoder().encode(payload).length > MAX_PAYLOAD_BYTES) {
              showMessage('Payload ist zu groß zum Schreiben!', 'err');
+             isWriting = false; // release lock
              return;
         }
         
         setNfcBadge('scanning');
-        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info');
+        showMessage('Bitte NFC-Tag an das Gerät halten...', 'info', 10000);
         disableButtons(true);
         writeNfcBtn.disabled = true;
 
@@ -383,8 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('off');
             showMessage(`Schreibfehler: ${error}`, 'err');
         } finally {
-            disableButtons(false);
-            generateAndShowPayload();
+            cleanupAfterWrite();
         }
     }
 
