@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text = text.trim();
         if (text.startsWith('v1')) {
             const content = text.substring(2).trim();
-            const regex = /(\w+):([^\n]*)/g;
+            const regex = /([^:]+):([^\n]*)/g; // Robustere Regex
             let match;
             while ((match = regex.exec(content)) !== null) {
                 const key = reverseFieldMap[match[1]] || match[1];
@@ -419,7 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const ndef = new NDEFReader();
-            await ndef.write(payload);
+            await ndef.write({
+                records: [{ recordType: "text", data: payload, lang: 'de' }]
+            });
             showMessage('Daten erfolgreich auf NFC-Tag geschrieben!', 'ok');
         } catch (error) {
             showMessage(`Schreibfehler: ${error.message}`, 'err');
@@ -451,7 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
             generateAndShowPayload();
             const payload = payloadOutput.value;
             const ndef = new NDEFReader();
-            await ndef.write(payload);
+            await ndef.write({
+                records: [{ recordType: "text", data: payload, lang: 'de' }]
+            });
             showMessage('Daten geschrieben. Sie können den nächsten Tag anhalten …', 'ok');
             startWriteCooldown();
         } catch (err) {
