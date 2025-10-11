@@ -77,11 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
             readResultEl.classList.remove('expanded'); // Start: eingeklappt
         }
 
-        // 2️⃣ Write-Tab: Gesamten Tab-Inhalt einklappbar machen
-        const writeTabContent = document.getElementById('write-tab');
-        if (writeTabContent) {
-            makeCollapsible(writeTabContent);
-            writeTabContent.classList.remove('expanded'); // Start: eingeklappt
+        // 2️⃣ Write-Tab: Den Inhalts-Container einklappbar machen (nicht den Tab selbst)
+        const writeFormContainer = document.getElementById('write-form-container');
+        if (writeFormContainer) {
+            makeCollapsible(writeFormContainer);
+            writeFormContainer.classList.remove('expanded'); // Start: eingeklappt
         }
     }
 
@@ -520,11 +520,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el.classList.contains('expanded')) return;
         el.classList.add('expanded');
         
-        // Defer blur until the next animation frame. This reliably prevents
-        // the browser's focus-scroll behavior on animated containers.
-        requestAnimationFrame(() => {
-            el.blur();
-        });
+        // Entfernt den Fokus vom Container direkt nach dem Öffnen.
+        // Das verhindert, dass der Browser automatisch zum ersten Formularfeld springt.
+        el.blur();
       };
 
       // Click nur zum Öffnen
