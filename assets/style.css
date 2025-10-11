@@ -767,3 +767,26 @@ body[data-theme="customer-brand"] .message-banner.info {
     background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
 }
 
+/* NEW BORDER STYLES FOR CUSTOMER THEME */
+body[data-theme="customer-brand"] header,
+body[data-theme="customer-brand"] .tabs,
+body[data-theme="customer-brand"] .tab-content {
+    border: 1px solid var(--secondary-color); /* Inner grey border */
+}
+
+body[data-theme="customer-brand"] header {
+     box-shadow: 0 0 0 1px var(--primary-color), /* Outer Red-Orange Border */
+                 0 8px 32px rgba(0, 0, 0, 0.15),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body[data-theme="customer-brand"] .tabs {
+     box-shadow: 0 0 0 1px var(--primary-color); /* Outer Red-Orange Border */
+}
+
+body[data-theme="customer-brand"] .tab-content {
+     box-shadow: 0 0 0 1px var(--primary-color), /* Outer Red-Orange Border */
+                 0 8px 32px rgba(0, 0, 0, 0.1),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
