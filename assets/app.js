@@ -70,32 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Collapsible Bereiche aktivieren ---
     function initCollapsibles() {
-        // 1️⃣ Gesamten "gelesenen" Container einklappbar machen
+        // 1️⃣ Read-Tab: Container für gelesene Daten einklappbar machen
         const readResultEl = document.getElementById('read-result');
         if (readResultEl) {
             makeCollapsible(readResultEl);
             readResultEl.classList.remove('expanded'); // Start: eingeklappt
         }
 
-        // 2️⃣ Schreiben-Tab komplett einklappbar machen
-        const writeTab = document.getElementById('write-tab');
-        const wrapperId = 'write-collapsible';
-        let wrapper = document.getElementById(wrapperId);
-
-        if (writeTab && !wrapper) {
-            wrapper = document.createElement('div');
-            wrapper.id = wrapperId;
-            wrapper.classList.add('collapsible'); // <<< Wichtig: direkt collapsible
-            // Bestehende Inhalte verschieben
-            while (writeTab.firstChild) {
-                wrapper.appendChild(writeTab.firstChild);
-            }
-            writeTab.appendChild(wrapper);
-        }
-
-        if (wrapper) {
-            makeCollapsible(wrapper);
-            wrapper.classList.remove('expanded'); // Start: eingeklappt
+        // 2️⃣ Write-Tab: Gesamten Tab-Inhalt einklappbar machen
+        const writeTabContent = document.getElementById('write-tab');
+        if (writeTabContent) {
+            makeCollapsible(writeTabContent);
+            writeTabContent.classList.remove('expanded'); // Start: eingeklappt
         }
     }
 
@@ -651,4 +637,3 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 });
-
