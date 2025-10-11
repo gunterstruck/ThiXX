@@ -378,9 +378,18 @@ body[data-theme="customer-brand"] .tab-link.active {
 }
 
 .action-box {
-    text-align: center;
-    padding: 1.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding-top: 1.5rem;
     margin-bottom: 1.5rem;
+}
+
+#auto-write-hint {
+    flex-basis: 100%;
+    text-align: center;
+    margin-top: 0.5rem;
 }
 
 .btn {
@@ -461,6 +470,12 @@ body[data-theme="customer-brand"] .btn::before {
     margin-top: 1.5rem;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.action-box .btn,
+.file-operations .btn {
+    flex: 1 1 220px;
+    text-align: center;
 }
 
 .file-input-label {
@@ -819,4 +834,3 @@ body[data-theme="customer-brand"] .tab-link::before,
 body[data-theme="customer-brand"] .btn.primary-btn {
     background: var(--primary-color); /* Solid Corporate Color */
 }
-
