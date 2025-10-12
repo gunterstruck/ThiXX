@@ -317,6 +317,7 @@ body[data-theme="customer-brand"] .nfc-badge.info {
     position: relative;
     overflow: hidden;
     isolation: isolate; 
+    white-space: nowrap; /* Verhindert den Zeilenumbruch */
 }
 
 .tab-link::before {
@@ -901,5 +902,3 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
-
-

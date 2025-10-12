@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thixx-v65'; // Version erhöht, um den Cache zu erneuern und neue Logik zu erzwingen
+const CACHE_NAME = 'thixx-v66'; // Version erhöht, um den Cache zu erneuern und neue Logik zu erzwingen
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
