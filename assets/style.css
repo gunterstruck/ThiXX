@@ -305,7 +305,6 @@ body[data-theme="customer-brand"] .nfc-badge.info {
 .tab-link {
     flex: 1;
     padding: 1rem 1.5rem;
-    text-align: center;
     background: transparent;
     border: none;
     font-size: 1rem;
@@ -318,6 +317,9 @@ body[data-theme="customer-brand"] .nfc-badge.info {
     overflow: hidden;
     isolation: isolate; 
     white-space: nowrap; /* Verhindert den Zeilenumbruch */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .tab-link::before {
@@ -572,6 +574,14 @@ h2 {
     background-clip: text;
     text-align: right;
     font-size: 1rem;
+}
+
+.protocol-card .placeholder-text {
+    text-align: center;
+    color: var(--light-text-color);
+    padding: 2rem 1rem;
+    font-style: italic;
+    transition: opacity 0.3s ease;
 }
 
 .raw-data-details {
@@ -902,3 +912,4 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   opacity: 0;
   pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
+
