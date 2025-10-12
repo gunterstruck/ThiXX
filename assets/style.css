@@ -397,6 +397,13 @@ body[data-theme="customer-brand"] .tab-link.active {
     margin-top: 1rem; /* Reduzierter Abstand nach oben */
 }
 
+.read-actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
 #auto-write-hint {
     flex-basis: 100%;
     text-align: center;

@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const readResultContainer = document.getElementById('read-result');
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
-    const rawDataDetailsContainer = document.getElementById('raw-data-details-container');
+    const readActions = document.getElementById('read-actions');
     
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
@@ -51,8 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function setupReadTabInitialState() {
         protocolCard.innerHTML = `<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`;
-        copyToFormBtn.classList.add('hidden');
-        rawDataDetailsContainer.classList.add('hidden');
+        readActions.classList.add('hidden');
     }
 
     function initCollapsibles() {
@@ -274,8 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             scannedDataObject = parseNfcText(text);
             displayParsedData(scannedDataObject);
-            copyToFormBtn.classList.remove('hidden');
-            rawDataDetailsContainer.classList.remove('hidden');
+            readActions.classList.remove('hidden');
+            readResultContainer.classList.add('expanded');
         } catch(e) {
             showMessage(`Fehler beim Verarbeiten: ${e.message}`, 'err');
             setupReadTabInitialState();
@@ -331,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createDataPair('am', data['am'])}
             </div>
         `;
-        readResultContainer.classList.remove('expanded');
     }
 
     function createDataPair(label, value, unit = '') {
@@ -503,3 +501,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 });
+
