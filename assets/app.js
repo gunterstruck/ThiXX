@@ -1,4 +1,120 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Design & Branding-Konfigurationen ---
+    // Hier werden alle verfügbaren Designs zentral verwaltet.
+    // Ein neues Design kann einfach durch Hinzufügen eines Eintrags hinzugefügt werden.
+    const designs = {
+        'default': {
+            appName: 'ThiXX NFC Tool',
+            theme: 'dark', // Standard-Theme
+            icons: {
+                icon192: '/ThiXX/assets/icon-192.png', // Original-Icons als Standard
+                icon512: '/ThiXX/assets/icon-512.png'
+            },
+            brandColors: {
+                primary: '#f04e37',
+                secondary: '#6c6b66'
+            },
+            manifestThemeColor: '#0f172a'
+        },
+        'sigx': {
+            appName: 'SIGX NFC Tool',
+            theme: 'customer-brand', // Das spezielle Kunden-Theme
+            icons: {
+                icon192: '/ThiXX/assets/THiXX_Icon_Transparent_192x192.png',
+                icon512: '/ThiXX/assets/THiXX_Icon_Transparent_512x512.png'
+            },
+            brandColors: {
+                primary: '#e45d45',
+                secondary: '#6c6b66'
+            },
+            manifestThemeColor: '#e45d45'
+        }
+        // HIER KÖNNEN ZUKÜNFTIGE KUNDEN HINZUGEFÜGT WERDEN
+        // 'kunde_b': { ... }
+    };
+
+    // --- Konfiguration laden und anwenden ---
+    function loadAndApplyConfig() {
+        fetch('/ThiXX/config.json')
+            .then(res => res.json())
+            .then(config => {
+                const designName = config.design || 'default';
+                const designConfig = designs[designName] || designs['default'];
+                applyConfig(designConfig);
+            })
+            .catch(err => {
+                console.warn('Keine Konfigurationsdatei gefunden, Standard-Design wird verwendet.', err);
+                applyConfig(designs['default']); // Fallback auf Standard-Design
+            });
+    }
+
+    function applyConfig(config) {
+        // App-Name und Titel
+        document.title = config.appName;
+
+        // Theme setzen
+        document.body.setAttribute('data-theme', config.theme);
+        localStorage.setItem('thixx-theme', config.theme);
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === config.theme);
+        });
+
+        // CSS-Variablen für Kundenfarben setzen
+        const root = document.documentElement;
+        root.style.setProperty('--customer-primary-color', config.brandColors.primary);
+        root.style.setProperty('--customer-secondary-color', config.brandColors.secondary);
+        
+        // Manifest-Theme-Color anpassen
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', config.manifestThemeColor);
+        }
+
+        // Icons im Header ersetzen
+        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
+        if (customerBtnImg) {
+            // Wir verwenden hier das 512er Icon des SIGX-Designs, da dies der "Kunden"-Button ist
+            customerBtnImg.src = designs.sigx.icons.icon512;
+        }
+
+        // Dynamisches Manifest generieren und anwenden
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+            const newManifest = {
+                name: config.appName,
+                short_name: config.appName.split(' ')[0], // Nimmt den ersten Teil des Namens
+                start_url: "/ThiXX/index.html",
+                scope: "/ThiXX/",
+                display: "standalone",
+                background_color: "#ffffff",
+                theme_color: config.brandColors.primary,
+                orientation: "portrait-primary",
+                icons: [{
+                    src: config.icons.icon192,
+                    sizes: "192x192",
+                    type: "image/png",
+                    purpose: "any maskable"
+                }, {
+                    src: config.icons.icon512,
+                    sizes: "512x512",
+                    type: "image/png",
+                    purpose: "any maskable"
+                }]
+            };
+            const blob = new Blob([JSON.stringify(newManifest)], {
+                type: 'application/manifest+json'
+            });
+            manifestLink.href = URL.createObjectURL(blob);
+        }
+        
+        // Apple Touch Icon ersetzen
+        const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleIconLink) {
+            appleIconLink.href = config.icons.icon192;
+        }
+    }
+
+
     // --- Service Worker Registration ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -20,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('nfc-write-form');
     const payloadOutput = document.getElementById('payload-output');
     const payloadSize = document.getElementById('payload-size');
-    const payloadContainer = document.getElementById('payload-container');
     const readResultContainer = document.getElementById('read-result');
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
@@ -36,75 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let isCooldownActive = false;
     let abortController = null;
 
-    // --- White-Label Configuration Loader ---
-    fetch('/ThiXX/config.json')
-        .then(response => {
-            if (!response.ok) { throw new Error('Config not found'); }
-            return response.json();
-        })
-        .then(config => {
-            applyConfig(config);
-            init(); // Start app after config is applied
-        })
-        .catch(err => {
-            console.warn('Keine Konfigurationsdatei gefunden, Standardwerte werden verwendet.', err);
-            init(); // Start app with defaults
-        });
-
-    // --- White-Label Configuration ---
-    function applyConfig(config) {
-        // App-Name in Titelleiste setzen
-        document.title = config.appName || document.title;
-
-        // Dynamisches Manifest für PWA-Installation erstellen
-        const manifestLink = document.querySelector('link[rel="manifest"]');
-        if (manifestLink && config.appName && config.icons) {
-            const newManifest = {
-                name: config.appName,
-                short_name: config.appName,
-                start_url: "/ThiXX/index.html",
-                scope: "/ThiXX/",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: config.brandColors ? config.brandColors.primary : "#f04e37",
-                orientation: "portrait-primary",
-                icons: [
-                    { src: config.icons.icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-                    { src: config.icons.icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
-                ]
-            };
-            const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' });
-            manifestLink.href = URL.createObjectURL(blob);
-        }
-
-        // Apple Touch Icon aktualisieren
-        const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
-        if (appleIconLink && config.icons?.icon192) {
-            appleIconLink.href = config.icons.icon192;
-        }
-
-        // Icon im Kunden-Theme-Button ersetzen
-        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
-        if (customerBtnImg && config.icons?.icon512) {
-            customerBtnImg.src = config.icons.icon512;
-        }
-        
-        // Brand-Farben als CSS-Variablen überschreiben
-        if (config.brandColors) {
-            document.documentElement.style.setProperty('--customer-primary-color', config.brandColors.primary);
-            document.documentElement.style.setProperty('--customer-secondary-color', config.brandColors.secondary);
-        }
-
-        // Theme aus der Konfiguration setzen
-        if (config.theme) {
-            document.body.setAttribute('data-theme', config.theme);
-        }
-    }
-    
     // --- Initialization ---
+    init();
+
     function init() {
+        loadAndApplyConfig(); // Lädt die Konfiguration zuerst
         setupEventListeners();
-        setupTheme(); // Theme-Switcher wird nach dem Anwenden der Config initialisiert
+        setupThemeSwitcher(); // Separater Theme-Switcher
         setTodaysDate();
         checkNfcSupport();
         initCollapsibles();
@@ -137,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         nfcStatusBadge.addEventListener('click', handleNfcAction);
-
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
@@ -153,31 +205,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Theme Switcher ---
-    function setupTheme() {
+    // --- Theme Switcher (manuelle Steuerung) ---
+    function setupThemeSwitcher() {
         const themeButtons = document.querySelectorAll('.theme-btn');
         const THEME_KEY = 'thixx-theme';
-        
-        const storedTheme = localStorage.getItem(THEME_KEY);
-        // Die Konfiguration (config.theme) hat Vorrang, ansonsten wird der gespeicherte Wert oder der Standardwert ('dark') verwendet.
-        const initialTheme = document.body.getAttribute('data-theme') || storedTheme || 'dark';
 
-        function applyTheme(themeName) {
+        function manuallyApplyTheme(themeName) {
             document.body.setAttribute('data-theme', themeName);
             localStorage.setItem(THEME_KEY, themeName);
             themeButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.theme === themeName);
             });
             
+            // Logik für manuelle Farbanpassung, falls nötig
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
-                const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#f8f9fa' };
+                const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': designs.sigx.manifestThemeColor };
                 metaThemeColor.setAttribute('content', colors[themeName] || '#0f172a');
             }
         }
 
-        themeButtons.forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)));
-        applyTheme(initialTheme);
+        themeButtons.forEach(btn => btn.addEventListener('click', () => manuallyApplyTheme(btn.dataset.theme)));
     }
 
     // --- UI Functions ---
@@ -279,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ndef = new NDEFReader();
             
             if (isWriteMode) {
-                // --- WRITE LOGIC ---
                 setNfcBadge('writing');
                 showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...', 'info');
                 
@@ -298,13 +345,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 startCooldown();
 
             } else {
-                // --- READ LOGIC ---
                 setNfcBadge('scanning');
                 showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...', 'info');
 
                 await ndef.scan({ signal: abortController.signal });
                 ndef.onreading = (event) => {
-                    abortNfcAction(); 
+                    abortNfcAction();
                     const firstRecord = event.message.records[0];
                     if (firstRecord && firstRecord.recordType === 'text') {
                         const textDecoder = new TextDecoder(firstRecord.encoding || 'utf-8');
@@ -565,3 +611,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 });
+
