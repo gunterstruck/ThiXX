@@ -389,13 +389,16 @@ body[data-theme="customer-brand"] .tab-link.active {
     display: block;
 }
 
+/* Entfernt da der Button nicht mehr existiert */
+/*
 .action-box {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 1rem;
-    margin-top: 1rem; /* Reduzierter Abstand nach oben */
+    margin-top: 1rem; 
 }
+*/
 
 .read-actions-container {
     display: flex;
@@ -484,7 +487,7 @@ body[data-theme="customer-brand"] .btn::before {
 .file-operations {
     display: flex;
     gap: 1rem;
-    margin-top: 1rem; /* Abstand vereinheitlicht */
+    margin-top: 2rem; /* ANGEPASST: Sorgt für den richtigen Abstand nach oben */
     justify-content: center;
     flex-wrap: wrap;
 }
@@ -494,7 +497,10 @@ body[data-theme="customer-brand"] .btn::before {
     margin-bottom: 0;
 }
 
+/* Entfernt da der Button nicht mehr existiert */
+/*
 .action-box .btn,
+*/
 .file-operations .btn {
     flex: 1 1 220px;
     text-align: center;

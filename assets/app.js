@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
-    const writeNfcBtnBottom = document.getElementById('write-nfc-btn-bottom');
+    // const writeNfcBtnBottom = document.getElementById('write-nfc-btn-bottom'); // Entfernt
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
     const loadJsonInput = document.getElementById('load-json-input');
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
-    const ACTION_COOLDOWN_MS = 2000; // 2 Sekunden Pause nach erfolgreicher Aktion
+    const ACTION_COOLDOWN_MS = 2000; // 2 Sekunden Pause nach jeder Aktion
 
     // --- State Variables ---
     let scannedDataObject = null;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('unsupported');
             nfcFallback.classList.remove('hidden');
             nfcStatusBadge.disabled = true;
-            if(writeNfcBtnBottom) writeNfcBtnBottom.disabled = true;
+            // if(writeNfcBtnBottom) writeNfcBtnBottom.disabled = true; // Entfernt
         }
     }
 
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         nfcStatusBadge.addEventListener('click', handleNfcAction);
-        if(writeNfcBtnBottom) writeNfcBtnBottom.addEventListener('click', handleNfcAction);
+        // if(writeNfcBtnBottom) writeNfcBtnBottom.addEventListener('click', handleNfcAction); // Entfernt
 
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
@@ -259,7 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const readableError = getReadableError(error);
                 setNfcBadge('error', readableError);
                 showMessage(readableError, 'err');
-                startCooldown(); // Start cooldown even on error to prevent rapid retries
+                // HINZUGEFÜGT: Starte den Cooldown auch bei einem Fehler
+                startCooldown(); 
             } else {
                 setNfcBadge('idle'); // Reset if user aborted
             }
