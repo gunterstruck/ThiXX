@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const designs = {
         'default': { // Fallback, falls config.json nicht lädt
             appName: "SIGX NFC Tool",
-            theme: "customer-brand", // Geändert: Startet jetzt standardmäßig im Kunden-Theme
-            lockTheme: true,
+            theme: "customer-brand",
+            lockTheme: false, // Geändert: Theme-Umschalter bleibt sichtbar
             icons: {
                 icon192: "/ThiXX/assets/icon-192.png",
                 icon512: "/ThiXX/assets/icon-512.png"
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'sigx': {
             appName: "SIGX NFC Tool",
             theme: "customer-brand",
-            lockTheme: true,
+            lockTheme: false, // GEÄNDERT: von 'true' auf 'false', um den Umschalter wieder anzuzeigen
             icons: {
                 icon192: "/ThiXX/assets/icon-192.png",
                 icon512: "/ThiXX/assets/icon-512.png"
