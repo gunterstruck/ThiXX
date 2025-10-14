@@ -1,119 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Design & Branding-Konfigurationen ---
-    // Hier werden alle verfügbaren Designs zentral verwaltet.
-    // Ein neues Design kann einfach durch Hinzufügen eines Eintrags hinzugefügt werden.
+    // --- Design-Vorlagen ---
     const designs = {
         'default': {
-            appName: 'ThiXX NFC Tool',
-            theme: 'dark', // Standard-Theme
+            appName: "ThiXX NFC Tool",
+            theme: "dark", // Standard-Theme
             icons: {
-                icon192: '/ThiXX/assets/icon-192.png', // Original-Icons als Standard
-                icon512: '/ThiXX/assets/icon-512.png'
+                icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png",
+                icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png"
             },
             brandColors: {
-                primary: '#f04e37',
-                secondary: '#6c6b66'
-            },
-            manifestThemeColor: '#0f172a'
+                primary: "#f04e37",
+                secondary: "#6c6b66"
+            }
         },
         'sigx': {
-            appName: 'SIGX NFC Tool',
-            theme: 'customer-brand', // Das spezielle Kunden-Theme
+            appName: "SIGX NFC Tool",
+            theme: "customer-brand",
             icons: {
-                icon192: '/ThiXX/assets/THiXX_Icon_Transparent_192x192.png',
-                icon512: '/ThiXX/assets/THiXX_Icon_Transparent_512x512.png'
+                icon192: "/ThiXX/assets/icon-192.png", // Geändert zum originalen Icon
+                icon512: "/ThiXX/assets/icon-512.png"  // Geändert zum originalen Icon
             },
             brandColors: {
-                primary: '#e45d45',
-                secondary: '#6c6b66'
-            },
-            manifestThemeColor: '#e45d45'
+                primary: "#e45d45",
+                secondary: "#6c6b66"
+            }
         }
-        // HIER KÖNNEN ZUKÜNFTIGE KUNDEN HINZUGEFÜGT WERDEN
-        // 'kunde_b': { ... }
     };
-
-    // --- Konfiguration laden und anwenden ---
-    function loadAndApplyConfig() {
-        fetch('/ThiXX/config.json')
-            .then(res => res.json())
-            .then(config => {
-                const designName = config.design || 'default';
-                const designConfig = designs[designName] || designs['default'];
-                applyConfig(designConfig);
-            })
-            .catch(err => {
-                console.warn('Keine Konfigurationsdatei gefunden, Standard-Design wird verwendet.', err);
-                applyConfig(designs['default']); // Fallback auf Standard-Design
-            });
-    }
-
-    function applyConfig(config) {
-        // App-Name und Titel
-        document.title = config.appName;
-
-        // Theme setzen
-        document.body.setAttribute('data-theme', config.theme);
-        localStorage.setItem('thixx-theme', config.theme);
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.theme === config.theme);
-        });
-
-        // CSS-Variablen für Kundenfarben setzen
-        const root = document.documentElement;
-        root.style.setProperty('--customer-primary-color', config.brandColors.primary);
-        root.style.setProperty('--customer-secondary-color', config.brandColors.secondary);
-        
-        // Manifest-Theme-Color anpassen
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', config.manifestThemeColor);
-        }
-
-        // Icons im Header ersetzen
-        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
-        if (customerBtnImg) {
-            // Wir verwenden hier das 512er Icon des SIGX-Designs, da dies der "Kunden"-Button ist
-            customerBtnImg.src = designs.sigx.icons.icon512;
-        }
-
-        // Dynamisches Manifest generieren und anwenden
-        const manifestLink = document.querySelector('link[rel="manifest"]');
-        if (manifestLink) {
-            const newManifest = {
-                name: config.appName,
-                short_name: config.appName.split(' ')[0], // Nimmt den ersten Teil des Namens
-                start_url: "/ThiXX/index.html",
-                scope: "/ThiXX/",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: config.brandColors.primary,
-                orientation: "portrait-primary",
-                icons: [{
-                    src: config.icons.icon192,
-                    sizes: "192x192",
-                    type: "image/png",
-                    purpose: "any maskable"
-                }, {
-                    src: config.icons.icon512,
-                    sizes: "512x512",
-                    type: "image/png",
-                    purpose: "any maskable"
-                }]
-            };
-            const blob = new Blob([JSON.stringify(newManifest)], {
-                type: 'application/manifest+json'
-            });
-            manifestLink.href = URL.createObjectURL(blob);
-        }
-        
-        // Apple Touch Icon ersetzen
-        const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
-        if (appleIconLink) {
-            appleIconLink.href = config.icons.icon192;
-        }
-    }
-
 
     // --- Service Worker Registration ---
     if ('serviceWorker' in navigator) {
@@ -611,4 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 });
+
+
+
 
