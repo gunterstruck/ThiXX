@@ -1,11 +1,12 @@
-const CACHE_NAME = 'thixx-v80'; // Version erhöht, um den Cache zu erneuern und neue Logik zu erzwingen
+const CACHE_NAME = 'thixx-v82'; // Version erhöht für die neuen Icons
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
+    '/ThiXX/config.json',
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
-    '/ThiXX/assets/icon-192.png',
-    '/ThiXX/assets/icon-512.png',
+    '/ThiXX/assets/THiXX_Icon_192x192.png', // Korrekte Icons
+    '/ThiXX/assets/THiXX_Icon_512x512.png',
     '/ThiXX/manifest.webmanifest'
 ];
 
@@ -15,7 +16,10 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[Service Worker] Caching app shell');
-                return cache.addAll(ASSETS_TO_CACHE);
+                // Use addAll with a catch to prevent install failure if one asset is missing
+                return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+                    console.error('[SW] Failed to cache assets during install:', err);
+                });
             })
             .then(() => self.skipWaiting())
     );
@@ -41,7 +45,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    // Only handle GET requests.
     if (request.method !== 'GET') {
         return;
     }
@@ -49,12 +52,10 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(request.url);
 
     // --- STRATEGY 1: Network First (for critical, frequently updated files) ---
-    // For app.js and style.css, always try the network first.
-    if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/style.css')) {
+    if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/style.css') || url.pathname.endsWith('/config.json')) {
         event.respondWith(
             fetch(request)
                 .then((networkResponse) => {
-                    // If successful, update the cache with the new version.
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(request, responseToCache);
@@ -62,7 +63,6 @@ self.addEventListener('fetch', (event) => {
                     return networkResponse;
                 })
                 .catch(() => {
-                    // If the network fails, serve the file from the cache.
                     return caches.match(request);
                 })
         );
@@ -74,10 +74,8 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(request)
                 .catch(() => {
-                    // If network fails, try to serve from cache.
                     return caches.match(request)
                         .then((response) => {
-                            // If not in cache, serve the offline fallback page.
                             return response || caches.match('/ThiXX/offline.html');
                         });
                 })
@@ -86,16 +84,10 @@ self.addEventListener('fetch', (event) => {
     }
 
     // --- STRATEGY 3: Cache First (for static assets that rarely change) ---
-    // For all other requests (images, manifest), serve from cache for performance.
     event.respondWith(
         caches.match(request)
             .then((response) => {
-                // If the resource is in the cache, serve it.
-                if (response) {
-                    return response;
-                }
-                // Otherwise, fetch from the network and cache it for next time.
-                return fetch(request).then((networkResponse) => {
+                return response || fetch(request).then((networkResponse) => {
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(request, responseToCache);
@@ -105,3 +97,4 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+

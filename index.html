@@ -6,7 +6,8 @@
     <title>ThiXX - NFC PWA</title>
     <link rel="manifest" href="/ThiXX/manifest.webmanifest">
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
-    <link rel="apple-touch-icon" href="/ThiXX/assets/icon-192.png">
+    <!-- Standard-Icon für Apple-Geräte, wird ggf. von app.js überschrieben -->
+    <link rel="apple-touch-icon" href="/ThiXX/assets/THiXX_Icon_192x192.png">
     <meta name="theme-color" content="#0f172a">
 </head>
 <body>
@@ -25,7 +26,8 @@
                     <button class="theme-btn active" data-theme="dark" title="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" title="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" title="Kunden-Design">
-                        <img src="/ThiXX/assets/icon-512.png" alt="Kunden-Design" width="29" height="29">
+                        <!-- Standard-Icon, wird von app.js durch das Konfigurations-Icon ersetzt -->
+                        <img src="/ThiXX/assets/THiXX_Icon_512x512.png" alt="Kunden-Design" width="29" height="29">
                     </button>
                 </div>
             </div>
@@ -111,8 +113,6 @@
                         </details>
                     </div>
                     
-                    <!-- ENTFERNT: Der redundante Button wurde hier entfernt -->
-
                     <div class="file-operations">
                          <button id="save-json-btn" class="btn">Auf Smartphone speichern</button>
                          <label class="btn file-input-label">

@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
-    // const writeNfcBtnBottom = document.getElementById('write-nfc-btn-bottom'); // Entfernt
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
     const loadJsonInput = document.getElementById('load-json-input');
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
-    const ACTION_COOLDOWN_MS = 2000; // 2 Sekunden Pause nach jeder Aktion
+    const ACTION_COOLDOWN_MS = 2000;
 
     // --- State Variables ---
     let scannedDataObject = null;
@@ -37,12 +36,75 @@ document.addEventListener('DOMContentLoaded', () => {
     let isCooldownActive = false;
     let abortController = null;
 
-    // --- Initialization ---
-    init();
+    // --- White-Label Configuration Loader ---
+    fetch('/ThiXX/config.json')
+        .then(response => {
+            if (!response.ok) { throw new Error('Config not found'); }
+            return response.json();
+        })
+        .then(config => {
+            applyConfig(config);
+            init(); // Start app after config is applied
+        })
+        .catch(err => {
+            console.warn('Keine Konfigurationsdatei gefunden, Standardwerte werden verwendet.', err);
+            init(); // Start app with defaults
+        });
 
+    // --- White-Label Configuration ---
+    function applyConfig(config) {
+        // App-Name in Titelleiste setzen
+        document.title = config.appName || document.title;
+
+        // Dynamisches Manifest für PWA-Installation erstellen
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink && config.appName && config.icons) {
+            const newManifest = {
+                name: config.appName,
+                short_name: config.appName,
+                start_url: "/ThiXX/index.html",
+                scope: "/ThiXX/",
+                display: "standalone",
+                background_color: "#ffffff",
+                theme_color: config.brandColors ? config.brandColors.primary : "#f04e37",
+                orientation: "portrait-primary",
+                icons: [
+                    { src: config.icons.icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+                    { src: config.icons.icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' });
+            manifestLink.href = URL.createObjectURL(blob);
+        }
+
+        // Apple Touch Icon aktualisieren
+        const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleIconLink && config.icons?.icon192) {
+            appleIconLink.href = config.icons.icon192;
+        }
+
+        // Icon im Kunden-Theme-Button ersetzen
+        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
+        if (customerBtnImg && config.icons?.icon512) {
+            customerBtnImg.src = config.icons.icon512;
+        }
+        
+        // Brand-Farben als CSS-Variablen überschreiben
+        if (config.brandColors) {
+            document.documentElement.style.setProperty('--customer-primary-color', config.brandColors.primary);
+            document.documentElement.style.setProperty('--customer-secondary-color', config.brandColors.secondary);
+        }
+
+        // Theme aus der Konfiguration setzen
+        if (config.theme) {
+            document.body.setAttribute('data-theme', config.theme);
+        }
+    }
+    
+    // --- Initialization ---
     function init() {
         setupEventListeners();
-        setupTheme();
+        setupTheme(); // Theme-Switcher wird nach dem Anwenden der Config initialisiert
         setTodaysDate();
         checkNfcSupport();
         initCollapsibles();
@@ -65,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('unsupported');
             nfcFallback.classList.remove('hidden');
             nfcStatusBadge.disabled = true;
-            // if(writeNfcBtnBottom) writeNfcBtnBottom.disabled = true; // Entfernt
         }
     }
 
@@ -76,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         nfcStatusBadge.addEventListener('click', handleNfcAction);
-        // if(writeNfcBtnBottom) writeNfcBtnBottom.addEventListener('click', handleNfcAction); // Entfernt
 
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
@@ -97,6 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupTheme() {
         const themeButtons = document.querySelectorAll('.theme-btn');
         const THEME_KEY = 'thixx-theme';
+        
+        const storedTheme = localStorage.getItem(THEME_KEY);
+        // Die Konfiguration (config.theme) hat Vorrang, ansonsten wird der gespeicherte Wert oder der Standardwert ('dark') verwendet.
+        const initialTheme = document.body.getAttribute('data-theme') || storedTheme || 'dark';
 
         function applyTheme(themeName) {
             document.body.setAttribute('data-theme', themeName);
@@ -113,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         themeButtons.forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)));
-        applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+        applyTheme(initialTheme);
     }
 
     // --- UI Functions ---
@@ -240,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await ndef.scan({ signal: abortController.signal });
                 ndef.onreading = (event) => {
-                    abortNfcAction(); // Stop scanning immediately after first read
+                    abortNfcAction(); 
                     const firstRecord = event.message.records[0];
                     if (firstRecord && firstRecord.recordType === 'text') {
                         const textDecoder = new TextDecoder(firstRecord.encoding || 'utf-8');
@@ -259,10 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const readableError = getReadableError(error);
                 setNfcBadge('error', readableError);
                 showMessage(readableError, 'err');
-                // HINZUGEFÜGT: Starte den Cooldown auch bei einem Fehler
                 startCooldown(); 
             } else {
-                setNfcBadge('idle'); // Reset if user aborted
+                setNfcBadge('idle');
             }
         } finally {
             isNfcActionActive = false;
@@ -502,4 +565,3 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 });
-
