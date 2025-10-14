@@ -259,7 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const readableError = getReadableError(error);
                 setNfcBadge('error', readableError);
                 showMessage(readableError, 'err');
-                startCooldown(); // Start cooldown even on error to prevent rapid retries
+                // KEINEN Cooldown bei Fehler starten, um einen sofortigen neuen Versuch zu ermöglichen.
+                // startCooldown(); // Entfernt, um das Problem des "App-Wechsel-Dialogs" zu beheben
             } else {
                 setNfcBadge('idle'); // Reset if user aborted
             }
