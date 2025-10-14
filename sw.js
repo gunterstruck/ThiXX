@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thixx-v83'; // Version erhöht für die neuen Icons
+const CACHE_NAME = 'thixx-v84'; // Version erhöht für die neuen Icons
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',

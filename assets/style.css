@@ -1,10 +1,3 @@
-/* Globale Variablen für Kundenfarben, die von JS gesetzt werden */
-:root {
-    --customer-primary-color: #e45d45; /* Standardwert aus config.json */
-    --customer-secondary-color: #6c6b66; /* Standardwert aus config.json */
-}
-
-
 /* Dark Theme (Default) */
 :root, body[data-theme="dark"] {
     --primary-color: #f04e37;
@@ -45,16 +38,15 @@ body[data-theme="thixx"] {
 
 /* Customer Brand Theme */
 body[data-theme="customer-brand"] {
-    /* Farben werden von den globalen --customer-Variablen übernommen */
-    --primary-color: var(--customer-primary-color);
-    --primary-dark: color-mix(in srgb, var(--customer-primary-color) 85%, black);
-    --primary-light: color-mix(in srgb, var(--customer-primary-color) 85%, white);
-    --secondary-color: var(--customer-secondary-color);
-    --background-color: #FCFCFD;
+    --primary-color: var(--customer-primary-color, #d54b2a); /* Customer Red-Orange */
+    --primary-dark: #B03D23;
+    --primary-light: #E56B51;
+    --secondary-color: var(--customer-secondary-color, #6c6b66); /* Customer Grey */
+    --background-color: #FCFCFD; /* Customer Off-White */
     --surface-color: #FFFFFF;
     --surface-light: #f0f0f0;
     --border-color: #d1d1d1;
-    --text-color: #3d3d3d;
+    --text-color: #3d3d3d; /* Dark grey for better readability */
     --light-text-color: #787771;
     --success-color: #198754;
     --error-color: #dc3545;
@@ -175,6 +167,21 @@ body[data-theme="customer-brand"] { --surface-color-rgb: 255, 255, 255; --border
     transform: scale(1.1); 
     background-color: transparent;
     box-shadow: none;
+}
+
+/* Generelle Bild-Ausrichtung im Button */
+.theme-btn img {
+    vertical-align: middle; /* Stellt sicher, dass das Bild vertikal zentriert ist */
+}
+
+/* Spezifische Anpassung für das Customer-Icon, um die Ausrichtung zu korrigieren und es zu vergrößern */
+.theme-btn[data-theme="customer-brand"] img {
+    transform: translateY(1px) scale(1.2); /* Feinjustierung und Vergrößerung */
+    transition: transform 0.3s ease;
+}
+
+.theme-btn[data-theme="customer-brand"]:hover img {
+    transform: translateY(1px) scale(1.3); /* Etwas größerer Effekt beim Hover */
 }
 
 
@@ -484,7 +491,7 @@ body[data-theme="customer-brand"] .btn::before {
 .file-operations {
     display: flex;
     gap: 1rem;
-    margin-top: 2rem;
+    margin-top: 2rem; /* ANGEPASST: Sorgt für den richtigen Abstand nach oben */
     justify-content: center;
     flex-wrap: wrap;
 }
@@ -521,7 +528,7 @@ h2 {
     opacity: 0.5;
     font-size: 1.5rem;
     font-weight: 700;
-    text-align: center;
+    text-align: center; /* Überschrift zentriert */
 }
 
 .protocol-card {
@@ -541,7 +548,7 @@ h2 {
 .protocol-card .data-pair {
   transition: max-height 0.4s ease-in-out, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
   overflow: hidden;
-  max-height: 500px;
+  max-height: 500px; /* Large enough value to not clip content */
   opacity: 1;
 }
 
@@ -913,7 +920,9 @@ body[data-theme="customer-brand"] .btn.primary-btn {
   transition: opacity 200ms ease;
 }
 
+/* Overlay ausblenden, wenn der Container geöffnet ist */
 .collapsible.expanded .collapsible-overlay {
   opacity: 0;
-  pointer-events: none;
+  pointer-events: none; /* Macht das Element "durchklickbar", wenn es unsichtbar ist */
 }
+
