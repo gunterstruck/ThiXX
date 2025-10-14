@@ -41,13 +41,13 @@ body[data-theme="customer-brand"] {
     --primary-color: var(--customer-primary-color, #d54b2a); /* Customer Red-Orange */
     --primary-dark: #B03D23;
     --primary-light: #E56B51;
-    --secondary-color: var(--customer-secondary-color, #6c6b66); /* Customer Grey */
+    --secondary-color: var(--customer-secondary-color, #6c6b66); /* Customer Grey - Unified to #6c6b66 */
     --background-color: #FCFCFD; /* Customer Off-White */
     --surface-color: #FFFFFF;
     --surface-light: #f0f0f0;
     --border-color: #d1d1d1;
     --text-color: #3d3d3d; /* Dark grey for better readability */
-    --light-text-color: #787771;
+    --light-text-color: #6c6b66; /* UNIFIED to the requested grey */
     --success-color: #198754;
     --error-color: #dc3545;
     --disabled-color: #b5b5b5;
@@ -290,7 +290,7 @@ h1.logo {
 }
 
 body[data-theme="customer-brand"] .nfc-badge.info {
-    background: linear-gradient(135deg, #8e8d88 0%, #787771 100%);
+    background: linear-gradient(135deg, #84837e 0%, var(--secondary-color) 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
@@ -850,7 +850,7 @@ body[data-theme="customer-brand"] .message-banner.info {
     background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
 }
 
-/* BORDER AND COLOR CONSISTENCY STYLES FOR CUSTOMER THEME */
+/* BORDER AND COLOR CONSISTENCY STYLES - ONLY FOR CUSTOMER THEME */
 body[data-theme="customer-brand"] header,
 body[data-theme="customer-brand"] .tabs,
 body[data-theme="customer-brand"] .tab-content {

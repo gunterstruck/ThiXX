@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
             appName: "SIGX NFC Tool",
             theme: "customer-brand",
             icons: {
-                icon192: "/ThiXX/assets/icon-192.png", // Geändert zum originalen Icon
-                icon512: "/ThiXX/assets/icon-512.png"  // Geändert zum originalen Icon
+                icon192: "/ThiXX/assets/icon-192.png",
+                icon512: "/ThiXX/assets/icon-512.png"
             },
             brandColors: {
                 primary: "#e45d45",
@@ -26,15 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-
-    // --- Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' })
-                .then(reg => console.log('Service Worker registered:', reg.scope))
-                .catch(err => console.error('Service Worker registration failed:', err));
-        });
-    }
 
     // --- DOM Element References ---
     const tabs = document.querySelectorAll('.tab-link');
@@ -52,30 +43,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
     const readActions = document.getElementById('read-actions');
-    
+
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
     const ACTION_COOLDOWN_MS = 2000;
 
     // --- State Variables ---
-    let scannedDataObject = null;
     let isNfcActionActive = false;
     let isCooldownActive = false;
     let abortController = null;
+    let scannedDataObject = null;
 
-    // --- Initialization ---
-    init();
+    // --- App Initialization ---
+    // Start by fetching the config to avoid race conditions
+    fetch('/ThiXX/config.json')
+      .then(res => res.json())
+      .then(config => {
+          // Once config is loaded, initialize the entire app
+          initializeApp(config);
+      })
+      .catch(err => {
+          console.warn('Keine Konfigurationsdatei gefunden, Standardwerte werden verwendet.', err);
+          // Fallback to a default config if fetch fails
+          const defaultConfig = { design: "default" };
+          initializeApp(defaultConfig);
+      });
 
-    function init() {
-        loadAndApplyConfig(); // Lädt die Konfiguration zuerst
+    function initializeApp(config) {
+        applyConfig(config);
         setupEventListeners();
-        setupThemeSwitcher(); // Separater Theme-Switcher
         setTodaysDate();
         checkNfcSupport();
         initCollapsibles();
         setupReadTabInitialState();
     }
     
+    // --- Service Worker ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' })
+                .then(reg => console.log('Service Worker registered:', reg.scope))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        });
+    }
+
     function setupReadTabInitialState() {
         protocolCard.innerHTML = `<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`;
         readActions.classList.add('hidden');
@@ -95,20 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Event Listeners ---
     function setupEventListeners() {
         tabs.forEach(tab => {
             tab.addEventListener('click', () => switchTab(tab.dataset.tab));
         });
-
         nfcStatusBadge.addEventListener('click', handleNfcAction);
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
-
         form.addEventListener('input', updatePayloadOnChange);
         form.addEventListener('change', updatePayloadOnChange);
-
         document.getElementById('has_PT100').addEventListener('change', (e) => {
             document.getElementById('PT 100').disabled = !e.target.checked;
         });
@@ -117,28 +124,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Theme Switcher (manuelle Steuerung) ---
-    function setupThemeSwitcher() {
-        const themeButtons = document.querySelectorAll('.theme-btn');
-        const THEME_KEY = 'thixx-theme';
+    // --- Dynamic Configuration & Theming ---
+    function applyConfig(config) {
+        const selectedDesign = designs[config.design] || designs['default'];
 
-        function manuallyApplyTheme(themeName) {
-            document.body.setAttribute('data-theme', themeName);
-            localStorage.setItem(THEME_KEY, themeName);
-            themeButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === themeName);
-            });
-            
-            // Logik für manuelle Farbanpassung, falls nötig
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': designs.sigx.manifestThemeColor };
-                metaThemeColor.setAttribute('content', colors[themeName] || '#0f172a');
-            }
+        // App-Name
+        document.title = selectedDesign.appName;
+
+        // Theme
+        applyTheme(selectedDesign.theme);
+
+        // Icons
+        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
+        if (customerBtnImg && selectedDesign.icons && selectedDesign.icons.icon512) {
+            customerBtnImg.src = selectedDesign.icons.icon512;
+        }
+        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleIcon && selectedDesign.icons && selectedDesign.icons.icon192) {
+            appleIcon.href = selectedDesign.icons.icon192;
         }
 
-        themeButtons.forEach(btn => btn.addEventListener('click', () => manuallyApplyTheme(btn.dataset.theme)));
+        // Manifest
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+            const newManifest = {
+                name: selectedDesign.appName,
+                short_name: selectedDesign.appName.split(' ')[0],
+                start_url: "/ThiXX/index.html",
+                scope: "/ThiXX/",
+                display: "standalone",
+                background_color: "#ffffff",
+                theme_color: selectedDesign.brandColors.primary || "#f04e37",
+                orientation: "portrait-primary",
+                icons: [{
+                    src: selectedDesign.icons.icon192, sizes: "192x192", type: "image/png"
+                }, {
+                    src: selectedDesign.icons.icon512, sizes: "512x512", type: "image/png"
+                }]
+            };
+            const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' });
+            manifestLink.href = URL.createObjectURL(blob);
+        }
+
+        // Brand Colors
+        if (selectedDesign.brandColors.primary) {
+            document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary);
+        }
+        if (selectedDesign.brandColors.secondary) {
+            document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary);
+        }
     }
+
+    function applyTheme(themeName) {
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        document.body.setAttribute('data-theme', themeName);
+        localStorage.setItem('thixx-theme', themeName);
+        themeButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === themeName);
+        });
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' };
+            metaThemeColor.setAttribute('content', colors[themeName] || '#0f172a');
+        }
+    }
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+    });
 
     // --- UI Functions ---
     function switchTab(tabId) {
@@ -147,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContents.forEach(content => content.classList.remove('active'));
         document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
-        
         setNfcBadge('idle');
         if (tabId === 'write-tab') {
             updatePayloadOnChange();
@@ -182,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cooldown: ['Bitte warten...', 'info']
         };
         const [text, className] = states[state] || states['idle'];
-        
         nfcStatusBadge.textContent = text;
         nfcStatusBadge.className = 'nfc-badge';
         nfcStatusBadge.classList.add(className);
@@ -201,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return errorMap[error.name] || error.message || 'Unbekannter Fehler';
     }
 
-    // --- Cooldown Logic ---
     function startCooldown() {
         isCooldownActive = true;
         setNfcBadge('cooldown');
@@ -225,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('Bitte kurz warten...', 'info', 1500);
             return;
         }
-
         if (!('NDEFReader' in window)) {
             showMessage('Web NFC wird auf diesem Gerät nicht unterstützt.', 'err');
             return;
@@ -239,14 +288,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const ndef = new NDEFReader();
             
             if (isWriteMode) {
+                // WRITE LOGIC
                 setNfcBadge('writing');
                 showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...', 'info');
                 
                 generateAndShowPayload();
                 const payload = payloadOutput.value;
-                const byteCount = new TextEncoder().encode(payload).length;
-
-                if (byteCount > MAX_PAYLOAD_BYTES) {
+                if (new TextEncoder().encode(payload).length > MAX_PAYLOAD_BYTES) {
                     throw new Error('Daten sind zu groß für den NFC-Tag.');
                 }
 
@@ -257,16 +305,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 startCooldown();
 
             } else {
+                // READ LOGIC (REFACTORED FOR STABILITY)
                 setNfcBadge('scanning');
                 showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...', 'info');
 
-                await ndef.scan({ signal: abortController.signal });
-                ndef.onreading = (event) => {
+                await new Promise((resolve, reject) => {
+                    const onAbort = () => {
+                        ndef.onreading = null;
+                        ndef.onreadingerror = null;
+                        reject(new DOMException('Vorgang abgebrochen.', 'AbortError'));
+                    };
+                    abortController.signal.addEventListener('abort', onAbort, { once: true });
+
+                    ndef.onreading = (event) => {
+                        abortController.signal.removeEventListener('abort', onAbort);
+                        resolve(event);
+                    };
+                    ndef.onreadingerror = (event) => {
+                        abortController.signal.removeEventListener('abort', onAbort);
+                        console.error("NFC Reading Error:", event);
+                        reject(new DOMException('Tag konnte nicht gelesen werden.', 'NotReadableError'));
+                    };
+                    
+                    ndef.scan({ signal: abortController.signal }).catch(err => {
+                         abortController.signal.removeEventListener('abort', onAbort);
+                         reject(err);
+                    });
+
+                }).then((event) => {
                     abortNfcAction();
                     const firstRecord = event.message.records[0];
                     if (firstRecord && firstRecord.recordType === 'text') {
-                        const textDecoder = new TextDecoder(firstRecord.encoding || 'utf-8');
-                        const text = textDecoder.decode(firstRecord.data);
+                        const text = new TextDecoder().decode(firstRecord.data);
                         processNfcData(text);
                         setNfcBadge('success', 'Tag gelesen!');
                         showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
@@ -274,17 +344,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error('Kein Text auf dem Tag gefunden.');
                     }
                     startCooldown();
-                };
+                });
             }
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                const readableError = getReadableError(error);
-                setNfcBadge('error', readableError);
-                showMessage(readableError, 'err');
-                startCooldown(); 
-            } else {
-                setNfcBadge('idle');
-            }
+            abortNfcAction();
+            const readableError = getReadableError(error);
+            setNfcBadge('error', readableError);
+            showMessage(readableError, 'err');
+            startCooldown();
         } finally {
             isNfcActionActive = false;
         }
@@ -491,7 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
     
-    // --- Collapsible helpers ---
     function makeCollapsible(el) {
         if (!el || el.dataset.collapsibleApplied) return;
         el.dataset.collapsibleApplied = 'true';
@@ -513,7 +579,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Field Mappings ---
     const fieldMap = {
         'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 
         'Widerstand': 'R', 'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 
@@ -523,7 +588,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const reverseFieldMap = Object.fromEntries(Object.entries(fieldMap).map(([k, v]) => [v, k]));
 });
-
-
-
 

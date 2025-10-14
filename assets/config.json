@@ -1,5 +1,5 @@
 {
-  "_comment": "Trage hier das gewünschte Design ein. Verfügbare Optionen: 'sigx', 'default'",
-  "design": "sigx"
+  "_comment": "Verfügbare Designs: 'default', 'sigx'",
+  "design": "default"
 }
 
