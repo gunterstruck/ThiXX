@@ -1,24 +1,24 @@
 {
-"name": "ThiXX",
-"short_name": "ThiXX",
-"start_url": "/ThiXX/index.html",
-"scope": "/ThiXX/",
-"display": "standalone",
-"background_color": "#ffffff",
-"theme_color": "#f04e37",
-"orientation": "portrait-primary",
-"icons": [
-{
-"src": "/ThiXX/assets/icon-192.png",
-"sizes": "192x192",
-"type": "image/png",
-"purpose": "any maskable"
-},
-{
-"src": "/ThiXX/assets/icon-512.png",
-"sizes": "512x512",
-"type": "image/png",
-"purpose": "any maskable"
-}
-]
+  "name": "ThiXX",
+  "short_name": "ThiXX",
+  "start_url": "/ThiXX/index.html",
+  "scope": "/ThiXX/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f04e37",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/ThiXX/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ThiXX/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
