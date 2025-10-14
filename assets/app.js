@@ -27,17 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 secondary: "#6c6b66"
             }
         },
-        'example_customer': { // WIEDER EINGEFÜGT: Vorlage für neue Kunden
+        'example_customer': {
             appName: "Kunden-App Alpha",
-            theme: "customer-brand", // Kann ein existierendes Theme wiederverwenden
-            lockTheme: true, // Echte White-Label-Version ohne Theme-Auswahl
+            theme: "customer-brand",
+            lockTheme: true,
             icons: {
-                // Pfade zu den Icons für diesen Kunden anpassen
                 icon192: "/ThiXX/assets/icon-192.png",
                 icon512: "/ThiXX/assets/icon-512.png"
             },
             brandColors: {
-                primary: "#3b82f6", // Beispiel: Ein Blauton
+                primary: "#3b82f6",
                 secondary: "#64748b"
             }
         }
@@ -61,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const readActions = document.getElementById('read-actions');
     const themeSwitcher = document.querySelector('.theme-switcher');
 
-
     // --- State Variables ---
     let isNfcActionActive = false;
     let isCooldownActive = false;
@@ -69,13 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let scannedDataObject = null;
 
     // --- App Initialization ---
+    // Verbessertes Laden der Konfiguration
     fetch('/ThiXX/config.json')
-      .then(res => res.json())
+      .then(res => {
+          if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+      })
       .then(config => {
+          console.log("Konfiguration erfolgreich geladen:", config);
           initializeApp(config);
       })
       .catch(err => {
-          console.warn('Keine Konfigurationsdatei gefunden, Standardwerte werden verwendet.', err);
+          console.warn('Konfigurationsdatei konnte nicht geladen werden, Standardwerte (default) werden verwendet.', err);
           initializeApp({ design: "default" });
       });
 
@@ -118,10 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Dynamic Configuration & Theming ---
     function applyConfig(config) {
         const selectedDesign = designs[config.design] || designs['default'];
-
         document.title = selectedDesign.appName;
         updateManifest(selectedDesign);
-
         applyTheme(selectedDesign.theme);
 
         if (selectedDesign.lockTheme) {
@@ -150,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateManifest(design) {
         const manifestLink = document.querySelector('link[rel="manifest"]');
         if (!manifestLink) return;
-
         const newManifest = {
             name: design.appName,
             short_name: design.appName.split(' ')[0],
@@ -174,9 +176,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const themeButtons = document.querySelectorAll('.theme-btn');
         document.body.setAttribute('data-theme', themeName);
         localStorage.setItem('thixx-theme', themeName);
+        
+        // Stellt sicher, dass der korrekte Button die 'active' Klasse erhält
         themeButtons.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.theme === themeName);
         });
+        
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
             const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' };
@@ -188,16 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
     });
 
-    // --- UI Functions ---
+    // --- Rest of the UI, NFC, and utility functions remain unchanged ---
     function setupReadTabInitialState() {
         protocolCard.innerHTML = `<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`;
         readActions.classList.add('hidden');
     }
-
     function initCollapsibles() {
         document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el));
     }
-
     function checkNfcSupport() {
         if ('NDEFReader' in window) {
             setNfcBadge('idle');
@@ -207,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nfcStatusBadge.disabled = true;
         }
     }
-    
     function switchTab(tabId) {
         abortNfcAction();
         tabs.forEach(tab => tab.classList.remove('active'));
@@ -219,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePayloadOnChange();
         }
     }
-
     function showMessage(text, type = 'info', duration = 4000) {
         messageBanner.textContent = text;
         messageBanner.className = 'message-banner';
@@ -227,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBanner.classList.remove('hidden');
         setTimeout(() => messageBanner.classList.add('hidden'), duration);
     }
-
     function setTodaysDate() {
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -235,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('am').value = `${yyyy}-${mm}-${dd}`;
     }
-
     function setNfcBadge(state, message = '') {
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');
         const states = {
@@ -252,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         nfcStatusBadge.className = 'nfc-badge';
         nfcStatusBadge.classList.add(className);
     }
-    
     function getReadableError(error) {
         const errorMap = {
             'NotAllowedError': 'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.',
@@ -265,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return errorMap[error.name] || error.message || 'Unbekannter Fehler';
     }
-
     function startCooldown() {
         isCooldownActive = true;
         setNfcBadge('cooldown');
@@ -274,8 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('idle');
         }, 2000);
     }
-
-    // --- NFC Logic ---
     function abortNfcAction() {
         if (abortController) {
             abortController.abort();
@@ -283,24 +278,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         isNfcActionActive = false;
     }
-
     async function handleNfcAction() {
-        if (isNfcActionActive || isCooldownActive) {
-            showMessage('Bitte kurz warten...', 'info', 1500);
-            return;
-        }
+        if (isNfcActionActive || isCooldownActive) { return; }
         if (!('NDEFReader' in window)) {
             showMessage('Web NFC wird auf diesem Gerät nicht unterstützt.', 'err');
             return;
         }
-        
         isNfcActionActive = true;
         abortController = new AbortController();
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');
-
         try {
             const ndef = new NDEFReader();
-            
             if (isWriteMode) {
                 setNfcBadge('writing');
                 showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...', 'info');
@@ -317,25 +305,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 setNfcBadge('scanning');
                 showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...', 'info');
                 await new Promise((resolve, reject) => {
-                    const onAbort = () => {
-                        ndef.onreading = null;
-                        ndef.onreadingerror = null;
-                        reject(new DOMException('Vorgang abgebrochen.', 'AbortError'));
-                    };
+                    const onAbort = () => { ndef.onreading = null; ndef.onreadingerror = null; reject(new DOMException('Vorgang abgebrochen.', 'AbortError')); };
                     abortController.signal.addEventListener('abort', onAbort, { once: true });
-                    ndef.onreading = (event) => {
-                        abortController.signal.removeEventListener('abort', onAbort);
-                        resolve(event);
-                    };
-                    ndef.onreadingerror = (event) => {
-                        abortController.signal.removeEventListener('abort', onAbort);
-                        console.error("NFC Reading Error:", event);
-                        reject(new DOMException('Tag konnte nicht gelesen werden.', 'NotReadableError'));
-                    };
-                    ndef.scan({ signal: abortController.signal }).catch(err => {
-                         abortController.signal.removeEventListener('abort', onAbort);
-                         reject(err);
-                    });
+                    ndef.onreading = (event) => { abortController.signal.removeEventListener('abort', onAbort); resolve(event); };
+                    ndef.onreadingerror = (event) => { abortController.signal.removeEventListener('abort', onAbort); reject(new DOMException('Tag konnte nicht gelesen werden.', 'NotReadableError')); };
+                    ndef.scan({ signal: abortController.signal }).catch(err => { abortController.signal.removeEventListener('abort', onAbort); reject(err); });
                 }).then((event) => {
                     abortNfcAction();
                     const firstRecord = event.message.records[0];
@@ -344,9 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         processNfcData(text);
                         setNfcBadge('success', 'Tag gelesen!');
                         showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
-                    } else {
-                        throw new Error('Kein Text auf dem Tag gefunden.');
-                    }
+                    } else { throw new Error('Kein Text auf dem Tag gefunden.'); }
                     startCooldown();
                 });
             }
@@ -360,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
             isNfcActionActive = false;
         }
     }
-
     function processNfcData(text) {
         rawDataOutput.value = text;
         try {
@@ -374,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
             scannedDataObject = null;
         }
     }
-    
     function parseNfcText(text) {
         const data = {};
         text = text.trim();
@@ -391,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         throw new Error("Kein bekanntes Format erkannt.");
     }
-    
     function displayParsedData(data) {
         protocolCard.innerHTML = `
             <div class="card-main">
@@ -424,7 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     }
-
     function createDataPair(label, value, unit = '') {
         if (!value) return '';
         return `
@@ -434,14 +402,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     }
-
-    // --- Form & Data Handling ---
     function updatePayloadOnChange() {
         if (document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active')) {
             generateAndShowPayload();
         }
     }
-    
     function generateAndShowPayload() {
         const formData = getFormData();
         const payload = formatToCompact(formData);
@@ -450,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
         payloadSize.textContent = `${byteCount} / 880 Bytes`;
         payloadSize.classList.toggle('limit-exceeded', byteCount > 880);
     }
-    
     function getFormData() {
         const formData = new FormData(form);
         const data = {};
@@ -463,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
         delete data['has_NiCr-Ni'];
         return data;
     }
-
     function formatToCompact(data) {
         let compactString = 'v1';
         const parts = [];
@@ -473,21 +436,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (parts.length > 0) compactString += '\n' + parts.join('\n');
         return compactString;
     }
-    
     function populateFormFromScan() {
-        if (!scannedDataObject) {
-            showMessage('Keine Daten zum Übernehmen vorhanden.', 'err');
-            return;
-        }
+        if (!scannedDataObject) { showMessage('Keine Daten zum Übernehmen vorhanden.', 'err'); return; }
         form.reset();
         setTodaysDate();
         for (const [key, value] of Object.entries(scannedDataObject)) {
             const input = form.elements[key];
             if (input) {
                 if (input.type === 'radio') {
-                    form.querySelectorAll(`input[name="${key}"]`).forEach(radio => {
-                        if (radio.value === value) radio.checked = true;
-                    });
+                    form.querySelectorAll(`input[name="${key}"]`).forEach(radio => { if (radio.value === value) radio.checked = true; });
                 } else if (input.type === 'checkbox') {
                     input.checked = (value === 'true' || value === 'on');
                 } else {
@@ -519,7 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('write-form-container').classList.add('expanded');
         showMessage('Daten in Formular übernommen.', 'ok');
     }
-
     function saveFormAsJson() {
         const data = getFormData();
         const jsonString = JSON.stringify(data, null, 2);
@@ -535,7 +491,6 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
         showMessage('Daten als JSON gespeichert.', 'ok');
     }
-
     function loadJsonIntoForm(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -554,28 +509,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
     }
-    
     function makeCollapsible(el) {
         if (!el || el.dataset.collapsibleApplied) return;
         el.dataset.collapsibleApplied = 'true';
-        const toggle = () => {
-            if (el.classList.contains('expanded')) return;
-            el.classList.add('expanded');
-        };
+        const toggle = () => { if (el.classList.contains('expanded')) return; el.classList.add('expanded'); };
         const overlay = el.querySelector('.collapsible-overlay');
-        if (overlay) {
-            overlay.addEventListener('click', (e) => {
-                e.preventDefault(); e.stopPropagation(); toggle();
-            });
-        }
+        if (overlay) { overlay.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); }); }
         el.addEventListener('click', (e) => {
             const tag = (e.target.tagName || '').toLowerCase();
-            if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || 
-                e.target.closest('.collapsible-overlay')) return;
+            if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) return;
             toggle();
         });
     }
-
     const fieldMap = {
         'HK.Nr.': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 
         'Widerstand': 'R', 'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 
