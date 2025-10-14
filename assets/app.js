@@ -19,20 +19,20 @@ document.addEventListener('DOMContentLoaded', () => {
             theme: "customer-brand",
             lockTheme: true, // Blendet den Theme-Umschalter aus -> ECHTES WHITE-LABEL
             icons: {
-                icon192: "/ThiXX/assets/THiXX_Icon_192x192.png",
-                icon512: "/ThiXX/assets/THiXX_Icon_512x512.png"
+                icon192: "/ThiXX/assets/icon-192.png",
+                icon512: "/ThiXX/assets/icon-512.png"
             },
             brandColors: {
                 primary: "#e45d45",
                 secondary: "#6c6b66"
             }
         },
-        'example_customer': { // NEUES BEISPIEL
+        'example_customer': { // WIEDER EINGEFÜGT: Vorlage für neue Kunden
             appName: "Kunden-App Alpha",
             theme: "customer-brand", // Kann ein existierendes Theme wiederverwenden
             lockTheme: true, // Echte White-Label-Version ohne Theme-Auswahl
             icons: {
-                // Verwendet die ursprünglich gewünschten Icons
+                // Pfade zu den Icons für diesen Kunden anpassen
                 icon192: "/ThiXX/assets/icon-192.png",
                 icon512: "/ThiXX/assets/icon-512.png"
             },
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Element References ---
     const tabs = document.querySelectorAll('.tab-link');
-    // ... (rest of the variable declarations remain the same)
+    const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
@@ -98,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
-        // ... (event listeners remain the same)
         tabs.forEach(tab => {
             tab.addEventListener('click', () => switchTab(tab.dataset.tab));
         });
@@ -120,21 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyConfig(config) {
         const selectedDesign = designs[config.design] || designs['default'];
 
-        // App-Name & PWA Manifest
         document.title = selectedDesign.appName;
         updateManifest(selectedDesign);
 
-        // Theme anwenden
         applyTheme(selectedDesign.theme);
 
-        // White-Label-Logik: Theme-Umschalter ausblenden, wenn das Theme gesperrt ist
         if (selectedDesign.lockTheme) {
             if (themeSwitcher) themeSwitcher.classList.add('hidden');
         } else {
             if (themeSwitcher) themeSwitcher.classList.remove('hidden');
         }
 
-        // Icons
         const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
         if (customerBtnImg && selectedDesign.icons && selectedDesign.icons.icon512) {
             customerBtnImg.src = selectedDesign.icons.icon512;
@@ -144,11 +139,10 @@ document.addEventListener('DOMContentLoaded', () => {
             appleIcon.href = selectedDesign.icons.icon192;
         }
 
-        // Brand Colors
-        if (selectedDesign.brandColors.primary) {
+        if (selectedDesign.brandColors && selectedDesign.brandColors.primary) {
             document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary);
         }
-        if (selectedDesign.brandColors.secondary) {
+         if (selectedDesign.brandColors && selectedDesign.brandColors.secondary) {
             document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary);
         }
     }
@@ -177,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyTheme(themeName) {
-        // ... (rest of the function remains the same)
         const themeButtons = document.querySelectorAll('.theme-btn');
         document.body.setAttribute('data-theme', themeName);
         localStorage.setItem('thixx-theme', themeName);
@@ -191,12 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event Listener für Theme-Buttons bleibt, falls White-Labeling nicht aktiv ist
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
     });
 
-    // ... (rest of the app.js code like NFC handling, UI functions, etc. remains the same)
     // --- UI Functions ---
     function setupReadTabInitialState() {
         protocolCard.innerHTML = `<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`;
@@ -220,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchTab(tabId) {
         abortNfcAction();
         tabs.forEach(tab => tab.classList.remove('active'));
-        // ... (rest of function)
+        tabContents.forEach(content => content.classList.remove('active'));
         document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
         document.getElementById(tabId).classList.add('active');
         setNfcBadge('idle');
@@ -230,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showMessage(text, type = 'info', duration = 4000) {
-        // ... (function remains the same)
         messageBanner.textContent = text;
         messageBanner.className = 'message-banner';
         messageBanner.classList.add(type);
@@ -239,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setTodaysDate() {
-        // ... (function remains the same)
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -248,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setNfcBadge(state, message = '') {
-        // ... (function remains the same)
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');
         const states = {
             unsupported: ['NFC nicht unterstützt', 'err'],
@@ -266,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getReadableError(error) {
-        // ... (function remains the same)
         const errorMap = {
             'NotAllowedError': 'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.',
             'NotSupportedError': 'NFC wird nicht unterstützt.',
@@ -280,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function startCooldown() {
-        // ... (function remains the same)
         isCooldownActive = true;
         setNfcBadge('cooldown');
         setTimeout(() => {
@@ -291,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NFC Logic ---
     function abortNfcAction() {
-        // ... (function remains the same)
         if (abortController) {
             abortController.abort();
             abortController = null;
@@ -300,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleNfcAction() {
-        // ... (NFC logic remains the same)
         if (isNfcActionActive || isCooldownActive) {
             showMessage('Bitte kurz warten...', 'info', 1500);
             return;
@@ -378,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function processNfcData(text) {
-        // ... (function remains the same)
         rawDataOutput.value = text;
         try {
             scannedDataObject = parseNfcText(text);
@@ -393,7 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function parseNfcText(text) {
-        // ... (function remains the same)
         const data = {};
         text = text.trim();
         if (text.startsWith('v1')) {
@@ -411,7 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function displayParsedData(data) {
-        // ... (function remains the same)
         protocolCard.innerHTML = `
             <div class="card-main">
                 ${createDataPair('HK.Nr.', data['HK.Nr.'])}
@@ -445,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createDataPair(label, value, unit = '') {
-        // ... (function remains the same)
         if (!value) return '';
         return `
             <div class="data-pair">
@@ -457,14 +437,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Form & Data Handling ---
     function updatePayloadOnChange() {
-        // ... (function remains the same)
         if (document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active')) {
             generateAndShowPayload();
         }
     }
     
     function generateAndShowPayload() {
-        // ... (function remains the same)
         const formData = getFormData();
         const payload = formatToCompact(formData);
         payloadOutput.value = payload;
@@ -474,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getFormData() {
-        // ... (function remains the same)
         const formData = new FormData(form);
         const data = {};
         for (const [key, value] of formData.entries()) {
@@ -488,7 +465,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatToCompact(data) {
-        // ... (function remains the same)
         let compactString = 'v1';
         const parts = [];
         for (const [key, shortKey] of Object.entries(fieldMap)) {
@@ -499,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populateFormFromScan() {
-        // ... (function remains the same)
         if (!scannedDataObject) {
             showMessage('Keine Daten zum Übernehmen vorhanden.', 'err');
             return;
@@ -546,7 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveFormAsJson() {
-        // ... (function remains the same)
         const data = getFormData();
         const jsonString = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -563,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadJsonIntoForm(event) {
-        // ... (function remains the same)
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -583,7 +556,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function makeCollapsible(el) {
-        // ... (function remains the same)
         if (!el || el.dataset.collapsibleApplied) return;
         el.dataset.collapsibleApplied = 'true';
         const toggle = () => {
