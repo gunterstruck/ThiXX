@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thixx-v74-final-cut'; // Finale Version, um alles zu überschreiben
+const CACHE_NAME = 'thixx-v80'; // Finale Version, um alles zu überschreiben
 const ASSETS_TO_CACHE = [
     // WICHTIG: Pfade müssen exakt mit der Server-Struktur übereinstimmen
     '/ThiXX/index.html',
