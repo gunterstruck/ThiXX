@@ -1,85 +1,67 @@
-const CACHE_NAME = 'thixx-v73-fresh-start'; // KORREKTUR: Neue Version, um alles neu zu laden
+const CACHE_NAME = 'thixx-v74-final-cut'; // Finale Version, um alles zu überschreiben
 const ASSETS_TO_CACHE = [
+    // WICHTIG: Pfade müssen exakt mit der Server-Struktur übereinstimmen
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
     '/ThiXX/assets/config.js',
-
-    // Original-Icons
     '/ThiXX/assets/icon-192.png',
     '/ThiXX/assets/icon-512.png',
-
-    // Neue Icons
     '/ThiXX/assets/THiXX_Icon_192x192.png',
-    '/ThiXX/assets/THiXX_Icon_512x512.png'
+    '/ThiXX/assets/THiXX_Icon_512x512.jpg' // Korrekter Dateityp .jpg
 ];
 
-// Install event: precache all essential assets.
+// Install event: Neues Caching
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
-                console.log('[Service Worker] Caching app shell for new version.');
-                return cache.addAll(ASSETS_TO_CACHE);
+                console.log('[Service Worker] Caching app shell for FINAL version.');
+                // Wir fügen eine "no-cache" Anweisung hinzu, um sicherzugehen, dass die Dateien frisch vom Server geholt werden
+                const requests = ASSETS_TO_CACHE.map(url => new Request(url, {cache: 'no-cache'}));
+                return cache.addAll(requests);
             })
             .then(() => {
-                console.log('[Service Worker] New shell cached. Activating now.');
-                return self.skipWaiting(); // Zwingt den neuen Service Worker zur sofortigen Aktivierung
+                console.log('[Service Worker] New shell cached. Activating immediately.');
+                return self.skipWaiting();
             })
     );
 });
 
-// Activate event: clean up ALL old caches.
+// Activate event: Radikales Aufräumen
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    // KORREKTUR: Wir löschen JEDEN Cache, der nicht exakt der neuen Version entspricht
                     if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Deleting old cache:', cacheName);
+                        console.log('[Service Worker] Deleting ALL old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
-            console.log('[Service Worker] Old caches deleted. Claiming clients.');
-            return self.clients.claim(); // Übernimmt die Kontrolle über alle offenen Tabs
+            console.log('[Service Worker] Claiming clients now.');
+            return self.clients.claim();
         })
     );
 });
 
-// Fetch event: Network falling back to Cache strategy
+// Fetch event: Network First, dann Cache
 self.addEventListener('fetch', (event) => {
-    const { request } = event;
-    if (request.method !== 'GET') return;
-
     event.respondWith(
-        fetch(request)
+        fetch(event.request, {cache: 'no-cache'}) // Immer zuerst das Netzwerk versuchen
             .then((networkResponse) => {
-                // Bei Erfolg: Cache aktualisieren
                 const responseToCache = networkResponse.clone();
                 caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(request, responseToCache);
+                    cache.put(event.request, responseToCache);
                 });
                 return networkResponse;
             })
-            .catch(() => {
-                // Bei Fehler: Aus dem Cache bedienen
-                return caches.match(request).then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    // Wenn nicht im Cache und Navigation: Offline-Seite zeigen
-                    if (request.mode === 'navigate') {
-                        return caches.match('/ThiXX/offline.html');
-                    }
-                    // Andernfalls gibt es keine Antwort
-                    return new Response("Network error and not in cache", {
-                        status: 404,
-                        statusText: "Not Found"
-                    });
+            .catch(() => { // Nur wenn das Netzwerk fehlschlägt, den Cache verwenden
+                return caches.match(event.request).then((cachedResponse) => {
+                    return cachedResponse || caches.match('/ThiXX/offline.html');
                 });
             })
     );
