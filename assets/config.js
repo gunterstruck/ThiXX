@@ -27,7 +27,7 @@ const AppConfig = {
         `
       },
       icons: {
-        // Hier werden die ursprünglichen Icons verwendet.
+        // Hier werden die ursprünglichen, ersten Icons verwendet.
         '192': '/ThiXX/assets/THiXX_Icon_192x192.png',
         '512': '/ThiXX/assets/THiXX_Icon_512x512.png'
       }
@@ -42,15 +42,15 @@ const AppConfig = {
       // Das Logo ist hier ein einfacher Verweis auf eine Bilddatei.
       logo: {
         type: 'image', 
-        // WICHTIG: Sie können hier den Pfad zu einem spezifischen Logo-Bild angeben.
-        // Zum Beispiel: '/ThiXX/assets/thixx-logo.png'
-        value: '/ThiXX/assets/THiXX_Icon_512x512.png' // Verwendet das neue Icon als Logo
+        // KORRIGIERT: Der Pfad verweist jetzt wie gewünscht auf eine .png-Datei.
+        value: '/ThiXX/assets/THiXX_Icon_512x512.png'
       },
       
       // Hier werden die neuen App-Icons verwendet, die Sie hochgeladen haben.
       icons: {
-        '192': '/ThiXX/assets/icon-192x192.png',
-        '512': '/ThiXX/assets/icon-512x512.png'
+        // KORRIGIERT: Die Pfade verweisen jetzt wie gewünscht auf die .png-Dateien.
+        '192': '/ThiXX/assets/icon-192.png',
+        '512': '/ThiXX/assets/icon-512.png'
       }
     }
   ]

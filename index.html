@@ -4,28 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ThiXX - NFC PWA</title>
-    <link rel="manifest" href="/ThiXX/manifest.webmanifest">
+    <!-- Das Manifest wird dynamisch durch app.js eingefügt -->
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
-    <link rel="apple-touch-icon" href="/ThiXX/assets/icon-192.png">
+    <!-- Das Apple Touch Icon wird ebenfalls dynamisch gesetzt -->
     <meta name="theme-color" content="#0f172a">
 </head>
 <body>
     <div class="container">
         <header>
             <div class="header-content">
-                <h1 class="logo">
-                  <span class="logo-orange">T</span>
-                  <span class="logo-orange">H</span>
-                  <span class="i-letter">
-                    <span class="i-dot"></span>
-                  </span>
-                  <span class="logo-gray">XX</span>
-                </h1>
+                <!-- LOGO WIRD DYNAMISCH HIER EINGEFÜGT -->
+                <div id="logo-container"></div>
                 <div class="theme-switcher">
                     <button class="theme-btn active" data-theme="dark" title="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" title="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" title="Kunden-Design">
-                        <img src="/ThiXX/assets/icon-512.png" alt="Kunden-Design" width="29" height="29">
+                         <!-- KUNDEN-ICON WIRD DYNAMISCH HIER EINGEFÜGT -->
+                        <div id="customer-theme-icon-container" style="width:29px; height:29px; display:flex; justify-content:center; align-items:center;"></div>
                     </button>
                 </div>
             </div>
@@ -130,6 +125,8 @@
             </div>
         </footer>
     </div>
+    <!-- WICHTIG: config.js MUSS VOR app.js geladen werden -->
+    <script src="/ThiXX/assets/config.js"></script>
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>

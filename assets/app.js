@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
-    const writeNfcBtnBottom = document.getElementById('write-nfc-btn-bottom');
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
     const loadJsonInput = document.getElementById('load-json-input');
@@ -26,10 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const protocolCard = document.getElementById('protocol-card');
     const rawDataOutput = document.getElementById('raw-data-output');
     const readActions = document.getElementById('read-actions');
+    const logoContainer = document.getElementById('logo-container');
+    const customerThemeIconContainer = document.getElementById('customer-theme-icon-container');
     
     // --- Constants ---
     const MAX_PAYLOAD_BYTES = 880;
-    const ACTION_COOLDOWN_MS = 2000; // 2 Sekunden Pause nach erfolgreicher Aktion
+    const ACTION_COOLDOWN_MS = 2000;
 
     // --- State Variables ---
     let scannedDataObject = null;
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     function init() {
+        initBranding(); 
         setupEventListeners();
         setupTheme();
         setTodaysDate();
@@ -49,6 +51,72 @@ document.addEventListener('DOMContentLoaded', () => {
         setupReadTabInitialState();
     }
     
+    // --- White Labeling ---
+    function initBranding() {
+        if (typeof AppConfig === 'undefined') {
+            console.error("AppConfig is not defined. Make sure config.js is loaded correctly.");
+            if(logoContainer) logoContainer.innerHTML = `<h1>Config Error</h1>`;
+            return;
+        }
+
+        const brand = AppConfig.brands.find(b => b.id === AppConfig.defaultBrand) || AppConfig.brands[0];
+        
+        // 1. Set Logo
+        if (logoContainer) {
+            if (brand.logo.type === 'html') {
+                logoContainer.innerHTML = brand.logo.value;
+            } else if (brand.logo.type === 'image') {
+                logoContainer.innerHTML = `<img src="${brand.logo.value}" alt="${brand.name} Logo" style="height: 40px; display: block;">`;
+            }
+        }
+
+        // 2. Set Customer Theme Icon (optional)
+        const customerBrand = AppConfig.brands.find(b => b.id === 'customer-brand');
+        if (customerThemeIconContainer && customerBrand) {
+             customerThemeIconContainer.innerHTML = `<img src="${customerBrand.icons['192']}" alt="Kunden-Design" width="29" height="29">`;
+        } else if (customerThemeIconContainer) {
+            // Fallback if 'customer-brand' is not defined in config
+            customerThemeIconContainer.innerHTML = `🎨`;
+        }
+        
+        // 3. Dynamically create and inject manifest
+        const manifest = {
+            name: brand.name,
+            short_name: brand.short_name,
+            start_url: "/ThiXX/index.html",
+            scope: "/ThiXX/",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: brand.theme_color,
+            orientation: "portrait-primary",
+            icons: [
+                { src: brand.icons['192'], sizes: "192x192", type: "image/png", purpose: "any maskable" },
+                { src: brand.icons['512'], sizes: "512x512", type: "image/png", purpose: "any maskable" }
+            ]
+        };
+        const manifestString = JSON.stringify(manifest);
+        const manifestBlob = new Blob([manifestString], {type: 'application/json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        
+        // Remove existing manifest link and add the new one
+        const existingManifest = document.querySelector('link[rel="manifest"]');
+        if (existingManifest) existingManifest.remove();
+        
+        const newManifestLink = document.createElement('link');
+        newManifestLink.rel = 'manifest';
+        newManifestLink.href = manifestUrl;
+        document.head.appendChild(newManifestLink);
+
+        // 4. Set Apple Touch Icon
+        const appleIconLink = document.createElement('link');
+        appleIconLink.rel = 'apple-touch-icon';
+        appleIconLink.href = brand.icons['192'];
+        document.head.appendChild(appleIconLink);
+
+        // 5. Set Page Title
+        document.title = brand.name;
+    }
+
     function setupReadTabInitialState() {
         protocolCard.innerHTML = `<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`;
         readActions.classList.add('hidden');
@@ -65,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('unsupported');
             nfcFallback.classList.remove('hidden');
             nfcStatusBadge.disabled = true;
-            if(writeNfcBtnBottom) writeNfcBtnBottom.disabled = true;
         }
     }
 
@@ -76,8 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         nfcStatusBadge.addEventListener('click', handleNfcAction);
-        if(writeNfcBtnBottom) writeNfcBtnBottom.addEventListener('click', handleNfcAction);
-
+        
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
@@ -215,7 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ndef = new NDEFReader();
             
             if (isWriteMode) {
-                // --- WRITE LOGIC ---
                 setNfcBadge('writing');
                 showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...', 'info');
                 
@@ -234,13 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 startCooldown();
 
             } else {
-                // --- READ LOGIC ---
                 setNfcBadge('scanning');
                 showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...', 'info');
 
                 await ndef.scan({ signal: abortController.signal });
                 ndef.onreading = (event) => {
-                    abortNfcAction(); // Stop scanning immediately after first read
+                    abortNfcAction(); 
                     const firstRecord = event.message.records[0];
                     if (firstRecord && firstRecord.recordType === 'text') {
                         const textDecoder = new TextDecoder(firstRecord.encoding || 'utf-8');
@@ -259,10 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const readableError = getReadableError(error);
                 setNfcBadge('error', readableError);
                 showMessage(readableError, 'err');
-                // KEINEN Cooldown bei Fehler starten, um einen sofortigen neuen Versuch zu ermöglichen.
-                // startCooldown(); // Entfernt, um das Problem des "App-Wechsel-Dialogs" zu beheben
             } else {
-                setNfcBadge('idle'); // Reset if user aborted
+                setNfcBadge('idle');
             }
         } finally {
             isNfcActionActive = false;
@@ -354,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = getFormData();
         const payload = formatToCompact(formData);
         payloadOutput.value = payload;
+        payloadContainer.classList.remove('hidden');
 
         const byteCount = new TextEncoder().encode(payload).length;
         payloadSize.textContent = `${byteCount} / ${MAX_PAYLOAD_BYTES} Bytes`;
