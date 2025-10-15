@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-v100'; // App-Shell Cache
+const APP_CACHE_NAME = 'thixx-v101'; // App-Shell Cache
 const DOC_CACHE_NAME = 'thixx-docs-v1'; // Separater Cache für Dokumente
 
 const APP_ASSETS_TO_CACHE = [
@@ -117,4 +117,3 @@ self.addEventListener('message', (event) => {
         );
     }
 });
-
