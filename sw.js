@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-v103'; // App-Shell Cache
+const APP_CACHE_NAME = 'thixx-v110'; // Version erhöht, um Update zu erzwingen
 const DOC_CACHE_NAME = 'thixx-docs-v1'; // Separater Cache für Dokumente
 
 const APP_ASSETS_TO_CACHE = [
@@ -7,11 +7,7 @@ const APP_ASSETS_TO_CACHE = [
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
     '/ThiXX/config.json',
-    // Alle Icon-Varianten für die verschiedenen Designs
-    '/ThiXX/assets/icon-192.png',
-    '/ThiXX/assets/icon-512.png',
-    '/ThiXX/assets/THiXX_Icon_192x192.png',
-    '/ThiXX/assets/THiXX_Icon_512x512.png',
+    // Nur noch die korrekten Icons cachen
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png'
 ];
@@ -55,7 +51,9 @@ self.addEventListener('activate', (event) => {
             caches.keys().then((cacheNames) => {
                 return Promise.all(
                     cacheNames.map((cacheName) => {
+                        // Lösche alle Caches, die nicht dem aktuellen App-Cache oder Doku-Cache entsprechen
                         if (cacheName !== APP_CACHE_NAME && cacheName !== DOC_CACHE_NAME) {
+                            console.log('[Service Worker] Lösche alten Cache:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
@@ -107,7 +105,7 @@ self.addEventListener('fetch', (event) => {
     }
 });
 
-// NEU: Lauscht auf Nachrichten von der App
+// Lauscht auf Nachrichten von der App
 self.addEventListener('message', (event) => {
     if (event.data && event.data.action === 'cache-doc') {
         console.log('[Service Worker] Anweisung zum Cachen erhalten:', event.data.url);
@@ -117,3 +115,4 @@ self.addEventListener('message', (event) => {
         );
     }
 });
+

@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Design-Vorlagen ---
     const designs = {
-        'default': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
-        'sigx': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'default': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'stixx': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } }
     };
 
@@ -25,14 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeSwitcher = document.querySelector('.theme-switcher');
     const docLinkContainer = document.getElementById('doc-link-container');
     const legalInfoContainer = document.getElementById('legal-info');
-    const eventLogOutput = document.getElementById('event-log-output'); // NEU
+    const eventLogOutput = document.getElementById('event-log-output');
 
     // --- State Variables ---
     let isNfcActionActive = false;
     let isCooldownActive = false;
     let abortController = null;
     let scannedDataObject = null;
-    let eventLog = []; // NEU
+    let eventLog = [];
 
     // --- App Initialization ---
     fetch('/ThiXX/config.json').then(res => res.ok ? res.json() : Promise.reject('config.json not found')).then(initializeApp).catch(err => { console.warn('Konfigurationsdatei nicht geladen, Fallback wird verwendet.', err); initializeApp({ design: "default" }); });
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('has_NiCr-Ni').addEventListener('change', (e) => { document.getElementById('NiCr-Ni').disabled = !e.target.checked; });
     }
 
-    // --- NEUE LOGGING FUNKTIONEN ---
+    // --- LOGGING FUNKTIONEN ---
     function renderLog() {
         if (!eventLogOutput) return;
         eventLogOutput.innerHTML = eventLog
@@ -75,14 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addLogEntry(message, type = 'info') {
         const timestamp = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        eventLog.unshift({ timestamp, message, type }); // unshift statt push, um neueste oben zu haben
+        eventLog.unshift({ timestamp, message, type });
         if (eventLog.length > 5) {
             eventLog.pop();
         }
         renderLog();
     }
-    // --- ENDE LOGGING FUNKTIONEN ---
-
+    
     async function isUrlCached(url) {
         if (!('caches' in window)) return false;
         try {
@@ -174,13 +173,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function applyConfig(config) { const selectedDesign = designs[config.design] || designs['default']; document.title = selectedDesign.appName; updateManifest(selectedDesign); applyTheme(selectedDesign.theme); if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); } const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img'); if (customerBtnImg && selectedDesign.icons && selectedDesign.icons.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; } const appleIcon = document.querySelector('link[rel="apple-touch-icon"]'); if (appleIcon && selectedDesign.icons && selectedDesign.icons.icon192) { appleIcon.href = selectedDesign.icons.icon192; } if (selectedDesign.brandColors && selectedDesign.brandColors.primary) { document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); } if (selectedDesign.brandColors && selectedDesign.brandColors.secondary) { document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); } }
-    function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
-    function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.body.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
+    function applyConfig(config) { 
+        const selectedDesign = designs[config.design] || designs['default']; 
+        document.title = selectedDesign.appName; 
+        updateManifest(selectedDesign); 
+        applyTheme(selectedDesign.theme); 
+        if (selectedDesign.lockTheme) { 
+            if (themeSwitcher) themeSwitcher.classList.add('hidden'); 
+        } else { 
+            if (themeSwitcher) themeSwitcher.classList.remove('hidden'); 
+        } 
+        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img'); 
+        if (customerBtnImg && selectedDesign.icons && selectedDesign.icons.icon512) { 
+            customerBtnImg.src = selectedDesign.icons.icon512; 
+        } 
+        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]'); 
+        if (appleIcon && selectedDesign.icons && selectedDesign.icons.icon192) { 
+            appleIcon.href = selectedDesign.icons.icon192; 
+        } 
+        if (selectedDesign.brandColors && selectedDesign.brandColors.primary) { 
+            document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); 
+        } 
+        if (selectedDesign.brandColors && selectedDesign.brandColors.secondary) { 
+            document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); 
+        } 
+    }
+    
+    function updateManifest(design) { 
+        const manifestLink = document.querySelector('link[rel="manifest"]'); 
+        if (!manifestLink) return; 
+        const newManifest = { 
+            name: design.appName, 
+            short_name: design.appName.split(' ')[0], 
+            start_url: "/ThiXX/index.html", 
+            scope: "/ThiXX/", 
+            display: "standalone", 
+            background_color: "#ffffff", 
+            theme_color: design.brandColors.primary || "#f04e37", 
+            orientation: "portrait-primary", 
+            icons: [
+                { src: design.icons.icon192, sizes: "192x192", type: "image/png" }, 
+                { src: design.icons.icon512, sizes: "512x512", type: "image/png" }
+            ] 
+        }; 
+        const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); 
+        manifestLink.href = URL.createObjectURL(blob); 
+    }
+
+    function applyTheme(themeName) { 
+        const themeButtons = document.querySelectorAll('.theme-btn'); 
+        document.body.setAttribute('data-theme', themeName); 
+        localStorage.setItem('thixx-theme', themeName); 
+        themeButtons.forEach(btn => { 
+            btn.classList.toggle('active', btn.dataset.theme === themeName); 
+        }); 
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]'); 
+        if (metaThemeColor) { 
+            const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; 
+            metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); 
+        } 
+    }
+    
     document.querySelectorAll('.theme-btn').forEach(btn => { btn.addEventListener('click', () => applyTheme(btn.dataset.theme)); });
-    function setupReadTabInitialState(){ protocolCard.innerHTML=`<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`; docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
-    function initCollapsibles(){document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el))}
-    function checkNfcSupport(){if('NDEFReader'in window){setNfcBadge('idle')}else{setNfcBadge('unsupported');nfcFallback.classList.remove('hidden');nfcStatusBadge.disabled=true}}
+    
+    function setupReadTabInitialState(){ 
+        protocolCard.innerHTML=`<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`; 
+        docLinkContainer.innerHTML = ''; 
+        readActions.classList.add('hidden'); 
+    }
+
+    function initCollapsibles(){
+        document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el))
+    }
+    
+    function checkNfcSupport(){
+        if('NDEFReader' in window){
+            setNfcBadge('idle')
+        } else {
+            setNfcBadge('unsupported');
+            nfcFallback.classList.remove('hidden');
+            nfcStatusBadge.disabled=true
+        }
+    }
     
     function switchTab(tabId) {
         abortNfcAction();
@@ -205,14 +279,60 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBanner.classList.add(type);
         messageBanner.classList.remove('hidden');
         setTimeout(()=>messageBanner.classList.add('hidden'),duration);
-        addLogEntry(text, type); // Log-Eintrag hinzufügen
+        addLogEntry(text, type); 
     }
 
-    function setTodaysDate(){const today=new Date();const yyyy=today.getFullYear();const mm=String(today.getMonth()+1).padStart(2,'0');const dd=String(today.getDate()).padStart(2,'0');document.getElementById('am').value=`${yyyy}-${mm}-${dd}`}
-    function setNfcBadge(state,message=''){const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');const states={unsupported:['NFC nicht unterstützt','err'],idle:[isWriteMode?'Schreiben starten':'Lesen starten','info'],scanning:['Scannen...','info'],writing:['Schreiben...','info'],success:[message||'Erfolgreich!','ok'],error:[message||'Fehler','err'],cooldown:['Bitte warten...','info']};const[text,className]=states[state]||states['idle'];nfcStatusBadge.textContent=text;nfcStatusBadge.className='nfc-badge';nfcStatusBadge.classList.add(className)}
-    function getReadableError(error){const errorMap={'NotAllowedError':'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.','NotSupportedError':'NFC wird nicht unterstützt.','NotReadableError':'Tag konnte nicht gelesen werden.','NetworkError':'Netzwerkfehler beim NFC-Zugriff.','InvalidStateError':'Ungültiger Zustand. Bitte App neu laden.','DataError':'Daten konnten nicht verarbeitet werden.','AbortError':'Vorgang abgebrochen.'};return errorMap[error.name]||error.message||'Unbekannter Fehler'}
-    function startCooldown(){isCooldownActive=true;setNfcBadge('cooldown');setTimeout(()=>{isCooldownActive=false;setNfcBadge('idle')},2000)}
-    function abortNfcAction(){if(abortController){abortController.abort();abortController=null}isNfcActionActive=false}
+    function setTodaysDate(){
+        const today=new Date();
+        const yyyy=today.getFullYear();
+        const mm=String(today.getMonth()+1).padStart(2,'0');
+        const dd=String(today.getDate()).padStart(2,'0');
+        document.getElementById('am').value=`${yyyy}-${mm}-${dd}`
+    }
+
+    function setNfcBadge(state,message=''){
+        const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');
+        const states={
+            unsupported:['NFC nicht unterstützt','err'],
+            idle:[isWriteMode?'Schreiben starten':'Lesen starten','info'],
+            scanning:['Scannen...','info'],
+            writing:['Schreiben...','info'],
+            success:[message||'Erfolgreich!','ok'],
+            error:[message||'Fehler','err'],
+            cooldown:['Bitte warten...','info']
+        };
+        const[text,className]=states[state]||states['idle'];
+        nfcStatusBadge.textContent=text;
+        nfcStatusBadge.className='nfc-badge';
+        nfcStatusBadge.classList.add(className)
+    }
+
+    function getReadableError(error){
+        const errorMap={
+            'NotAllowedError':'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.',
+            'NotSupportedError':'NFC wird nicht unterstützt.',
+            'NotReadableError':'Tag konnte nicht gelesen werden.',
+            'NetworkError':'Netzwerkfehler beim NFC-Zugriff.',
+            'InvalidStateError':'Ungültiger Zustand. Bitte App neu laden.',
+            'DataError':'Daten konnten nicht verarbeitet werden.',
+            'AbortError':'Vorgang abgebrochen.'
+        };
+        return errorMap[error.name]||error.message||'Unbekannter Fehler'
+    }
+
+    function startCooldown(){
+        isCooldownActive=true;
+        setNfcBadge('cooldown');
+        setTimeout(()=>{isCooldownActive=false;setNfcBadge('idle')},2000)
+    }
+
+    function abortNfcAction(){
+        if(abortController){
+            abortController.abort();
+            abortController=null
+        }
+        isNfcActionActive=false
+    }
     
     async function handleNfcAction() {
         if (isNfcActionActive || isCooldownActive) { return; }
@@ -293,23 +413,210 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function processNfcData(text){rawDataOutput.value=text;try{scannedDataObject=parseNfcText(text);displayParsedData(scannedDataObject);readActions.classList.remove('hidden');readResultContainer.classList.add('expanded')}catch(e){showMessage(`Fehler beim Verarbeiten: ${e.message}`,'err');setupReadTabInitialState();scannedDataObject=null}}
-    function parseNfcText(text){const data={};text=text.trim();if(text.startsWith('v1')){const content=text.substring(2).trim();const regex=/([^:\n]+):([^\n]*)/g;let match;while((match=regex.exec(content))!==null){const key=reverseFieldMap[match[1].trim()]||match[1].trim();data[key]=match[2].trim()}if(Object.keys(data).length===0)throw new Error("v1-Format, aber keine Daten gefunden.");return data}throw new Error("Kein bekanntes Format erkannt.")}
-    function createDataPair(label,value,unit=''){if(!value)return'';return`
+    function processNfcData(text){
+        rawDataOutput.value=text;
+        try{
+            scannedDataObject=parseNfcText(text);
+            displayParsedData(scannedDataObject);
+            readActions.classList.remove('hidden');
+            readResultContainer.classList.add('expanded')
+        }catch(e){
+            showMessage(`Fehler beim Verarbeiten: ${e.message}`,'err');
+            setupReadTabInitialState();
+            scannedDataObject=null
+        }
+    }
+
+    function parseNfcText(text){
+        const data={};
+        text=text.trim();
+        if(text.startsWith('v1')){
+            const content=text.substring(2).trim();
+            const regex=/([^:\n]+):([^\n]*)/g;
+            let match;
+            while((match=regex.exec(content))!==null){
+                const key=reverseFieldMap[match[1].trim()]||match[1].trim();
+                data[key]=match[2].trim()
+            }
+            if(Object.keys(data).length===0)throw new Error("v1-Format, aber keine Daten gefunden.");
+            return data
+        }
+        throw new Error("Kein bekanntes Format erkannt.")
+    }
+
+    function createDataPair(label,value,unit=''){
+        if(!value)return'';
+        return`
             <div class="data-pair">
                 <span class="data-pair-label">${label}</span>
                 <span class="data-pair-value">${value} ${unit}</span>
             </div>
-        `}
-    function updatePayloadOnChange(){if(document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active')){generateAndShowPayload()}}
-    function generateAndShowPayload(){const formData=getFormData();const payload=formatToCompact(formData);payloadOutput.value=payload;const byteCount=new TextEncoder().encode(payload).length;payloadSize.textContent=`${byteCount} / 880 Bytes`;payloadSize.classList.toggle('limit-exceeded',byteCount>880)}
-    function getFormData(){const formData=new FormData(form);const data={};for(const[key,value]of formData.entries()){if(value.trim())data[key]=value.trim()}if(!document.getElementById('has_PT100').checked)delete data['PT 100'];if(!document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni'];delete data['has_PT100'];delete data['has_NiCr-Ni'];return data}
-    function formatToCompact(data){let compactString='v1';const parts=[];for(const[key,shortKey]of Object.entries(fieldMap)){if(data[key])parts.push(`${shortKey}:${data[key]}`)}if(parts.length>0)compactString+='\n'+parts.join('\n');return compactString}
-    function populateFormFromScan(){if(!scannedDataObject){showMessage('Keine Daten zum Übernehmen vorhanden.','err');return}form.reset();setTodaysDate();for(const[key,value]of Object.entries(scannedDataObject)){const input=form.elements[key];if(input){if(input.type==='radio'){form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{if(radio.value===value)radio.checked=true})}else if(input.type==='checkbox'){input.checked=(value==='true'||value==='on')}else{input.value=value}}}const pt100Input=document.getElementById('PT 100');const hasPt100Checkbox=document.getElementById('has_PT100');if(scannedDataObject['PT 100']){pt100Input.value=scannedDataObject['PT 100'];pt100Input.disabled=false;hasPt100Checkbox.checked=true}else{pt100Input.disabled=true;hasPt100Checkbox.checked=false}const niCrInput=document.getElementById('NiCr-Ni');const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni');if(scannedDataObject['NiCr-Ni']){niCrInput.value=scannedDataObject['NiCr-Ni'];niCrInput.disabled=false;hasNiCrCheckbox.checked=true}else{niCrInput.disabled=true;hasNiCrCheckbox.checked=false}switchTab('write-tab');document.getElementById('write-form-container').classList.add('expanded');showMessage('Daten in Formular übernommen.','ok')}
-    function saveFormAsJson(){const data=getFormData();const jsonString=JSON.stringify(data,null,2);const blob=new Blob([jsonString],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;const today=new Date().toISOString().slice(0,10);a.download=`thixx-${today}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showMessage('Daten als JSON gespeichert.','ok')}
-    function loadJsonIntoForm(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(e)=>{try{const data=JSON.parse(e.target.result);scannedDataObject=data;populateFormFromScan();showMessage('JSON-Datei erfolgreich geladen.','ok')}catch(error){showMessage(`Fehler beim Laden: ${error.message}`,'err')}finally{event.target.value=null}};reader.readAsText(file)}
-    function makeCollapsible(el){if(!el||el.dataset.collapsibleApplied)return;el.dataset.collapsibleApplied='true';const toggle=()=>{if(el.classList.contains('expanded'))return;el.classList.add('expanded')};const overlay=el.querySelector('.collapsible-overlay');if(overlay){overlay.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();toggle()})}el.addEventListener('click',(e)=>{const tag=(e.target.tagName||'').toLowerCase();if(['input','select','textarea','button','label','summary','details'].includes(tag)||e.target.closest('.collapsible-overlay'))return;toggle()})}
-    const fieldMap={'HK.Nr.':'HK','KKS':'KKS','Leistung':'P','Strom':'I','Spannung':'U','Widerstand':'R','Regler':'Reg','Sicherheitsregler/Begrenzer':'Sich','Wächter':'Wäch','Projekt Nr.':'Proj','Anzahl Heizkabeleinheiten':'Anz','Trennkasten':'TB','Heizkabeltyp':'HKT','Schaltung':'Sch','PT 100':'PT100','NiCr-Ni':'NiCr','geprüft von':'Chk','am':'Date', 'Dokumentation': 'Doc'};
+        `
+    }
+
+    function updatePayloadOnChange(){
+        if(document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active')){
+            generateAndShowPayload()
+        }
+    }
+
+    function generateAndShowPayload(){
+        const formData=getFormData();
+        const payload=formatToCompact(formData);
+        payloadOutput.value=payload;
+        const byteCount=new TextEncoder().encode(payload).length;
+        payloadSize.textContent=`${byteCount} / 880 Bytes`;
+        payloadSize.classList.toggle('limit-exceeded',byteCount>880)
+    }
+
+    function getFormData(){
+        const formData=new FormData(form);
+        const data={};
+        for(const[key,value]of formData.entries()){
+            if(value.trim())data[key]=value.trim()
+        }
+        if(!document.getElementById('has_PT100').checked)delete data['PT 100'];
+        if(!document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni'];
+        delete data['has_PT100'];
+        delete data['has_NiCr-Ni'];
+        return data
+    }
+
+    function formatToCompact(data){
+        let compactString='v1';
+        const parts=[];
+        for(const[key,shortKey]of Object.entries(fieldMap)){
+            if(data[key])parts.push(`${shortKey}:${data[key]}`)
+        }
+        if(parts.length>0)compactString+='\n'+parts.join('\n');
+        return compactString
+    }
+
+    function populateFormFromScan(){
+        if(!scannedDataObject){
+            showMessage('Keine Daten zum Übernehmen vorhanden.','err');
+            return
+        }
+        form.reset();
+        setTodaysDate();
+        for(const[key,value]of Object.entries(scannedDataObject)){
+            const input=form.elements[key];
+            if(input){
+                if(input.type==='radio'){
+                    form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{
+                        if(radio.value===value)radio.checked=true
+                    })
+                }else if(input.type==='checkbox'){
+                    input.checked=(value==='true'||value==='on')
+                }else{
+                    input.value=value
+                }
+            }
+        }
+        const pt100Input=document.getElementById('PT 100');
+        const hasPt100Checkbox=document.getElementById('has_PT100');
+        if(scannedDataObject['PT 100']){
+            pt100Input.value=scannedDataObject['PT 100'];
+            pt100Input.disabled=false;
+            hasPt100Checkbox.checked=true
+        }else{
+            pt100Input.disabled=true;
+            hasPt100Checkbox.checked=false
+        }
+        const niCrInput=document.getElementById('NiCr-Ni');
+        const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni');
+        if(scannedDataObject['NiCr-Ni']){
+            niCrInput.value=scannedDataObject['NiCr-Ni'];
+            niCrInput.disabled=false;
+            hasNiCrCheckbox.checked=true
+        }else{
+            niCrInput.disabled=true;
+            hasNiCrCheckbox.checked=false
+        }
+        switchTab('write-tab');
+        document.getElementById('write-form-container').classList.add('expanded');
+        showMessage('Daten in Formular übernommen.','ok')
+    }
+
+    function saveFormAsJson(){
+        const data=getFormData();
+        const jsonString=JSON.stringify(data,null,2);
+        const blob=new Blob([jsonString],{type:'application/json'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;
+        const today=new Date().toISOString().slice(0,10);
+        a.download=`thixx-${today}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage('Daten als JSON gespeichert.','ok')
+    }
+
+    function loadJsonIntoForm(event){
+        const file=event.target.files[0];
+        if(!file)return;
+        const reader=new FileReader();
+        reader.onload=(e)=>{
+            try{
+                const data=JSON.parse(e.target.result);
+                scannedDataObject=data;
+                populateFormFromScan();
+                showMessage('JSON-Datei erfolgreich geladen.','ok')
+            }catch(error){
+                showMessage(`Fehler beim Laden: ${error.message}`,'err')
+            }finally{
+                event.target.value=null
+            }
+        };
+        reader.readAsText(file)
+    }
+
+    function makeCollapsible(el){
+        if(!el||el.dataset.collapsibleApplied)return;
+        el.dataset.collapsibleApplied='true';
+        const toggle=()=>{
+            if(el.classList.contains('expanded'))return;
+            el.classList.add('expanded')
+        };
+        const overlay=el.querySelector('.collapsible-overlay');
+        if(overlay){
+            overlay.addEventListener('click',(e)=>{
+                e.preventDefault();
+                e.stopPropagation();
+                toggle()
+            })
+        }
+        el.addEventListener('click',(e)=>{
+            const tag=(e.target.tagName||'').toLowerCase();
+            if(['input','select','textarea','button','label','summary','details'].includes(tag)||e.target.closest('.collapsible-overlay'))return;
+            toggle()
+        })
+    }
+    
+    const fieldMap={
+        'HK.Nr.':'HK',
+        'KKS':'KKS',
+        'Leistung':'P',
+        'Strom':'I',
+        'Spannung':'U',
+        'Widerstand':'R',
+        'Regler':'Reg',
+        'Sicherheitsregler/Begrenzer':'Sich',
+        'Wächter':'Wäch',
+        'Projekt Nr.':'Proj',
+        'Anzahl Heizkabeleinheiten':'Anz',
+        'Trennkasten':'TB',
+        'Heizkabeltyp':'HKT',
+        'Schaltung':'Sch',
+        'PT 100':'PT100',
+        'NiCr-Ni':'NiCr',
+        'geprüft von':'Chk',
+        'am':'Date', 
+        'Dokumentation': 'Doc'
+    };
+    
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 });
 
