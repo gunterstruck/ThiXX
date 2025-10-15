@@ -45,7 +45,6 @@
                     <div id="protocol-card" class="protocol-card">
                         <!-- Content wird durch JS generiert -->
                     </div>
-                     <!-- Neuer Container für den Doku-Button -->
                     <div id="doc-link-container" class="doc-link-container"></div>
                     <div id="read-actions" class="read-actions-container hidden">
                         <button id="copy-to-form-btn" class="btn">In Formular übernehmen</button>
@@ -53,6 +52,23 @@
                             <summary>Rohdaten anzeigen</summary>
                             <textarea id="raw-data-output" readonly></textarea>
                         </details>
+                    </div>
+                    <div class="collapsible-overlay">Tippen zum Öffnen</div>
+                </div>
+
+                <!-- NEUER CONTAINER FÜR IMPRESSUM & DATENSCHUTZ -->
+                <div id="legal-info" class="collapsible">
+                    <h2>Rechtliches</h2>
+                    <div class="legal-content">
+                        <p><strong>Impressum</strong><br>
+                        Angaben gemäß § 5 TMG:<br>
+                        Günter Struck<br>
+                        Musterstraße 1<br>
+                        12345 Musterstadt</p>
+                        <div class="legal-links">
+                            <!-- Mockup-Link zur Datenschutzerklärung auf GitHub -->
+                            <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>
+                        </div>
                     </div>
                     <div class="collapsible-overlay">Tippen zum Öffnen</div>
                 </div>
@@ -75,7 +91,6 @@
                             <div class="form-group"><label for="Sicherheitsregler/Begrenzer">Sicherheitsregler/Begrenzer (°C)</label><input type="number" id="Sicherheitsregler/Begrenzer" name="Sicherheitsregler/Begrenzer"></div>
                             <div class="form-group"><label for="Wächter">Wächter (°C)</label><input type="number" id="Wächter" name="Wächter"></div>
                             <div class="form-group"><label for="Projekt Nr.">Projekt Nr.</label><input type="text" id="Projekt Nr." name="Projekt Nr."></div>
-                            <!-- NEUES FELD FÜR DIE DOKUMENTATION -->
                             <div class="form-group full-width"><label for="Dokumentation">Dokumentation (URL)</label><input type="url" id="Dokumentation" name="Dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
                             <div class="form-group"><label for="Anzahl Heizkabeleinheiten">Anzahl Heizkabeleinheiten (Stk)</label><input type="number" id="Anzahl Heizkabeleinheiten" name="Anzahl Heizkabeleinheiten"></div>
                             <div class="form-group"><label for="Trennkasten">Trennkasten (Stk)</label><input type="number" id="Trennkasten" name="Trennkasten"></div>
