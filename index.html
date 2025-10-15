@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- FIX: Strengere Content Security Policy für erhöhte Sicherheit -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
+    
     <title>ThiXX - NFC PWA</title>
     <link rel="manifest" href="/ThiXX/manifest.webmanifest">
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
@@ -22,10 +25,10 @@
                   <span class="logo-gray">XX</span>
                 </h1>
                 <div class="theme-switcher">
-                    <button class="theme-btn" data-theme="dark" title="Dunkles Design">🌙</button>
-                    <button class="theme-btn" data-theme="thixx" title="Helles Design">☀️</button>
-                    <button class="theme-btn" data-theme="customer-brand" title="Kunden-Design">
-                        <img src="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" alt="Kunden-Design" width="29" height="29">
+                    <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
+                    <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
+                    <button class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
+                        <img src="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" alt="Kunden-Logo" width="29" height="29">
                     </button>
                 </div>
             </div>
@@ -33,69 +36,67 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-link active" data-tab="read-tab">NFC lesen</button>
-            <button class="tab-link" data-tab="write-tab">NFC schreiben</button>
+            <button class="tab-link active" data-tab="read-tab" data-i18n="readNfcTab"></button>
+            <button class="tab-link" data-tab="write-tab" data-i18n="writeNfcTab"></button>
         </div>
 
         <main>
             <!-- Tab A: NFC lesen -->
             <div id="read-tab" class="tab-content active">
                 <div id="read-result" class="collapsible">
-                    <h2>Abnahmeprotokoll</h2>
+                    <h2 data-i18n="acceptanceProtocol"></h2>
                     <div id="protocol-card" class="protocol-card">
-                        <!-- Content wird durch JS generiert -->
+                        <!-- Inhalt wird dynamisch und sicher durch JS generiert -->
                     </div>
                     <div id="doc-link-container" class="doc-link-container"></div>
                     <div id="read-actions" class="read-actions-container hidden">
-                        <button id="copy-to-form-btn" class="btn">In Formular übernehmen</button>
+                        <button id="copy-to-form-btn" class="btn" data-i18n="copyToForm"></button>
                         <details class="raw-data-details">
-                            <summary>Rohdaten anzeigen</summary>
+                            <summary data-i18n="showRawData"></summary>
                             <textarea id="raw-data-output" readonly></textarea>
                         </details>
-                        <!-- NEUES EVENT LOG -->
                         <details class="raw-data-details">
-                            <summary>Letzte Ereignisse anzeigen</summary>
+                            <summary data-i18n="showEvents"></summary>
                             <div id="event-log-output"></div>
                         </details>
                     </div>
-                    <div class="collapsible-overlay">Tippen zum Öffnen</div>
+                    <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
             </div>
 
             <!-- Tab B: NFC schreiben -->
             <div id="write-tab" class="tab-content">
                 <div id="write-form-container" class="collapsible">
-                    <h2>Abnahmeprotokoll</h2>
-                    <form id="nfc-write-form">
-                        <!-- ... Formularfelder ... -->
+                    <h2 data-i18n="acceptanceProtocol"></h2>
+                    <form id="nfc-write-form" novalidate>
                         <div class="form-grid">
-                            <div class="form-group"><label for="HK.Nr.">HK.Nr.</label><input type="text" id="HK.Nr." name="HK.Nr."></div>
-                            <div class="form-group"><label for="KKS">KKS</label><input type="text" id="KKS" name="KKS"></div>
-                            <div class="form-group"><label for="Leistung">Leistung (kW)</label><input type="number" step="0.1" id="Leistung" name="Leistung"></div>
-                            <div class="form-group"><label for="Strom">Strom (A)</label><input type="number" step="0.1" id="Strom" name="Strom"></div>
-                            <div class="form-group"><label for="Spannung">Spannung (V)</label><input type="number" id="Spannung" name="Spannung"></div>
-                            <div class="form-group"><label for="Widerstand">Widerstand (Ω)</label><input type="number" step="0.1" id="Widerstand" name="Widerstand"></div>
-                            <div class="form-group"><label for="Regler">Regler (°C)</label><input type="number" id="Regler" name="Regler"></div>
-                            <div class="form-group"><label for="Sicherheitsregler/Begrenzer">Sicherheitsregler/Begrenzer (°C)</label><input type="number" id="Sicherheitsregler/Begrenzer" name="Sicherheitsregler/Begrenzer"></div>
-                            <div class="form-group"><label for="Wächter">Wächter (°C)</label><input type="number" id="Wächter" name="Wächter"></div>
-                            <div class="form-group"><label for="Projekt Nr.">Projekt Nr.</label><input type="text" id="Projekt Nr." name="Projekt Nr."></div>
-                            <div class="form-group full-width"><label for="Dokumentation">Dokumentation (URL)</label><input type="url" id="Dokumentation" name="Dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
-                            <div class="form-group"><label for="Anzahl Heizkabeleinheiten">Anzahl Heizkabeleinheiten (Stk)</label><input type="number" id="Anzahl Heizkabeleinheiten" name="Anzahl Heizkabeleinheiten"></div>
-                            <div class="form-group"><label for="Trennkasten">Trennkasten (Stk)</label><input type="number" id="Trennkasten" name="Trennkasten"></div>
-                            <div class="form-group full-width"><label for="Heizkabeltyp">Heizkabeltyp</label><input type="text" id="Heizkabeltyp" name="Heizkabeltyp"></div>
+                            <div class="form-group"><label for="HK.Nr." data-i18n="form.HK.Nr."></label><input type="text" id="HK.Nr." name="HK.Nr."></div>
+                            <div class="form-group"><label for="KKS" data-i18n="form.KKS"></label><input type="text" id="KKS" name="KKS"></div>
+                            <div class="form-group"><label for="Leistung" data-i18n="form.Leistung"></label><input type="number" step="0.1" id="Leistung" name="Leistung"></div>
+                            <div class="form-group"><label for="Strom" data-i18n="form.Strom"></label><input type="number" step="0.1" id="Strom" name="Strom"></div>
+                            <div class="form-group"><label for="Spannung" data-i18n="form.Spannung"></label><input type="number" id="Spannung" name="Spannung"></div>
+                            <div class="form-group"><label for="Widerstand" data-i18n="form.Widerstand"></label><input type="number" step="0.1" id="Widerstand" name="Widerstand"></div>
+                            <div class="form-group"><label for="Regler" data-i18n="form.Regler"></label><input type="number" id="Regler" name="Regler"></div>
+                            <div class="form-group"><label for="Sicherheitsregler/Begrenzer" data-i18n="form.Sicherheitsregler/Begrenzer"></label><input type="number" id="Sicherheitsregler/Begrenzer" name="Sicherheitsregler/Begrenzer"></div>
+                            <div class="form-group"><label for="Wächter" data-i18n="form.Wächter"></label><input type="number" id="Wächter" name="Wächter"></div>
+                            <div class="form-group"><label for="Projekt Nr." data-i18n="form.Projekt Nr."></label><input type="text" id="Projekt Nr." name="Projekt Nr."></div>
+                            <div class="form-group full-width"><label for="Dokumentation" data-i18n="form.Dokumentation"></label><input type="url" id="Dokumentation" name="Dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
+                            <div class="form-group"><label for="Anzahl Heizkabeleinheiten" data-i18n="form.Anzahl Heizkabeleinheiten"></label><input type="number" id="Anzahl Heizkabeleinheiten" name="Anzahl Heizkabeleinheiten"></div>
+                            <div class="form-group"><label for="Trennkasten" data-i18n="form.Trennkasten"></label><input type="number" id="Trennkasten" name="Trennkasten"></div>
+                            <div class="form-group full-width"><label for="Heizkabeltyp" data-i18n="form.Heizkabeltyp"></label><input type="text" id="Heizkabeltyp" name="Heizkabeltyp"></div>
                         </div>
                         
                         <fieldset class="form-group">
-                            <legend>Schaltung</legend>
+                            <legend data-i18n="form.Schaltung"></legend>
                             <div class="radio-group">
-                                <label><input type="radio" name="Schaltung" value="Stern" checked> Stern</label>
-                                <label><input type="radio" name="Schaltung" value="Dreieck"> Dreieck</label>
-                                <label><input type="radio" name="Schaltung" value="Wechselstrom"> Wechselstrom</label>
+                                <label><input type="radio" name="Schaltung" value="Stern" checked> <span data-i18n="form.schaltungOptions.stern"></span></label>
+                                <label><input type="radio" name="Schaltung" value="Dreieck"> <span data-i18n="form.schaltungOptions.dreieck"></span></label>
+                                <label><input type="radio" name="Schaltung" value="Wechselstrom"> <span data-i18n="form.schaltungOptions.wechselstrom"></span></label>
                             </div>
                         </fieldset>
 
                         <fieldset class="form-group">
-                            <legend>Messwertgeber</legend>
+                            <legend data-i18n="form.Messwertgeber"></legend>
                             <div class="checkbox-group">
                                 <label><input type="checkbox" id="has_PT100" name="has_PT100"> PT 100</label>
                                 <input type="number" id="PT 100" name="PT 100" min="0" value="0" disabled>
@@ -105,65 +106,47 @@
                         </fieldset>
                         
                         <div class="form-grid">
-                            <div class="form-group"><label for="geprüft von">geprüft von</label><input type="text" id="geprüft von" name="geprüft von"></div>
-                            <div class="form-group"><label for="am">am (Datum)</label><input type="date" id="am" name="am"></div>
+                            <div class="form-group"><label for="geprüft von" data-i18n="form.geprüft von"></label><input type="text" id="geprüft von" name="geprüft von"></div>
+                            <div class="form-group"><label for="am" data-i18n="form.am"></label><input type="date" id="am" name="am"></div>
                         </div>
                     </form>
 
-                    <div id="payload-container" class="hidden">
+                    <div id="payload-container">
                         <details class="raw-data-details">
-                            <summary>Rohdaten anzeigen</summary>
+                            <summary data-i18n="showRawData"></summary>
                             <textarea id="payload-output" readonly></textarea>
                             <div id="payload-size" class="payload-size">0 / 880 Bytes</div>
                         </details>
                     </div>
 
                     <div class="file-operations">
-                         <button id="save-json-btn" class="btn">Auf Smartphone speichern</button>
-                         <label class="btn file-input-label">
-                             Von Smartphone laden
+                         <button id="save-json-btn" class="btn" data-i18n="saveToJson"></button>
+                         <label class="btn file-input-label" data-i18n="loadFromJson">
                              <input type="file" id="load-json-input" accept=".json" style="display:none;">
                          </label>
                     </div>
-                    <div class="collapsible-overlay">Tippen zum Öffnen</div>
+                    <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
             </div>
-             <!-- CONTAINER FÜR IMPRESSUM & DATENSCHUTZ (jetzt außerhalb der Tabs) -->
              <div id="legal-info" class="collapsible hidden">
-                <h2>Rechtliches</h2>
+                <h2 data-i18n="legalTitle"></h2>
                 <div class="legal-content">
-                    <p><strong>Impressum</strong><br>
+                    <p><strong data-i18n="imprintTitle"></strong><br>
                     Angaben gemäß § 5 TMG:<br>
                     Günter Struck<br>
                     Musterstraße 1<br>
                     12345 Musterstadt</p>
                     <div class="legal-links">
-                        <!-- Mockup-Link zur Datenschutzerklärung auf GitHub -->
-                        <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>
+                        <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicyLink"></a>
                     </div>
                 </div>
-                <div class="collapsible-overlay">Tippen zum Öffnen</div>
+                <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
             </div>
         </main>
         
-        <div id="legal-info" class="hidden">
-             <h2>Rechtliches</h2>
-             <div class="legal-content">
-                 <p><strong>Impressum</strong><br>
-                 Angaben gemäß § 5 TMG:<br>
-                 Günter Struck<br>
-                 Musterstraße 1<br>
-                 12345 Musterstadt</p>
-                 <div class="legal-links">
-                     <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>
-                 </div>
-             </div>
-        </div>
-
         <footer>
             <div id="message-banner" class="message-banner hidden" role="alert"></div>
-            <div id="nfc-fallback" class="message-banner err hidden">
-                Web NFC wird nicht unterstützt. Bitte verwenden Sie Chrome auf Android.
+            <div id="nfc-fallback" class="message-banner err hidden" data-i18n="nfcFallback">
             </div>
         </footer>
     </div>
