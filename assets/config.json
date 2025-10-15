@@ -1,15 +1,5 @@
 {
-  "appName": "SIGX NFC Tool",
-  "theme": "customer-brand",
-  "icons": {
-    "icon192": "/ThiXX/assets/THiXX_Icon_Transparent_192x192.png",
-    "icon512": "/ThiXX/assets/THiXX_Icon_Transparent_512x512.png"
-  },
-  "brandColors": {
-    "primary": "#e45d45",
-    "secondary": "#6c6b66"
-  }
+  "_comment": "Verfügbare Designs: 'default', 'sigx'",
+  "design": "default"
 }
-
-
 

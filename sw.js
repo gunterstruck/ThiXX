@@ -1,13 +1,20 @@
-const CACHE_NAME = 'thixx-v82'; // Version erhöht für die neuen Icons
+const CACHE_NAME = 'thixx-v85'; // Version erhöht, um den Cache zu erneuern
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
-    '/ThiXX/config.json',
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
-    '/ThiXX/assets/THiXX_Icon_192x192.png', // Korrekte Icons
+    '/ThiXX/manifest.webmanifest',
+    '/ThiXX/config.json',
+    // Neue Standard-Icons
+    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
+    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
+    // Andere Design-Icons
+    '/ThiXX/assets/THiXX_Icon_192x192.png',
     '/ThiXX/assets/THiXX_Icon_512x512.png',
-    '/ThiXX/manifest.webmanifest'
+    // Originale Icons für SIGX hinzugefügt
+    '/ThiXX/assets/icon-192.png',
+    '/ThiXX/assets/icon-512.png'
 ];
 
 // Install event: precache all essential assets.
@@ -16,7 +23,6 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[Service Worker] Caching app shell');
-                // Use addAll with a catch to prevent install failure if one asset is missing
                 return cache.addAll(ASSETS_TO_CACHE).catch(err => {
                     console.error('[SW] Failed to cache assets during install:', err);
                 });
@@ -97,4 +103,6 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+
 
