@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         COOLDOWN_DURATION: 2000,
         MAX_PAYLOAD_SIZE: 880,
         DEBOUNCE_DELAY: 300,
-        MAX_LOG_ENTRIES: 10,
+        MAX_LOG_ENTRIES: 5,
     };
 
     // --- Zustand der Anwendung ---
@@ -16,15 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
         scannedDataObject: null,
         eventLog: [],
     };
-    
-    // FIX: Memory Leak bei dynamischem Manifest
-    let previousManifestURL = null;
 
     // --- Design-Vorlagen ---
     const designs = {
-        'default': { appName: "ThiXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
-        'thixx_light': { appName: "ThiXX NFC Tool", theme: "thixx", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'default': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'stixx': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
+        // KORREKTUR: lockTheme auf false gesetzt, damit der Theme-Switcher sichtbar ist
+        'sigx': { appName: "SIGX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
     };
 
     // --- DOM Element References ---
@@ -90,6 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const lang = navigator.language.split('-')[0];
         const supportedLangs = ['de', 'en', 'es', 'fr'];
         const selectedLang = supportedLangs.includes(lang) ? lang : 'de';
+        
+        // KORREKTUR: Pfad zu den Sprachdateien ohne /assets/
         const path = `/ThiXX/lang/${selectedLang}.json`;
 
         try {
@@ -100,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Could not load translations, falling back to German.', error);
             try {
+                // KORREKTUR: Fallback-Pfad ebenfalls korrigiert
                 const fallbackPath = `/ThiXX/lang/de.json`;
                 const response = await fetch(fallbackPath);
                 appState.translations = await response.json();
@@ -113,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTranslations() {
         document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
         document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
-        // Title wird jetzt direkt in der de.json gesetzt, um Konsistenz zu wahren.
         document.title = t('appTitle');
     }
 
@@ -123,7 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const readableError = this.getReadableError(error);
             console.error(`[${context}]`, error);
             showMessage(readableError, 'err');
-            return readableError; // Log wird in showMessage erledigt
+            addLogEntry(`${context}: ${readableError}`, 'err');
+            return readableError;
         }
 
         static getReadableError(error) {
@@ -150,25 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return { design: "default" };
         }
     }
-    
-    // FIX: Memory Leak, Listener werden in einer Map gespeichert zum späteren Entfernen
-    const eventHandlers = new Map();
-    function addManagedEventListener(element, event, handler) {
-        element.addEventListener(event, handler);
-        eventHandlers.set({ element, event }, handler);
-    }
-    
-    function cleanupEventListeners() {
-        for (const [{ element, event }, handler] of eventHandlers.entries()) {
-            element.removeEventListener(event, handler);
-        }
-        eventHandlers.clear();
-        if (appState.abortController) {
-            appState.abortController.abort();
-        }
-    }
-    
-    window.addEventListener('beforeunload', cleanupEventListeners);
 
     async function main() {
         if ('serviceWorker' in navigator) {
@@ -196,31 +179,28 @@ document.addEventListener('DOMContentLoaded', () => {
     main();
 
     function setupEventListeners() {
-        addManagedEventListener(tabsContainer, 'click', (e) => {
+        tabsContainer.addEventListener('click', (e) => {
             const tabLink = e.target.closest('.tab-link');
             if (tabLink) switchTab(tabLink.dataset.tab);
         });
-        addManagedEventListener(themeSwitcher, 'click', (e) => {
+        themeSwitcher.addEventListener('click', (e) => {
             const themeBtn = e.target.closest('.theme-btn');
             if (themeBtn) applyTheme(themeBtn.dataset.theme);
         });
 
-        addManagedEventListener(nfcStatusBadge, 'click', handleNfcAction);
-        addManagedEventListener(copyToFormBtn, 'click', populateFormFromScan);
-        addManagedEventListener(saveJsonBtn, 'click', saveFormAsJson);
-        addManagedEventListener(loadJsonInput, 'change', loadJsonIntoForm);
+        nfcStatusBadge.addEventListener('click', handleNfcAction);
+        copyToFormBtn.addEventListener('click', populateFormFromScan);
+        saveJsonBtn.addEventListener('click', saveFormAsJson);
+        loadJsonInput.addEventListener('change', loadJsonIntoForm);
         
-        addManagedEventListener(form, 'input', debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY));
-        addManagedEventListener(form, 'change', updatePayloadOnChange);
+        form.addEventListener('input', debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY));
+        form.addEventListener('change', updatePayloadOnChange);
         
-        const pt100Checkbox = document.getElementById('has_PT100');
-        if (pt100Checkbox) addManagedEventListener(pt100Checkbox, 'change', (e) => {
+        document.getElementById('has_PT100')?.addEventListener('change', (e) => {
             const el = document.getElementById('PT 100');
             if (el) el.disabled = !e.target.checked;
         });
-
-        const niCrNiCheckbox = document.getElementById('has_NiCr-Ni');
-        if (niCrNiCheckbox) addManagedEventListener(niCrNiCheckbox, 'change', (e) => {
+        document.getElementById('has_NiCr-Ni')?.addEventListener('change', (e) => {
             const el = document.getElementById('NiCr-Ni');
             if (el) el.disabled = !e.target.checked;
         });
@@ -247,9 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function displayParsedData(data) {
-        // FIX: XSS-Risiko durch .innerHTML = '' entfernt
-        protocolCard.replaceChildren();
-        
+        protocolCard.innerHTML = '';
         const fragments = { main: document.createDocumentFragment(), section1: document.createDocumentFragment(), section2: document.createDocumentFragment(), section3: document.createDocumentFragment(), footer: document.createDocumentFragment() };
         const addPair = (frag, label, val, unit) => { const el = createDataPair(label, val, unit); if (el) frag.appendChild(el); };
         
@@ -326,10 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleNfcAction() {
-        // FIX: Race Condition Check
         if (appState.isNfcActionActive || appState.isCooldownActive) return;
+        if (!('NDEFReader' in window)) {
+            showMessage(t('messages.nfcNotSupported'), 'err');
+            return;
+        }
         appState.isNfcActionActive = true;
-        
         appState.abortController = new AbortController();
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active');
 
@@ -339,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const validationErrors = validateForm();
                 if (validationErrors.length > 0) {
                     showMessage(validationErrors.join('\n'), 'err');
-                    // No need to abort here, as we haven't started anything
+                    abortNfcAction();
                     return;
                 }
                 setNfcBadge('writing');
@@ -381,44 +361,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.name !== 'AbortError') {
                 ErrorHandler.handle(error, 'NFCAction');
             }
+            abortNfcAction();
             startCooldown();
-        } finally {
-            // FIX: Robust state reset
-            appState.isNfcActionActive = false;
         }
     }
     
-    /**
-     * @typedef {Object<string, any>} NfcData
-     */
-
-    /**
-     * Sanitizes an object of NFC data by escaping HTML characters and removing control characters.
-     * @param {NfcData} data The raw data object.
-     * @returns {NfcData} The sanitized data object.
-     */
     function sanitizeNfcData(data) {
         const sanitized = {};
         const allowedFields = new Set([...Object.keys(fieldMap), ...Object.values(fieldMap)]);
         
         for (const [key, value] of Object.entries(data)) {
-            if (!allowedFields.has(key) || value === null || value === undefined) continue;
+            if (!allowedFields.has(key)) continue;
             
-            // FIX: Unvollständige Input-Sanitierung verbessert
             let sanitizedValue = String(value)
                 .trim()
-                .replace(/[<>"'&]/g, (char) => {
-                    const entities = {
-                        '<': '&lt;', '>': '&gt;', '"': '&quot;',
-                        "'": '&#39;', '&': '&amp;'
-                    };
-                    return entities[char] || char;
-                })
-                .replace(/[\x00-\x1F\x7F]/g, '')
-                .substring(0, 200);
+                .replace(/[<>]/g, '') // HTML tags
+                .replace(/[\x00-\x1F\x7F]/g, '') // Control characters
+                .substring(0, 200); // Max length
             
             if (key === 'Dokumentation' && !isValidDocUrl(sanitizedValue)) {
-                continue;
+                continue; // Skip invalid URLs
             }
             
             sanitized[key] = sanitizedValue;
@@ -458,84 +420,46 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.isNfcActionActive=false;
     }
 
-    // --- Performance: Event Log ---
-    function createLogElement({ timestamp, message, type }) {
-        const div = document.createElement('div');
-        div.className = `log-entry ${type}`;
-        
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'log-timestamp';
-        timeSpan.textContent = timestamp;
-        
-        const messageNode = document.createTextNode(` ${message}`);
-        
-        div.appendChild(timeSpan);
-        div.appendChild(messageNode);
-        return div;
-    }
-
     function addLogEntry(message, type = 'info') {
         const timestamp = new Date().toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const entry = { timestamp, message, type };
-        appState.eventLog.unshift(entry);
-        
+        appState.eventLog.unshift({ timestamp, message, type });
         if (appState.eventLog.length > CONFIG.MAX_LOG_ENTRIES) {
             appState.eventLog.pop();
         }
-
-        // FIX: Performance, kein komplettes re-rendering
-        if (eventLogOutput) {
-            const newLogElement = createLogElement(entry);
-            eventLogOutput.insertBefore(newLogElement, eventLogOutput.firstChild);
-            
-            while (eventLogOutput.children.length > CONFIG.MAX_LOG_ENTRIES) {
-                eventLogOutput.removeChild(eventLogOutput.lastChild);
-            }
-        }
+        renderLog();
     }
 
+    function renderLog() {
+        if (!eventLogOutput) return;
+        eventLogOutput.innerHTML = '';
+        
+        appState.eventLog.forEach(entry => {
+            const div = document.createElement('div');
+            div.className = `log-entry ${entry.type}`;
+            
+            const timestamp = document.createElement('span');
+            timestamp.className = 'log-timestamp';
+            timestamp.textContent = entry.timestamp;
+            
+            const message = document.createTextNode(` ${entry.message}`);
+            
+            div.appendChild(timestamp);
+            div.appendChild(message);
+            
+            eventLogOutput.appendChild(div);
+        });
+    }
 
     async function isUrlCached(url) { if (!('caches' in window)) return false; try { const cache = await caches.open('thixx-docs-v1'); const response = await cache.match(url); return !!response; } catch (error) { console.error("Cache check failed:", error); return false; } }
     
     async function handleDocButtonClick(event) { const button = event.target; const url = button.dataset.url; if (navigator.onLine) { window.open(url, '_blank'); if (navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); button.textContent = t('docOpenOffline'); button.disabled = true; } } else { showMessage(t('docDownloadLater'), 'info'); button.textContent = t('docDownloadPending'); button.disabled = true; } }
     
-    function updateManifest(design) {
-        const manifestLink = document.querySelector('link[rel="manifest"]');
-        if (!manifestLink) return;
-        
-        // FIX: Memory Leak bei Blob-URL
-        if (previousManifestURL) {
-            URL.revokeObjectURL(previousManifestURL);
-        }
-
-        const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] };
-        const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' });
-        
-        previousManifestURL = URL.createObjectURL(blob);
-        manifestLink.href = previousManifestURL;
-    }
+    function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
     
-    function applyTheme(themeName) {
-        const themeButtons = document.querySelectorAll('.theme-btn');
-        document.body.setAttribute('data-theme', themeName);
-        localStorage.setItem('thixx-theme', themeName);
-        
-        // FIX: Accessibility, aria-checked aktualisieren
-        themeButtons.forEach(btn => {
-            const isActive = btn.dataset.theme === themeName;
-            btn.classList.toggle('active', isActive);
-            btn.setAttribute('aria-checked', isActive);
-        });
-        
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' };
-            metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD');
-        }
-    }
+    function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.body.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
     
     function setupReadTabInitialState(){ 
-        protocolCard.replaceChildren(); // Sicherer als innerHTML
+        protocolCard.innerHTML = '';
         const p = document.createElement('p');
         p.className = 'placeholder-text';
         p.textContent = t('placeholderRead');
@@ -577,17 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function parseNfcText(text){ const data={}; text=text.trim(); if(text.startsWith('v1')){ const content=text.substring(2).trim(); const regex=/([^:\n]+):([^\n]*)/g; let match; while((match=regex.exec(content))!==null){ const key=reverseFieldMap[match[1].trim()]||match[1].trim(); data[key]=match[2].trim() } if(Object.keys(data).length===0)throw new Error(t('errors.v1NoData')); return data } throw new Error(t('errors.unknownFormat')) }
     
-    function updatePayloadOnChange() {
-        if (document.querySelector('.tab-link[data-tab="write-tab"].active')) {
-            generateAndShowPayload();
-            const byteCount = new TextEncoder().encode(payloadOutput.value).length;
-            
-            // FIX: Unzureichende Größenprüfung
-            if (byteCount > CONFIG.MAX_PAYLOAD_SIZE * 0.9 && byteCount <= CONFIG.MAX_PAYLOAD_SIZE) {
-                 showMessage(t('messages.payloadNearLimit'), 'info', 5000);
-            }
-        }
-    }
+    function updatePayloadOnChange(){ if(document.querySelector('.tab-link[data-tab="write-tab"].active')){ generateAndShowPayload() } }
     
     function generateAndShowPayload(){ const formData=getFormData(); const payload=formatToCompact(formData); payloadOutput.value=payload; const byteCount=new TextEncoder().encode(payload).length; payloadSize.textContent=`${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; payloadSize.classList.toggle('limit-exceeded',byteCount>CONFIG.MAX_PAYLOAD_SIZE) }
     
@@ -599,35 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function saveFormAsJson(){ const data=getFormData(); const jsonString=JSON.stringify(data,null,2); const blob=new Blob([jsonString],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; const today=new Date().toISOString().slice(0,10); a.download=`thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showMessage(t('messages.saveSuccess'),'ok') }
     
-    function loadJsonIntoForm(event){
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                
-                // FIX: Fehlende Fehlerbehandlung bei JSON-Load
-                if (!data || typeof data !== 'object') {
-                    throw new Error(t('errors.invalidJsonStructure'));
-                }
-                const allowedKeys = Object.keys(fieldMap);
-                const hasValidKeys = Object.keys(data).some(key => allowedKeys.includes(key));
-                if (!hasValidKeys) {
-                    throw new Error(t('errors.noValidFields'));
-                }
-                
-                appState.scannedDataObject = sanitizeNfcData(data);
-                populateFormFromScan();
-                showMessage(t('messages.loadSuccess'), 'ok');
-            } catch (error) {
-                ErrorHandler.handle(error, 'LoadJSON');
-            } finally {
-                event.target.value = null; // Input zurücksetzen
-            }
-        };
-        reader.readAsText(file);
-    }
+    function loadJsonIntoForm(event){ const file=event.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=(e)=>{ try{ const data=JSON.parse(e.target.result); appState.scannedDataObject=data; populateFormFromScan(); showMessage(t('messages.loadSuccess'),'ok') }catch(error){ ErrorHandler.handle(error, 'LoadJSON'); }finally{ event.target.value=null } }; reader.readAsText(file) }
     
     function makeCollapsible(el){ if(!el||el.dataset.collapsibleApplied)return; el.dataset.collapsibleApplied='true'; const toggle=()=>{ if(el.classList.contains('expanded'))return; el.classList.add('expanded') }; const overlay=el.querySelector('.collapsible-overlay'); if(overlay){ overlay.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); toggle() }) } el.addEventListener('click',(e)=>{ const tag=(e.target.tagName||'').toLowerCase(); if(['input','select','textarea','button','label','summary','details'].includes(tag)||e.target.closest('.collapsible-overlay'))return; toggle() }) }
     
@@ -635,5 +521,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 
 });
-
 

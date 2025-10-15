@@ -1,5 +1,4 @@
 {
-  "_comment": "Verfügbare Designs: 'thixx_standard', 'thixx_light', 'default'",
-  "design": "thixx_standard"
+  "_comment": "Verfügbare Designs: 'thixx_standard', 'sigx'",
+  "design": "sigx"
 }
-
