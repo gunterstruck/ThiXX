@@ -117,8 +117,9 @@
 
                     <div class="file-operations">
                          <button id="save-json-btn" class="btn" data-i18n="saveToJson"></button>
-                         <label class="btn file-input-label" data-i18n="loadFromJson">
-                             <input type="file" id="load-json-input" accept=".json" style="display:none;">
+                         <!-- Das Label löst nun per JavaScript den Klick auf das Input-Feld aus -->
+                         <label id="load-json-label" class="btn file-input-label" data-i18n="loadFromJson">
+                             <input type="file" id="load-json-input" accept=".json" class="visually-hidden">
                          </label>
                     </div>
                     <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>

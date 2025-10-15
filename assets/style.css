@@ -222,6 +222,19 @@ body[data-theme="thixx"] .btn::before, body[data-theme="customer-brand"] .btn::b
 #copy-to-form-btn { width: 100%; margin-bottom: 0; }
 .file-operations .btn { flex: 1 1 220px; text-align: center; }
 .file-input-label { display: inline-block; }
+/* KORREKTUR: Klasse zum visuellen Verstecken des Inputs, ohne die Funktionalität zu beeinträchtigen */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
 #read-result, #write-form-container { display: flex; flex-direction: column; gap: 1.5rem; }
 #read-result.hidden, #payload-container.hidden { display: none; }
 h2 { color: var(--text-color); margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--primary-color); opacity: 0.5; font-size: 1.5rem; font-weight: 700; text-align: center; }

@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'stixx': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
-        // KORREKTUR: lockTheme auf false gesetzt, damit der Theme-Switcher sichtbar ist
         'sigx': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
     };
 
@@ -33,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
     const saveJsonBtn = document.getElementById('save-json-btn');
     const loadJsonInput = document.getElementById('load-json-input');
+    const loadJsonLabel = document.getElementById('load-json-label'); // Hinzugefügt
     const nfcFallback = document.getElementById('nfc-fallback');
     const messageBanner = document.getElementById('message-banner');
     const form = document.getElementById('nfc-write-form');
@@ -89,8 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const lang = navigator.language.split('-')[0];
         const supportedLangs = ['de', 'en', 'es', 'fr'];
         const selectedLang = supportedLangs.includes(lang) ? lang : 'de';
-        
-        // KORREKTUR: Pfad zu den Sprachdateien ohne /assets/
         const path = `/ThiXX/lang/${selectedLang}.json`;
 
         try {
@@ -101,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Could not load translations, falling back to German.', error);
             try {
-                // KORREKTUR: Fallback-Pfad ebenfalls korrigiert
                 const fallbackPath = `/ThiXX/lang/de.json`;
                 const response = await fetch(fallbackPath);
                 appState.translations = await response.json();
@@ -191,6 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
         nfcStatusBadge.addEventListener('click', handleNfcAction);
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
+        
+        // KORREKTUR: Event Listener für das Label hinzugefügt, um den Klick an das Input-Feld weiterzuleiten
+        if (loadJsonLabel) {
+            loadJsonLabel.addEventListener('click', () => {
+                loadJsonInput.click();
+            });
+        }
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
         
         form.addEventListener('input', debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY));
@@ -521,4 +525,3 @@ document.addEventListener('DOMContentLoaded', () => {
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 
 });
-

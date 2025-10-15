@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-v117'; // Version erhöht wegen Pfadänderung
+const APP_CACHE_NAME = 'thixx-v118'; // Version erhöht wegen Pfadänderung
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 // Alle Assets, die für die App-Shell benötigt werden
