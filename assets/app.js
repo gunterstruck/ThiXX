@@ -340,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(validationErrors.join('\n'));
                 }
                 
-                // KORREKTUR: Button-Text sofort aktualisieren
                 setNfcBadge('writing');
 
                 const payload = payloadOutput.value;
@@ -482,11 +481,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // KORREKTUR: Cache-Prüfung verwendet jetzt `no-cors`, um mit dem Service Worker übereinzustimmen
     async function isUrlCached(url) { 
         if (!('caches' in window)) return false; 
         try { 
             const cache = await caches.open(DOC_CACHE_NAME); 
-            const response = await cache.match(new Request(url)); 
+            // Wichtig: Die Anfrage muss mit dem übereinstimmen, was der Service Worker speichert.
+            const request = new Request(url, { mode: 'no-cors' });
+            const response = await cache.match(request); 
             return !!response; 
         } catch (error) { 
             console.error("Cache check failed:", error); 
@@ -505,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.onclick = () => window.open(url, '_blank');
 
             if (navigator.serviceWorker.controller) { 
-                navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); 
+                navigator.service-worker.controller.postMessage({ action: 'cache-doc', url: url }); 
             } 
         } else { 
             showMessage(t('docDownloadLater'), 'info'); 

@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-v121'; // Version erhöht, um das Update zu erzwingen
+const APP_CACHE_NAME = 'thixx-v122'; // Version erhöht, um das Update zu erzwingen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 // Alle Assets, die für die App-Shell benötigt werden
@@ -53,10 +53,20 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname.endsWith('.pdf')) {
         event.respondWith(
             caches.open(DOC_CACHE_NAME).then(async (cache) => {
-                const cachedResponse = await cache.match(request);
+                // KORREKTUR: Wir müssen mit der gleichen `no-cors`-Anfrage suchen, wie sie gespeichert wurde.
+                const noCorsRequest = new Request(request.url, { mode: 'no-cors' });
+                const cachedResponse = await cache.match(noCorsRequest);
                 if (cachedResponse) {
-                    return cachedResponse;
+                    console.log('[Service Worker] Serving doc from cache:', url.href);
+                    // Wir müssen eine "richtige" Antwort zurückgeben, damit der Browser sie anzeigen kann.
+                    // Wir erstellen eine neue Antwort aus dem (opakem) Cache-Body.
+                    return new Response(cachedResponse.body, {
+                        headers: {
+                            'Content-Type': 'application/pdf',
+                        },
+                    });
                 }
+                console.log('[Service Worker] Doc not in cache, fetching from network:', url.href);
                 return fetch(request);
             })
         );
@@ -69,19 +79,15 @@ self.addEventListener('fetch', (event) => {
         return;
     }
     
-    // KORREKTUR: Neue Strategie für die App selbst (Navigation)
     // Strategie: "Cache First", damit die App offline startet.
     if (request.mode === 'navigate') {
         event.respondWith(
-            caches.match(request) // Zuerst im Cache (auf dem Handy) suchen
+            caches.match(request)
                 .then(cachedResponse => {
-                    // Wenn die Seite im Cache ist, sofort anzeigen.
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    // Wenn nicht, aus dem Netzwerk laden (falls man doch online ist).
                     return fetch(request).catch(() => {
-                        // Wenn beides fehlschlägt, die Offline-Seite als Notlösung zeigen.
                         return caches.match('/ThiXX/offline.html');
                     });
                 })
