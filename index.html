@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Strikte Content Security Policy für erhöhte Sicherheit -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
     
     <title>ThiXX - NFC PWA</title>
@@ -25,7 +24,6 @@
                   <span class="logo-gray">XX</span>
                 </h1>
                 <div class="theme-switcher">
-                    <!-- KORREKTUR: data-i18n-title wird verwendet, damit Emojis nicht überschrieben werden -->
                     <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
@@ -42,13 +40,11 @@
         </div>
 
         <main>
-            <!-- Tab A: NFC lesen -->
             <div id="read-tab" class="tab-content active">
                 <div id="read-result" class="collapsible">
                     <h2 data-i18n="acceptanceProtocol"></h2>
                     <div id="protocol-card" class="protocol-card">
-                        <!-- Inhalt wird dynamisch und sicher durch JS generiert -->
-                    </div>
+                        </div>
                     <div id="doc-link-container" class="doc-link-container"></div>
                     <div id="read-actions" class="read-actions-container hidden">
                         <button id="copy-to-form-btn" class="btn" data-i18n="copyToForm"></button>
@@ -63,8 +59,8 @@
                     </div>
                     <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
-                 <!-- KORREKTUR: Impressum-Container ist jetzt hier, um nur auf der "Lesen"-Seite angezeigt zu werden -->
-                <div id="legal-info" class="collapsible hidden">
+                
+                <div id="legal-info" class="collapsible">
                     <h2 data-i18n="legalTitle"></h2>
                     <div class="legal-content">
                         <p><strong data-i18n="imprintTitle"></strong><br>
@@ -80,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- Tab B: NFC schreiben -->
             <div id="write-tab" class="tab-content">
                 <div id="write-form-container" class="collapsible">
                     <h2 data-i18n="acceptanceProtocol"></h2>
@@ -155,4 +150,3 @@
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
-
