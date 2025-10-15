@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thixx-v85'; // Version erhöht, um den Cache zu erneuern
+const CACHE_NAME = 'thixx-v97'; // Version erhöht, um den Cache zu erneuern
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(request.url);
 
-    // --- STRATEGY 1: Network First (for critical, frequently updated files) ---
+    // --- STRATEGIE 1: Netzwerk zuerst (für kritische, oft geänderte Dateien) ---
     if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/style.css') || url.pathname.endsWith('/config.json')) {
         event.respondWith(
             fetch(request)
@@ -75,7 +75,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // --- STRATEGY 2: Network falling back to Cache (for the main page) ---
+    // --- STRATEGIE 2: Netzwerk mit Fallback auf Cache (für die Hauptseite) ---
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // --- STRATEGY 3: Cache First (for static assets that rarely change) ---
+    // --- STRATEGIE 3: Cache zuerst (für statische Assets, die sich selten ändern) ---
     event.respondWith(
         caches.match(request)
             .then((response) => {
@@ -103,6 +103,4 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
-
-
 
