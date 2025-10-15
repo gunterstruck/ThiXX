@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-v120'; // Version erhöht für Cache-Update
+const APP_CACHE_NAME = 'thixx-v121'; // Version erhöht, um das Update zu erzwingen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 // Alle Assets, die für die App-Shell benötigt werden
@@ -49,62 +49,66 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // KORREKTUR: Neue, verbesserte Logik für PDFs
-    // Strategie für Dokumente (PDFs): Immer zuerst im Cache nachsehen, egal welcher Ursprung.
+    // Strategie für Dokumente (PDFs): Cache First, dann Network.
     if (url.pathname.endsWith('.pdf')) {
         event.respondWith(
             caches.open(DOC_CACHE_NAME).then(async (cache) => {
                 const cachedResponse = await cache.match(request);
                 if (cachedResponse) {
-                    console.log('[Service Worker] Serving doc from cache:', url.href);
                     return cachedResponse;
                 }
-                console.log('[Service Worker] Doc not in cache, fetching from network:', url.href);
-                // Wenn nicht im Cache, vom Netzwerk holen
                 return fetch(request);
             })
         );
         return;
     }
 
-    // Anfragen, die keine PDFs sind und nicht vom eigenen Ursprung stammen,
-    // sollen direkt ans Netzwerk weitergeleitet werden.
+    // Strategie für externe Anfragen (keine PDFs): Network only.
     if (url.origin !== self.origin) {
         event.respondWith(fetch(request));
         return;
     }
-
-    // Strategie für App-Assets: Stale-While-Revalidate
-    if (APP_ASSETS_TO_CACHE.some(asset => url.pathname.endsWith(asset.split('/').pop()))) {
-         event.respondWith(
-            caches.match(request).then(cachedResponse => {
-                const fetchPromise = fetch(request).then(networkResponse => {
-                    caches.open(APP_CACHE_NAME).then(cache => {
-                        cache.put(request, networkResponse.clone());
+    
+    // KORREKTUR: Neue Strategie für die App selbst (Navigation)
+    // Strategie: "Cache First", damit die App offline startet.
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            caches.match(request) // Zuerst im Cache (auf dem Handy) suchen
+                .then(cachedResponse => {
+                    // Wenn die Seite im Cache ist, sofort anzeigen.
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    // Wenn nicht, aus dem Netzwerk laden (falls man doch online ist).
+                    return fetch(request).catch(() => {
+                        // Wenn beides fehlschlägt, die Offline-Seite als Notlösung zeigen.
+                        return caches.match('/ThiXX/offline.html');
                     });
-                    return networkResponse;
-                });
-                return cachedResponse || fetchPromise;
-            })
+                })
         );
         return;
     }
 
-    // Fallback für die Navigation (nur für die eigene Seite): Versuche Netzwerk, sonst zeige Offline-Seite
-    if (request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request).catch(() => caches.match('/ThiXX/offline.html'))
-        );
-    }
+    // Fallback-Strategie für andere App-Assets (JS, CSS, etc.)
+    event.respondWith(
+        caches.match(request).then(cachedResponse => {
+            const fetchPromise = fetch(request).then(networkResponse => {
+                caches.open(APP_CACHE_NAME).then(cache => {
+                    cache.put(request, networkResponse.clone());
+                });
+                return networkResponse;
+            });
+            return cachedResponse || fetchPromise;
+        })
+    );
 });
 
-// Message-Event: Lauscht auf Anweisungen von der App
+// Message-Event: Lauscht auf Anweisungen von der App.
 self.addEventListener('message', (event) => {
     if (event.data && event.data.action === 'cache-doc') {
         console.log('[Service Worker] Caching instruction received:', event.data.url);
         event.waitUntil(
             caches.open(DOC_CACHE_NAME)
-                // Wichtig: 'no-cors' wird für externe Inhalte benötigt, damit der Download nicht blockiert wird.
                 .then(cache => cache.add(new Request(event.data.url, { mode: 'no-cors' })))
                 .then(() => console.log('[Service Worker] Doc cached successfully:', event.data.url))
                 .catch(err => console.error('[Service Worker] Failed to cache doc:', err))
