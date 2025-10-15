@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DEBOUNCE_DELAY: 300,
         MAX_LOG_ENTRIES: 15,
         NFC_WRITE_TIMEOUT: 5000, 
-        MAX_WRITE_RETRIES: 3,
+        MAX_WRITE_RETRIES: 3, 
     };
 
     // --- Application State ---
@@ -339,6 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (validationErrors.length > 0) {
                     throw new Error(validationErrors.join('\n'));
                 }
+                
+                // KORREKTUR: Button-Text sofort aktualisieren
+                setNfcBadge('writing');
 
                 const payload = payloadOutput.value;
                 const message = {
@@ -483,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!('caches' in window)) return false; 
         try { 
             const cache = await caches.open(DOC_CACHE_NAME); 
-            const response = await cache.match(url); 
+            const response = await cache.match(new Request(url)); 
             return !!response; 
         } catch (error) { 
             console.error("Cache check failed:", error); 
@@ -491,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
     
-    // VERBESSERUNG: Button-Zustand wird sofort aktualisiert
     async function handleDocButtonClick(event) { 
         const button = event.target; 
         const url = button.dataset.url; 
@@ -499,9 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navigator.onLine) { 
             window.open(url, '_blank'); 
             
-            // UI sofort aktualisieren für besseres Feedback
             button.textContent = t('docOpenOffline');
-            button.onclick = () => window.open(url, '_blank'); // Klick-Verhalten für die Zukunft anpassen
+            button.onclick = () => window.open(url, '_blank');
 
             if (navigator.serviceWorker.controller) { 
                 navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); 
