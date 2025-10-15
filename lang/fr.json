@@ -1,5 +1,5 @@
 {
-  "appTitle": "ThiXX Outil NFC",
+  "appTitle": "ThiXX",
   "readNfcTab": "Lire NFC",
   "writeNfcTab": "Écrire NFC",
   "acceptanceProtocol": "Protocole de réception",
@@ -38,6 +38,7 @@
     "readPrompt": "Veuillez approcher une étiquette NFC de l'appareil pour la lire...",
     "writePrompt": "Veuillez approcher une étiquette NFC de l'appareil pour écrire...",
     "payloadTooLarge": "Les données sont trop volumineuses pour l'étiquette NFC (max. 880 octets).",
+    "payloadNearLimit": "Attention : La quantité de données approche la limite de l'étiquette NFC.",
     "writeSuccess": "Données écrites avec succès sur l'étiquette.",
     "readSuccess": "Étiquette NFC lue avec succès !",
     "noKnownContent": "Aucun contenu textuel connu n'a été trouvé sur l'étiquette NFC.",
@@ -54,6 +55,8 @@
     "unknownFormat": "Aucun format d'étiquette connu n'a été reconnu.",
     "invalidVoltage": "La tension doit être comprise entre 0 et 1000.",
     "invalidDocUrl": "L'URL de la documentation n'est pas valide.",
+    "invalidJsonStructure": "Le fichier JSON a une structure non valide.",
+    "noValidFields": "Le fichier JSON ne contient aucun champ de données valide.",
     "NotAllowedError": "Accès refusé. Veuillez accorder l'autorisation NFC.",
     "NotSupportedError": "Votre navigateur ne prend pas en charge le NFC.",
     "NotFoundError": "Aucun appareil NFC compatible n'a été trouvé.",
@@ -87,4 +90,3 @@
     "am": "le (Date)"
   }
 }
-

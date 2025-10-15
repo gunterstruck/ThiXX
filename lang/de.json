@@ -1,5 +1,5 @@
 {
-  "appTitle": "ThiXX NFC Tool",
+  "appTitle": "ThiXX",
   "readNfcTab": "NFC lesen",
   "writeNfcTab": "NFC schreiben",
   "acceptanceProtocol": "Abnahmeprotokoll",
@@ -38,6 +38,7 @@
     "readPrompt": "Bitte NFC-Tag zum Lesen an das Gerät halten...",
     "writePrompt": "Bitte NFC-Tag zum Schreiben an das Gerät halten...",
     "payloadTooLarge": "Daten sind zu groß für den NFC-Tag (max. 880 Bytes).",
+    "payloadNearLimit": "Achtung: Die Datenmenge nähert sich dem Limit des NFC-Tags.",
     "writeSuccess": "Daten erfolgreich auf den Tag geschrieben.",
     "readSuccess": "NFC-Tag erfolgreich gelesen!",
     "noKnownContent": "Kein bekannter Textinhalt auf dem NFC-Tag gefunden.",
@@ -54,6 +55,8 @@
     "unknownFormat": "Kein bekanntes Tag-Format erkannt.",
     "invalidVoltage": "Spannung muss zwischen 0 und 1000 liegen.",
     "invalidDocUrl": "Die Dokumentations-URL ist ungültig.",
+    "invalidJsonStructure": "Die JSON-Datei hat eine ungültige Struktur.",
+    "noValidFields": "Die JSON-Datei enthält keine gültigen Datenfelder.",
     "NotAllowedError": "Zugriff verweigert. Bitte erteilen Sie die NFC-Berechtigung.",
     "NotSupportedError": "NFC wird von Ihrem Browser nicht unterstützt.",
     "NotFoundError": "Kein kompatibles NFC-Gerät gefunden.",
