@@ -1,20 +1,13 @@
-const CACHE_NAME = 'thixx-v97'; // Version erhöht, um den Cache zu erneuern
+const CACHE_NAME = 'thixx-v82'; // Version erhöht für die neuen Icons
 const ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
+    '/ThiXX/config.json',
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
-    '/ThiXX/manifest.webmanifest',
-    '/ThiXX/config.json',
-    // Neue Standard-Icons
-    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
-    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
-    // Andere Design-Icons
-    '/ThiXX/assets/THiXX_Icon_192x192.png',
+    '/ThiXX/assets/THiXX_Icon_192x192.png', // Korrekte Icons
     '/ThiXX/assets/THiXX_Icon_512x512.png',
-    // Originale Icons für SIGX hinzugefügt
-    '/ThiXX/assets/icon-192.png',
-    '/ThiXX/assets/icon-512.png'
+    '/ThiXX/manifest.webmanifest'
 ];
 
 // Install event: precache all essential assets.
@@ -23,6 +16,7 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[Service Worker] Caching app shell');
+                // Use addAll with a catch to prevent install failure if one asset is missing
                 return cache.addAll(ASSETS_TO_CACHE).catch(err => {
                     console.error('[SW] Failed to cache assets during install:', err);
                 });
@@ -57,7 +51,7 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(request.url);
 
-    // --- STRATEGIE 1: Netzwerk zuerst (für kritische, oft geänderte Dateien) ---
+    // --- STRATEGY 1: Network First (for critical, frequently updated files) ---
     if (url.pathname.endsWith('/app.js') || url.pathname.endsWith('/style.css') || url.pathname.endsWith('/config.json')) {
         event.respondWith(
             fetch(request)
@@ -75,7 +69,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // --- STRATEGIE 2: Netzwerk mit Fallback auf Cache (für die Hauptseite) ---
+    // --- STRATEGY 2: Network falling back to Cache (for the main page) ---
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
@@ -89,7 +83,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // --- STRATEGIE 3: Cache zuerst (für statische Assets, die sich selten ändern) ---
+    // --- STRATEGY 3: Cache First (for static assets that rarely change) ---
     event.respondWith(
         caches.match(request)
             .then((response) => {
