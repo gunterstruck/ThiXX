@@ -46,7 +46,8 @@
     "copySuccess": "Daten in Formular übernommen.",
     "saveSuccess": "Daten als JSON-Datei gespeichert.",
     "loadSuccess": "JSON-Datei erfolgreich geladen und in Formular übernommen.",
-    "loadError": "Fehler beim Laden der JSON-Datei: {message}"
+    "loadError": "Fehler beim Laden der JSON-Datei: {message}",
+    "writeAttempt": "Schreibversuch {attempt}/{total}... Bitte Tag ruhig halten."
   },
   "errors": {
     "unknown": "Ein unbekannter Fehler ist aufgetreten.",
@@ -58,8 +59,10 @@
     "NotSupportedError": "NFC wird von Ihrem Browser nicht unterstützt.",
     "NotFoundError": "Kein kompatibles NFC-Gerät gefunden.",
     "NotReadableError": "Der NFC-Tag konnte nicht gelesen werden.",
-    "NetworkError": "Ein Netzwerkfehler ist beim NFC-Zugriff aufgetreten.",
-    "AbortError": "Der Vorgang wurde abgebrochen."
+    "NetworkError": "Ein Netzwerkfehler ist beim NFC-Zugriff aufgetreten. Bitte Handy ruhig halten.",
+    "AbortError": "Der Vorgang wurde vom Benutzer abgebrochen.",
+    "WriteTimeoutError": "Schreibvorgang hat zu lange gedauert. Bitte halten Sie das Handy ruhig und direkt an den NFC-Tag.",
+    "tagEmpty": "Der NFC-Tag ist leer oder nicht lesbar."
   },
   "form": {
     "HK.Nr.": "HK.Nr.",
