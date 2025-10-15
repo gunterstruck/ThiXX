@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DEBOUNCE_DELAY: 300,
         MAX_LOG_ENTRIES: 15,
         NFC_WRITE_TIMEOUT: 5000, 
-        MAX_WRITE_RETRIES: 3, // NEU: Anzahl der Schreibversuche
+        MAX_WRITE_RETRIES: 3,
     };
 
     // --- Application State ---
@@ -341,8 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const payload = payloadOutput.value;
-
-                // VERBESSERUNG: Korrekte NDEF Message-Struktur verwenden
                 const message = {
                     records: [{
                         recordType: "text",
@@ -351,33 +349,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     }]
                 };
 
-                // NEU: Debugging-Informationen in der Konsole ausgeben
                 console.log("=== NFC Write Debug ===");
                 console.log("Payload Size:", new TextEncoder().encode(payload).length, "Bytes");
                 console.log("Payload Content:", payload);
                 console.log("Writing NDEF Message:", message);
 
-                // NEU: Schreibvorgang mit Wiederholungslogik
                 for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) {
                     try {
                         console.log(`Write attempt ${attempt}/${CONFIG.MAX_WRITE_RETRIES}...`);
                         showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT);
-                        
                         await ndef.write(message, { signal: appState.abortController.signal });
-                        
-                        // Erfolg
                         clearTimeout(appState.nfcTimeoutId);
                         setNfcBadge('success', t('status.tagWritten'));
                         showMessage(t('messages.writeSuccess'), 'ok');
                         startCooldown();
-                        return; // Wichtig: Funktion bei Erfolg verlassen
-
+                        return;
                     } catch (error) {
                         console.warn(`Write attempt ${attempt} failed:`, error);
                         if (attempt === CONFIG.MAX_WRITE_RETRIES || error.name === 'TimeoutError' || error.name === 'AbortError') {
-                            throw error; // Letzten Fehler oder Abbruchfehler nach außen geben
+                            throw error;
                         }
-                        await new Promise(resolve => setTimeout(resolve, 200)); // Kurze Pause vor Wiederholung
+                        await new Promise(resolve => setTimeout(resolve, 200));
                     }
                 }
 
@@ -487,9 +479,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function isUrlCached(url) { if (!('caches' in window)) return false; try { const cache = await caches.open('thixx-docs-v1'); const response = await cache.match(url); return !!response; } catch (error) { console.error("Cache check failed:", error); return false; } }
+    async function isUrlCached(url) { 
+        if (!('caches' in window)) return false; 
+        try { 
+            const cache = await caches.open(DOC_CACHE_NAME); 
+            const response = await cache.match(url); 
+            return !!response; 
+        } catch (error) { 
+            console.error("Cache check failed:", error); 
+            return false; 
+        } 
+    }
     
-    async function handleDocButtonClick(event) { const button = event.target; const url = button.dataset.url; if (navigator.onLine) { window.open(url, '_blank'); if (navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); button.textContent = t('docOpenOffline'); button.disabled = true; } } else { showMessage(t('docDownloadLater'), 'info'); button.textContent = t('docDownloadPending'); button.disabled = true; } }
+    // VERBESSERUNG: Button-Zustand wird sofort aktualisiert
+    async function handleDocButtonClick(event) { 
+        const button = event.target; 
+        const url = button.dataset.url; 
+        
+        if (navigator.onLine) { 
+            window.open(url, '_blank'); 
+            
+            // UI sofort aktualisieren für besseres Feedback
+            button.textContent = t('docOpenOffline');
+            button.onclick = () => window.open(url, '_blank'); // Klick-Verhalten für die Zukunft anpassen
+
+            if (navigator.serviceWorker.controller) { 
+                navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); 
+            } 
+        } else { 
+            showMessage(t('docDownloadLater'), 'info'); 
+            button.textContent = t('docDownloadPending'); 
+            button.disabled = true; 
+        } 
+    }
     
     function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
     
