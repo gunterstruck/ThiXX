@@ -7,7 +7,6 @@
     <link rel="manifest" href="/ThiXX/manifest.webmanifest">
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
     <link rel="apple-touch-icon" href="/ThiXX/assets/icon-192.png">
-    <!-- Geändert für einen hellen Start ohne "dunklen Blitz" -->
     <meta name="theme-color" content="#FCFCFD">
 </head>
 <body>
@@ -23,7 +22,6 @@
                   <span class="logo-gray">XX</span>
                 </h1>
                 <div class="theme-switcher">
-                    <!-- 'active' Klasse wurde von allen Buttons entfernt -->
                     <button class="theme-btn" data-theme="dark" title="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" title="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" title="Kunden-Design">
@@ -47,6 +45,8 @@
                     <div id="protocol-card" class="protocol-card">
                         <!-- Content wird durch JS generiert -->
                     </div>
+                     <!-- Neuer Container für den Doku-Button -->
+                    <div id="doc-link-container" class="doc-link-container"></div>
                     <div id="read-actions" class="read-actions-container hidden">
                         <button id="copy-to-form-btn" class="btn">In Formular übernehmen</button>
                         <details class="raw-data-details">
@@ -75,6 +75,8 @@
                             <div class="form-group"><label for="Sicherheitsregler/Begrenzer">Sicherheitsregler/Begrenzer (°C)</label><input type="number" id="Sicherheitsregler/Begrenzer" name="Sicherheitsregler/Begrenzer"></div>
                             <div class="form-group"><label for="Wächter">Wächter (°C)</label><input type="number" id="Wächter" name="Wächter"></div>
                             <div class="form-group"><label for="Projekt Nr.">Projekt Nr.</label><input type="text" id="Projekt Nr." name="Projekt Nr."></div>
+                            <!-- NEUES FELD FÜR DIE DOKUMENTATION -->
+                            <div class="form-group full-width"><label for="Dokumentation">Dokumentation (URL)</label><input type="url" id="Dokumentation" name="Dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
                             <div class="form-group"><label for="Anzahl Heizkabeleinheiten">Anzahl Heizkabeleinheiten (Stk)</label><input type="number" id="Anzahl Heizkabeleinheiten" name="Anzahl Heizkabeleinheiten"></div>
                             <div class="form-group"><label for="Trennkasten">Trennkasten (Stk)</label><input type="number" id="Trennkasten" name="Trennkasten"></div>
                             <div class="form-group full-width"><label for="Heizkabeltyp">Heizkabeltyp</label><input type="text" id="Heizkabeltyp" name="Heizkabeltyp"></div>
