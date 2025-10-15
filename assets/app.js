@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const readActions = document.getElementById('read-actions');
     const themeSwitcher = document.querySelector('.theme-switcher');
     const docLinkContainer = document.getElementById('doc-link-container');
+    const legalInfoContainer = document.getElementById('legal-info');
 
     // --- State Variables ---
     let isNfcActionActive = false;
@@ -41,11 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         setupReadTabInitialState();
+        switchTab('read-tab'); // Ensure correct initial state
     }
     
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        console.log("Service Worker ist aktiv.");
-    } else if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' }).then(reg => console.log('Service Worker registered:', reg.scope)).catch(err => console.error('Service Worker registration failed:', err));
         });
@@ -161,7 +161,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupReadTabInitialState(){ protocolCard.innerHTML=`<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`; docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
     function initCollapsibles(){document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el))}
     function checkNfcSupport(){if('NDEFReader'in window){setNfcBadge('idle')}else{setNfcBadge('unsupported');nfcFallback.classList.remove('hidden');nfcStatusBadge.disabled=true}}
-    function switchTab(tabId){abortNfcAction();tabs.forEach(tab=>tab.classList.remove('active'));tabContents.forEach(content=>content.classList.remove('active'));document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');document.getElementById(tabId).classList.add('active');setNfcBadge('idle');if(tabId==='write-tab'){updatePayloadOnChange()}}
+    
+    function switchTab(tabId) {
+        abortNfcAction();
+        tabs.forEach(tab => tab.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        
+        if (legalInfoContainer) {
+            legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab');
+        }
+
+        setNfcBadge('idle');
+        if (tabId === 'write-tab') {
+            updatePayloadOnChange();
+        }
+    }
+
     function showMessage(text,type='info',duration=4000){messageBanner.textContent=text;messageBanner.className='message-banner';messageBanner.classList.add(type);messageBanner.classList.remove('hidden');setTimeout(()=>messageBanner.classList.add('hidden'),duration)}
     function setTodaysDate(){const today=new Date();const yyyy=today.getFullYear();const mm=String(today.getMonth()+1).padStart(2,'0');const dd=String(today.getDate()).padStart(2,'0');document.getElementById('am').value=`${yyyy}-${mm}-${dd}`}
     function setNfcBadge(state,message=''){const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');const states={unsupported:['NFC nicht unterstützt','err'],idle:[isWriteMode?'Schreiben starten':'Lesen starten','info'],scanning:['Scannen...','info'],writing:['Schreiben...','info'],success:[message||'Erfolgreich!','ok'],error:[message||'Fehler','err'],cooldown:['Bitte warten...','info']};const[text,className]=states[state]||states['idle'];nfcStatusBadge.textContent=text;nfcStatusBadge.className='nfc-badge';nfcStatusBadge.classList.add(className)}
