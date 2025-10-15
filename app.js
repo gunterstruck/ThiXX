@@ -1,13 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Konfiguration und Konstanten ---
+    const CONFIG = {
+        COOLDOWN_DURATION: 2000,
+        MAX_PAYLOAD_SIZE: 880,
+        DEBOUNCE_DELAY: 300,
+        MAX_LOG_ENTRIES: 5,
+    };
+
+    // --- Zustand der Anwendung ---
+    const appState = {
+        translations: {},
+        isNfcActionActive: false,
+        isCooldownActive: false,
+        abortController: null,
+        scannedDataObject: null,
+        eventLog: [],
+    };
+
     // --- Design-Vorlagen ---
     const designs = {
-        'default': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
-        'sigx': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
-        'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } }
+        'default': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'stixx': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
+        'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
+        // KORREKTUR: lockTheme auf false gesetzt, damit der Theme-Switcher sichtbar ist
+        'sigx': { appName: "SIGX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
     };
 
     // --- DOM Element References ---
-    const tabs = document.querySelectorAll('.tab-link');
+    const tabsContainer = document.querySelector('.tabs');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
@@ -24,167 +44,481 @@ document.addEventListener('DOMContentLoaded', () => {
     const readActions = document.getElementById('read-actions');
     const themeSwitcher = document.querySelector('.theme-switcher');
     const docLinkContainer = document.getElementById('doc-link-container');
+    const legalInfoContainer = document.getElementById('legal-info');
+    const eventLogOutput = document.getElementById('event-log-output');
 
-    // --- State Variables ---
-    let isNfcActionActive = false;
-    let isCooldownActive = false;
-    let abortController = null;
-    let scannedDataObject = null;
+    // --- Hilfsfunktionen ---
+    const debounce = (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    };
+    
+    function isValidDocUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'));
+        } catch {
+            return false;
+        }
+    }
 
-    // --- App Initialization ---
-    fetch('/ThiXX/config.json').then(res => res.ok ? res.json() : Promise.reject('config.json not found')).then(initializeApp).catch(err => { console.warn('Konfigurationsdatei nicht geladen, Fallback wird verwendet.', err); initializeApp({ design: "default" }); });
+    // --- Internationalisierungsfunktionen (i18n) ---
+    function t(key, options = {}) {
+        let text = key.split('.').reduce((obj, i) => obj?.[i], appState.translations);
+        if (!text) {
+            console.warn(`Translation not found for key: ${key}`);
+            return key;
+        }
+        if (options.replace) {
+            for (const [placeholder, value] of Object.entries(options.replace)) {
+                text = text.replace(`{${placeholder}}`, value);
+            }
+        }
+        return text;
+    }
 
-    function initializeApp(config) {
+    async function loadTranslations() {
+        const lang = navigator.language.split('-')[0];
+        const supportedLangs = ['de', 'en', 'es', 'fr'];
+        const selectedLang = supportedLangs.includes(lang) ? lang : 'de';
+        
+        // KORREKTUR: Pfad zu den Sprachdateien ohne /assets/
+        const path = `/ThiXX/lang/${selectedLang}.json`;
+
+        try {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`Language file for ${selectedLang} not found at ${path}`);
+            appState.translations = await response.json();
+            document.documentElement.lang = selectedLang;
+        } catch (error) {
+            console.error('Could not load translations, falling back to German.', error);
+            try {
+                // KORREKTUR: Fallback-Pfad ebenfalls korrigiert
+                const fallbackPath = `/ThiXX/lang/de.json`;
+                const response = await fetch(fallbackPath);
+                appState.translations = await response.json();
+                document.documentElement.lang = 'de';
+            } catch (fallbackError) {
+                console.error('Could not load fallback German translations.', fallbackError);
+            }
+        }
+    }
+
+    function applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+        document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+        document.title = t('appTitle');
+    }
+
+    // --- Fehlerbehandlung ---
+    class ErrorHandler {
+        static handle(error, context = 'General') {
+            const readableError = this.getReadableError(error);
+            console.error(`[${context}]`, error);
+            showMessage(readableError, 'err');
+            addLogEntry(`${context}: ${readableError}`, 'err');
+            return readableError;
+        }
+
+        static getReadableError(error) {
+            const errorMap = {
+                'NotAllowedError': 'errors.NotAllowedError',
+                'NotSupportedError': 'errors.NotSupportedError',
+                'NotFoundError': 'errors.NotFoundError',
+                'NotReadableError': 'errors.NotReadableError',
+                'NetworkError': 'errors.NetworkError',
+                'AbortError': 'errors.AbortError'
+            };
+            return t(errorMap[error.name] || 'errors.unknown');
+        }
+    }
+
+    // --- App Initialisierung ---
+    async function loadConfig() {
+        try {
+            const response = await fetch('/ThiXX/config.json');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.warn('Config load failed, using default.', error);
+            return { design: "default" };
+        }
+    }
+
+    async function main() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' })
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => ErrorHandler.handle(err, 'ServiceWorkerRegistration'));
+            });
+        }
+
+        await loadTranslations();
+        applyTranslations();
+        
+        const config = await loadConfig();
         applyConfig(config);
+        
         setupEventListeners();
         setTodaysDate();
         checkNfcSupport();
         initCollapsibles();
         setupReadTabInitialState();
-    }
-    
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        console.log("Service Worker ist aktiv.");
-    } else if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/ThiXX/sw.js', { scope: '/ThiXX/' }).then(reg => console.log('Service Worker registered:', reg.scope)).catch(err => console.error('Service Worker registration failed:', err));
-        });
+        switchTab('read-tab'); 
     }
 
+    main();
+
     function setupEventListeners() {
-        tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+        tabsContainer.addEventListener('click', (e) => {
+            const tabLink = e.target.closest('.tab-link');
+            if (tabLink) switchTab(tabLink.dataset.tab);
+        });
+        themeSwitcher.addEventListener('click', (e) => {
+            const themeBtn = e.target.closest('.theme-btn');
+            if (themeBtn) applyTheme(themeBtn.dataset.theme);
+        });
+
         nfcStatusBadge.addEventListener('click', handleNfcAction);
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
-        form.addEventListener('input', updatePayloadOnChange);
+        
+        form.addEventListener('input', debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY));
         form.addEventListener('change', updatePayloadOnChange);
-        document.getElementById('has_PT100').addEventListener('change', (e) => { document.getElementById('PT 100').disabled = !e.target.checked; });
-        document.getElementById('has_NiCr-Ni').addEventListener('change', (e) => { document.getElementById('NiCr-Ni').disabled = !e.target.checked; });
+        
+        document.getElementById('has_PT100')?.addEventListener('change', (e) => {
+            const el = document.getElementById('PT 100');
+            if (el) el.disabled = !e.target.checked;
+        });
+        document.getElementById('has_NiCr-Ni')?.addEventListener('change', (e) => {
+            const el = document.getElementById('NiCr-Ni');
+            if (el) el.disabled = !e.target.checked;
+        });
     }
 
-    async function isUrlCached(url) {
-        if (!('caches' in window)) return false;
-        try {
-            const cache = await caches.open('thixx-docs-v1');
-            const response = await cache.match(url);
-            return !!response;
-        } catch (error) {
-            console.error("Cache check failed:", error);
-            return false;
-        }
+    // --- UI & Darstellungslogik ---
+    function createDataPair(label, value, unit = '') {
+        if (value === undefined || value === null || value === '') return null;
+        
+        const div = document.createElement('div');
+        div.className = 'data-pair';
+        
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'data-pair-label';
+        labelSpan.textContent = label;
+        
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'data-pair-value';
+        valueSpan.textContent = `${value} ${unit}`.trim();
+        
+        div.appendChild(labelSpan);
+        div.appendChild(valueSpan);
+        return div;
     }
     
-    async function handleDocButtonClick(event) {
-        const button = event.target;
-        const url = button.dataset.url;
-
-        if (navigator.onLine) {
-            window.open(url, '_blank');
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url });
-                button.textContent = 'Offline verfügbar ✓';
-                button.disabled = true;
-            }
-        } else {
-            showMessage('Sie sind offline. Anleitung wird später geladen.', 'info');
-            const pendingDownloads = JSON.parse(localStorage.getItem('pendingDownloads') || '[]');
-            if (!pendingDownloads.includes(url)) {
-                pendingDownloads.push(url);
-                localStorage.setItem('pendingDownloads', JSON.stringify(pendingDownloads));
-            }
-            button.textContent = 'Download ausstehend...';
-            button.disabled = true;
-        }
-    }
-
     async function displayParsedData(data) {
-        protocolCard.innerHTML = `
-            <div class="card-main">
-                ${createDataPair('HK.Nr.', data['HK.Nr.'])}
-                ${createDataPair('KKS', data['KKS'])}
-            </div>
-            <div class="card-section">
-                ${createDataPair('Leistung', data['Leistung'], 'kW')}
-                ${createDataPair('Strom', data['Strom'], 'A')}
-                ${createDataPair('Spannung', data['Spannung'], 'V')}
-                ${createDataPair('Widerstand', data['Widerstand'], 'Ω')}
-            </div>
-            <div class="card-section">
-                ${createDataPair('Anzahl Heizkabeleinheiten', data['Anzahl Heizkabeleinheiten'], 'Stk')}
-                ${createDataPair('Trennkasten', data['Trennkasten'], 'Stk')}
-                ${createDataPair('Heizkabeltyp', data['Heizkabeltyp'])}
-                ${createDataPair('Schaltung', data['Schaltung'])}
-                ${createDataPair('PT 100', data['PT 100'], 'Stk')}
-                ${createDataPair('NiCr-Ni', data['NiCr-Ni'], 'Stk')}
-            </div>
-            <div class="card-section">
-                ${createDataPair('Regler', data['Regler'], '°C')}
-                ${createDataPair('Sicherheitsregler/Begrenzer', data['Sicherheitsregler/Begrenzer'], '°C')}
-                ${createDataPair('Wächter', data['Wächter'], '°C')}
-            </div>
-            <div class="card-footer">
-                ${createDataPair('Projekt Nr.', data['Projekt Nr.'])}
-                ${createDataPair('geprüft von', data['geprüft von'])}
-                ${createDataPair('am', data['am'])}
-            </div>
-        `;
+        protocolCard.innerHTML = '';
+        const fragments = { main: document.createDocumentFragment(), section1: document.createDocumentFragment(), section2: document.createDocumentFragment(), section3: document.createDocumentFragment(), footer: document.createDocumentFragment() };
+        const addPair = (frag, label, val, unit) => { const el = createDataPair(label, val, unit); if (el) frag.appendChild(el); };
         
+        addPair(fragments.main, t('form.HK.Nr.'), data['HK.Nr.']);
+        addPair(fragments.main, t('form.KKS'), data['KKS']);
+        addPair(fragments.section1, t('form.Leistung'), data['Leistung'], 'kW');
+        addPair(fragments.section1, t('form.Strom'), data['Strom'], 'A');
+        addPair(fragments.section1, t('form.Spannung'), data['Spannung'], 'V');
+        addPair(fragments.section1, t('form.Widerstand'), data['Widerstand'], 'Ω');
+        addPair(fragments.section2, t('form.Anzahl Heizkabeleinheiten'), data['Anzahl Heizkabeleinheiten'], 'Stk');
+        addPair(fragments.section2, t('form.Trennkasten'), data['Trennkasten'], 'Stk');
+        addPair(fragments.section2, t('form.Heizkabeltyp'), data['Heizkabeltyp']);
+        addPair(fragments.section2, t('form.Schaltung'), data['Schaltung']);
+        addPair(fragments.section2, 'PT 100', data['PT 100'], 'Stk');
+        addPair(fragments.section2, 'NiCr-Ni', data['NiCr-Ni'], 'Stk');
+        addPair(fragments.section3, t('form.Regler'), data['Regler'], '°C');
+        addPair(fragments.section3, t('form.Sicherheitsregler/Begrenzer'), data['Sicherheitsregler/Begrenzer'], '°C');
+        addPair(fragments.section3, t('form.Wächter'), data['Wächter'], '°C');
+        addPair(fragments.footer, t('form.Projekt Nr.'), data['Projekt Nr.']);
+        addPair(fragments.footer, t('form.geprüft von'), data['geprüft von']);
+        addPair(fragments.footer, t('form.am'), data['am']);
+        
+        const createSection = (frag, className) => { if(frag.hasChildNodes()) { const section = document.createElement('div'); section.className = className; section.appendChild(frag); protocolCard.appendChild(section); } };
+        createSection(fragments.main, 'card-main'); createSection(fragments.section1, 'card-section'); createSection(fragments.section2, 'card-section'); createSection(fragments.section3, 'card-section'); createSection(fragments.footer, 'card-footer');
+
         docLinkContainer.innerHTML = '';
         if (data['Dokumentation']) {
             const url = data['Dokumentation'];
+            if (!isValidDocUrl(url)) {
+                console.warn('Invalid documentation URL provided:', url);
+                return;
+            }
             const button = document.createElement('button');
             button.className = 'btn doc-link-btn';
             button.dataset.url = url;
 
             const isCached = await isUrlCached(url);
-
             if (isCached) {
-                button.textContent = 'Anleitung offline öffnen ✓';
+                button.textContent = t('docOpenOffline');
                 button.onclick = () => window.open(url, '_blank');
             } else {
-                if (navigator.onLine) {
-                    button.textContent = 'Betriebsanleitung herunterladen ↓';
-                } else {
-                    button.textContent = 'Offline - Später herunterladen';
-                }
+                button.textContent = navigator.onLine ? t('docDownload') : t('docDownloadLater');
                 button.addEventListener('click', handleDocButtonClick);
             }
             docLinkContainer.appendChild(button);
         }
     }
+    
+    function applyConfig(config) { 
+        const selectedDesign = designs[config.design] || designs['default'];
+        updateManifest(selectedDesign); 
+        applyTheme(selectedDesign.theme); 
+        if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); } 
+        const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img'); 
+        if (customerBtnImg && selectedDesign.icons?.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; } 
+        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]'); 
+        if (appleIcon && selectedDesign.icons?.icon192) { appleIcon.href = selectedDesign.icons.icon192; } 
+        if (selectedDesign.brandColors?.primary) { document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); } 
+        if (selectedDesign.brandColors?.secondary) { document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); } 
+    }
 
-    function applyConfig(config) { const selectedDesign = designs[config.design] || designs['default']; document.title = selectedDesign.appName; updateManifest(selectedDesign); applyTheme(selectedDesign.theme); if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); } const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img'); if (customerBtnImg && selectedDesign.icons && selectedDesign.icons.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; } const appleIcon = document.querySelector('link[rel="apple-touch-icon"]'); if (appleIcon && selectedDesign.icons && selectedDesign.icons.icon192) { appleIcon.href = selectedDesign.icons.icon192; } if (selectedDesign.brandColors && selectedDesign.brandColors.primary) { document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); } if (selectedDesign.brandColors && selectedDesign.brandColors.secondary) { document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); } }
+    // --- NFC Logik & Datenverarbeitung ---
+    function validateForm() {
+        const errors = [];
+        const voltage = parseFloat(form.elements['Spannung']?.value);
+        if (voltage && (voltage < 0 || voltage > 1000)) {
+            errors.push(t('errors.invalidVoltage'));
+        }
+        const docUrl = form.elements['Dokumentation']?.value;
+        if (docUrl && !isValidDocUrl(docUrl)) {
+            errors.push(t('errors.invalidDocUrl'));
+        }
+        return errors;
+    }
+
+    async function handleNfcAction() {
+        if (appState.isNfcActionActive || appState.isCooldownActive) return;
+        if (!('NDEFReader' in window)) {
+            showMessage(t('messages.nfcNotSupported'), 'err');
+            return;
+        }
+        appState.isNfcActionActive = true;
+        appState.abortController = new AbortController();
+        const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active');
+
+        try {
+            const ndef = new NDEFReader();
+            if (isWriteMode) {
+                const validationErrors = validateForm();
+                if (validationErrors.length > 0) {
+                    showMessage(validationErrors.join('\n'), 'err');
+                    abortNfcAction();
+                    return;
+                }
+                setNfcBadge('writing');
+                showMessage(t('messages.writePrompt'), 'info');
+                generateAndShowPayload();
+                const payload = payloadOutput.value;
+                if (new TextEncoder().encode(payload).length > CONFIG.MAX_PAYLOAD_SIZE) {
+                    throw new Error(t('messages.payloadTooLarge'));
+                }
+                await ndef.write(payload, { signal: appState.abortController.signal });
+                setNfcBadge('success', t('status.tagWritten'));
+                showMessage(t('messages.writeSuccess'), 'ok');
+                startCooldown();
+            } else {
+                setNfcBadge('scanning');
+                showMessage(t('messages.readPrompt'), 'info');
+
+                ndef.onreading = (event) => {
+                    try {
+                        const textRecord = event.message.records.find(r => r.recordType === 'text');
+                        if (textRecord) {
+                            const text = new TextDecoder().decode(textRecord.data);
+                            processNfcData(text);
+                            setNfcBadge('success', t('status.tagRead'));
+                            showMessage(t('messages.readSuccess'), 'ok');
+                        } else {
+                            throw new Error(t('messages.noKnownContent'));
+                        }
+                    } catch (error) {
+                        ErrorHandler.handle(error, 'NFCReadCallback');
+                    } finally {
+                        abortNfcAction();
+                        startCooldown();
+                    }
+                };
+                await ndef.scan({ signal: appState.abortController.signal });
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                ErrorHandler.handle(error, 'NFCAction');
+            }
+            abortNfcAction();
+            startCooldown();
+        }
+    }
+    
+    function sanitizeNfcData(data) {
+        const sanitized = {};
+        const allowedFields = new Set([...Object.keys(fieldMap), ...Object.values(fieldMap)]);
+        
+        for (const [key, value] of Object.entries(data)) {
+            if (!allowedFields.has(key)) continue;
+            
+            let sanitizedValue = String(value)
+                .trim()
+                .replace(/[<>]/g, '') // HTML tags
+                .replace(/[\x00-\x1F\x7F]/g, '') // Control characters
+                .substring(0, 200); // Max length
+            
+            if (key === 'Dokumentation' && !isValidDocUrl(sanitizedValue)) {
+                continue; // Skip invalid URLs
+            }
+            
+            sanitized[key] = sanitizedValue;
+        }
+        return sanitized;
+    }
+    
+    function processNfcData(text) {
+        rawDataOutput.value = text;
+        try {
+            let parsedData = parseNfcText(text);
+            appState.scannedDataObject = sanitizeNfcData(parsedData);
+            displayParsedData(appState.scannedDataObject);
+            readActions.classList.remove('hidden');
+            readResultContainer.classList.add('expanded');
+        } catch (e) {
+            showMessage(t('messages.processingError', { replace: { message: e.message } }), 'err');
+            setupReadTabInitialState();
+            appState.scannedDataObject = null;
+        }
+    }
+    
+    function startCooldown(){
+        appState.isCooldownActive=true;
+        setNfcBadge('cooldown');
+        setTimeout(()=>{
+            appState.isCooldownActive=false;
+            if ('NDEFReader' in window) setNfcBadge('idle');
+        }, CONFIG.COOLDOWN_DURATION)
+    }
+
+    function abortNfcAction(){
+        if(appState.abortController){
+            appState.abortController.abort();
+            appState.abortController=null;
+        }
+        appState.isNfcActionActive=false;
+    }
+
+    function addLogEntry(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        appState.eventLog.unshift({ timestamp, message, type });
+        if (appState.eventLog.length > CONFIG.MAX_LOG_ENTRIES) {
+            appState.eventLog.pop();
+        }
+        renderLog();
+    }
+
+    function renderLog() {
+        if (!eventLogOutput) return;
+        eventLogOutput.innerHTML = '';
+        
+        appState.eventLog.forEach(entry => {
+            const div = document.createElement('div');
+            div.className = `log-entry ${entry.type}`;
+            
+            const timestamp = document.createElement('span');
+            timestamp.className = 'log-timestamp';
+            timestamp.textContent = entry.timestamp;
+            
+            const message = document.createTextNode(` ${entry.message}`);
+            
+            div.appendChild(timestamp);
+            div.appendChild(message);
+            
+            eventLogOutput.appendChild(div);
+        });
+    }
+
+    async function isUrlCached(url) { if (!('caches' in window)) return false; try { const cache = await caches.open('thixx-docs-v1'); const response = await cache.match(url); return !!response; } catch (error) { console.error("Cache check failed:", error); return false; } }
+    
+    async function handleDocButtonClick(event) { const button = event.target; const url = button.dataset.url; if (navigator.onLine) { window.open(url, '_blank'); if (navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); button.textContent = t('docOpenOffline'); button.disabled = true; } } else { showMessage(t('docDownloadLater'), 'info'); button.textContent = t('docDownloadPending'); button.disabled = true; } }
+    
     function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
+    
     function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.body.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
-    document.querySelectorAll('.theme-btn').forEach(btn => { btn.addEventListener('click', () => applyTheme(btn.dataset.theme)); });
-    function setupReadTabInitialState(){ protocolCard.innerHTML=`<p class="placeholder-text">Noch keine Daten gelesen. Bitte NFC-Tag zum Lesen halten.</p>`; docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
-    function initCollapsibles(){document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el))}
-    function checkNfcSupport(){if('NDEFReader'in window){setNfcBadge('idle')}else{setNfcBadge('unsupported');nfcFallback.classList.remove('hidden');nfcStatusBadge.disabled=true}}
-    function switchTab(tabId){abortNfcAction();tabs.forEach(tab=>tab.classList.remove('active'));tabContents.forEach(content=>content.classList.remove('active'));document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');document.getElementById(tabId).classList.add('active');setNfcBadge('idle');if(tabId==='write-tab'){updatePayloadOnChange()}}
-    function showMessage(text,type='info',duration=4000){messageBanner.textContent=text;messageBanner.className='message-banner';messageBanner.classList.add(type);messageBanner.classList.remove('hidden');setTimeout(()=>messageBanner.classList.add('hidden'),duration)}
-    function setTodaysDate(){const today=new Date();const yyyy=today.getFullYear();const mm=String(today.getMonth()+1).padStart(2,'0');const dd=String(today.getDate()).padStart(2,'0');document.getElementById('am').value=`${yyyy}-${mm}-${dd}`}
-    function setNfcBadge(state,message=''){const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');const states={unsupported:['NFC nicht unterstützt','err'],idle:[isWriteMode?'Schreiben starten':'Lesen starten','info'],scanning:['Scannen...','info'],writing:['Schreiben...','info'],success:[message||'Erfolgreich!','ok'],error:[message||'Fehler','err'],cooldown:['Bitte warten...','info']};const[text,className]=states[state]||states['idle'];nfcStatusBadge.textContent=text;nfcStatusBadge.className='nfc-badge';nfcStatusBadge.classList.add(className)}
-    function getReadableError(error){const errorMap={'NotAllowedError':'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.','NotSupportedError':'NFC wird nicht unterstützt.','NotReadableError':'Tag konnte nicht gelesen werden.','NetworkError':'Netzwerkfehler beim NFC-Zugriff.','InvalidStateError':'Ungültiger Zustand. Bitte App neu laden.','DataError':'Daten konnten nicht verarbeitet werden.','AbortError':'Vorgang abgebrochen.'};return errorMap[error.name]||error.message||'Unbekannter Fehler'}
-    function startCooldown(){isCooldownActive=true;setNfcBadge('cooldown');setTimeout(()=>{isCooldownActive=false;setNfcBadge('idle')},2000)}
-    function abortNfcAction(){if(abortController){abortController.abort();abortController=null}isNfcActionActive=false}
-    async function handleNfcAction(){if(isNfcActionActive||isCooldownActive){return}if(!('NDEFReader'in window)){showMessage('Web NFC wird auf diesem Gerät nicht unterstützt.','err');return}isNfcActionActive=true;abortController=new AbortController();const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');try{const ndef=new NDEFReader();if(isWriteMode){setNfcBadge('writing');showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...','info');generateAndShowPayload();const payload=payloadOutput.value;if(new TextEncoder().encode(payload).length>880){throw new Error('Daten sind zu groß für den NFC-Tag.')}await ndef.write(payload,{signal:abortController.signal});setNfcBadge('success','Tag geschrieben!');showMessage('Daten erfolgreich auf den Tag geschrieben.','ok');startCooldown()}else{setNfcBadge('scanning');showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...','info');await new Promise((resolve,reject)=>{const onAbort=()=>{ndef.onreading=null;ndef.onreadingerror=null;reject(new DOMException('Vorgang abgebrochen.','AbortError'))};abortController.signal.addEventListener('abort',onAbort,{once:true});ndef.onreading=(event)=>{abortController.signal.removeEventListener('abort',onAbort);resolve(event)};ndef.onreadingerror=(event)=>{abortController.signal.removeEventListener('abort',onAbort);reject(new DOMException('Tag konnte nicht gelesen werden.','NotReadableError'))};ndef.scan({signal:abortController.signal}).catch(err=>{abortController.signal.removeEventListener('abort',onAbort);reject(err)})}).then((event)=>{abortNfcAction();const firstRecord=event.message.records[0];if(firstRecord&&firstRecord.recordType==='text'){const text=new TextDecoder().decode(firstRecord.data);processNfcData(text);setNfcBadge('success','Tag gelesen!');showMessage('NFC-Tag erfolgreich gelesen!','ok')}else{throw new Error('Kein Text auf dem Tag gefunden.')}startCooldown()})}}catch(error){abortNfcAction();const readableError=getReadableError(error);setNfcBadge('error',readableError);showMessage(readableError,'err');startCooldown()}finally{isNfcActionActive=false}}
-    function processNfcData(text){rawDataOutput.value=text;try{scannedDataObject=parseNfcText(text);displayParsedData(scannedDataObject);readActions.classList.remove('hidden');readResultContainer.classList.add('expanded')}catch(e){showMessage(`Fehler beim Verarbeiten: ${e.message}`,'err');setupReadTabInitialState();scannedDataObject=null}}
-    function parseNfcText(text){const data={};text=text.trim();if(text.startsWith('v1')){const content=text.substring(2).trim();const regex=/([^:\n]+):([^\n]*)/g;let match;while((match=regex.exec(content))!==null){const key=reverseFieldMap[match[1].trim()]||match[1].trim();data[key]=match[2].trim()}if(Object.keys(data).length===0)throw new Error("v1-Format, aber keine Daten gefunden.");return data}throw new Error("Kein bekanntes Format erkannt.")}
-    function createDataPair(label,value,unit=''){if(!value)return'';return`
-            <div class="data-pair">
-                <span class="data-pair-label">${label}</span>
-                <span class="data-pair-value">${value} ${unit}</span>
-            </div>
-        `}
-    function updatePayloadOnChange(){if(document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active')){generateAndShowPayload()}}
-    function generateAndShowPayload(){const formData=getFormData();const payload=formatToCompact(formData);payloadOutput.value=payload;const byteCount=new TextEncoder().encode(payload).length;payloadSize.textContent=`${byteCount} / 880 Bytes`;payloadSize.classList.toggle('limit-exceeded',byteCount>880)}
-    function getFormData(){const formData=new FormData(form);const data={};for(const[key,value]of formData.entries()){if(value.trim())data[key]=value.trim()}if(!document.getElementById('has_PT100').checked)delete data['PT 100'];if(!document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni'];delete data['has_PT100'];delete data['has_NiCr-Ni'];return data}
-    function formatToCompact(data){let compactString='v1';const parts=[];for(const[key,shortKey]of Object.entries(fieldMap)){if(data[key])parts.push(`${shortKey}:${data[key]}`)}if(parts.length>0)compactString+='\n'+parts.join('\n');return compactString}
-    function populateFormFromScan(){if(!scannedDataObject){showMessage('Keine Daten zum Übernehmen vorhanden.','err');return}form.reset();setTodaysDate();for(const[key,value]of Object.entries(scannedDataObject)){const input=form.elements[key];if(input){if(input.type==='radio'){form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{if(radio.value===value)radio.checked=true})}else if(input.type==='checkbox'){input.checked=(value==='true'||value==='on')}else{input.value=value}}}const pt100Input=document.getElementById('PT 100');const hasPt100Checkbox=document.getElementById('has_PT100');if(scannedDataObject['PT 100']){pt100Input.value=scannedDataObject['PT 100'];pt100Input.disabled=false;hasPt100Checkbox.checked=true}else{pt100Input.disabled=true;hasPt100Checkbox.checked=false}const niCrInput=document.getElementById('NiCr-Ni');const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni');if(scannedDataObject['NiCr-Ni']){niCrInput.value=scannedDataObject['NiCr-Ni'];niCrInput.disabled=false;hasNiCrCheckbox.checked=true}else{niCrInput.disabled=true;hasNiCrCheckbox.checked=false}switchTab('write-tab');document.getElementById('write-form-container').classList.add('expanded');showMessage('Daten in Formular übernommen.','ok')}
-    function saveFormAsJson(){const data=getFormData();const jsonString=JSON.stringify(data,null,2);const blob=new Blob([jsonString],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;const today=new Date().toISOString().slice(0,10);a.download=`thixx-${today}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showMessage('Daten als JSON gespeichert.','ok')}
-    function loadJsonIntoForm(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(e)=>{try{const data=JSON.parse(e.target.result);scannedDataObject=data;populateFormFromScan();showMessage('JSON-Datei erfolgreich geladen.','ok')}catch(error){showMessage(`Fehler beim Laden: ${error.message}`,'err')}finally{event.target.value=null}};reader.readAsText(file)}
-    function makeCollapsible(el){if(!el||el.dataset.collapsibleApplied)return;el.dataset.collapsibleApplied='true';const toggle=()=>{if(el.classList.contains('expanded'))return;el.classList.add('expanded')};const overlay=el.querySelector('.collapsible-overlay');if(overlay){overlay.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();toggle()})}el.addEventListener('click',(e)=>{const tag=(e.target.tagName||'').toLowerCase();if(['input','select','textarea','button','label','summary','details'].includes(tag)||e.target.closest('.collapsible-overlay'))return;toggle()})}
-    const fieldMap={'HK.Nr.':'HK','KKS':'KKS','Leistung':'P','Strom':'I','Spannung':'U','Widerstand':'R','Regler':'Reg','Sicherheitsregler/Begrenzer':'Sich','Wächter':'Wäch','Projekt Nr.':'Proj','Anzahl Heizkabeleinheiten':'Anz','Trennkasten':'TB','Heizkabeltyp':'HKT','Schaltung':'Sch','PT 100':'PT100','NiCr-Ni':'NiCr','geprüft von':'Chk','am':'Date', 'Dokumentation': 'Doc'};
+    
+    function setupReadTabInitialState(){ 
+        protocolCard.innerHTML = '';
+        const p = document.createElement('p');
+        p.className = 'placeholder-text';
+        p.textContent = t('placeholderRead');
+        protocolCard.appendChild(p);
+        
+        docLinkContainer.innerHTML = '';
+        readActions.classList.add('hidden');
+    }
+    
+    function initCollapsibles(){ document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el)) }
+    
+    function checkNfcSupport(){ if('NDEFReader' in window){ setNfcBadge('idle') } else { setNfcBadge('unsupported'); nfcFallback.classList.remove('hidden'); nfcStatusBadge.disabled=true } }
+    
+    function switchTab(tabId) { 
+        abortNfcAction(); 
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); 
+        tabContents.forEach(content => content.classList.remove('active')); 
+        document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); 
+        document.getElementById(tabId).classList.add('active'); 
+        
+        if (legalInfoContainer) { 
+            legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab');
+        } 
+        
+        if ('NDEFReader' in window) { 
+            setNfcBadge('idle'); 
+        } 
+        
+        if (tabId === 'write-tab') { 
+            updatePayloadOnChange(); 
+        } 
+    }
+    
+    function showMessage(text,type='info',duration=4000){ messageBanner.textContent=text; messageBanner.className='message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(()=>messageBanner.classList.add('hidden'),duration); addLogEntry(text, type); }
+    
+    function setTodaysDate(){ const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0'); document.getElementById('am').value=`${yyyy}-${mm}-${dd}` }
+    
+    function setNfcBadge(state,message=''){ const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"].active'); const states={ unsupported: [t('status.unsupported'), 'err'], idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'], scanning: [t('status.scanning'), 'info'], writing: [t('status.writing'), 'info'], success: [message || t('status.success'), 'ok'], error: [message || t('status.error'), 'err'], cooldown: [t('status.cooldown'), 'info'] }; const[text,className]=states[state]||states['idle']; nfcStatusBadge.textContent=text; nfcStatusBadge.className='nfc-badge'; nfcStatusBadge.classList.add(className) }
+    
+    function parseNfcText(text){ const data={}; text=text.trim(); if(text.startsWith('v1')){ const content=text.substring(2).trim(); const regex=/([^:\n]+):([^\n]*)/g; let match; while((match=regex.exec(content))!==null){ const key=reverseFieldMap[match[1].trim()]||match[1].trim(); data[key]=match[2].trim() } if(Object.keys(data).length===0)throw new Error(t('errors.v1NoData')); return data } throw new Error(t('errors.unknownFormat')) }
+    
+    function updatePayloadOnChange(){ if(document.querySelector('.tab-link[data-tab="write-tab"].active')){ generateAndShowPayload() } }
+    
+    function generateAndShowPayload(){ const formData=getFormData(); const payload=formatToCompact(formData); payloadOutput.value=payload; const byteCount=new TextEncoder().encode(payload).length; payloadSize.textContent=`${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; payloadSize.classList.toggle('limit-exceeded',byteCount>CONFIG.MAX_PAYLOAD_SIZE) }
+    
+    function getFormData(){ const formData=new FormData(form); const data={}; for(const[key,value]of formData.entries()){ if(value.trim())data[key]=value.trim() } if(!document.getElementById('has_PT100').checked)delete data['PT 100']; if(!document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data }
+    
+    function formatToCompact(data){ let compactString='v1'; const parts=[]; for(const[key,shortKey]of Object.entries(fieldMap)){ if(data[key])parts.push(`${shortKey}:${data[key]}`) } if(parts.length>0)compactString+='\n'+parts.join('\n'); return compactString }
+    
+    function populateFormFromScan(){ if(!appState.scannedDataObject){ showMessage(t('messages.noDataToCopy'),'err'); return } form.reset(); setTodaysDate(); for(const[key,value]of Object.entries(appState.scannedDataObject)){ const input=form.elements[key]; if(input){ if(input.type==='radio'){ form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{ if(radio.value===value)radio.checked=true }) }else if(input.type==='checkbox'){ input.checked=(value==='true'||value==='on') }else{ input.value=value } } } const pt100Input=document.getElementById('PT 100'); const hasPt100Checkbox=document.getElementById('has_PT100'); if(appState.scannedDataObject['PT 100']){ pt100Input.value=appState.scannedDataObject['PT 100']; pt100Input.disabled=false; hasPt100Checkbox.checked=true }else{ pt100Input.disabled=true; hasPt100Checkbox.checked=false } const niCrInput=document.getElementById('NiCr-Ni'); const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni'); if(appState.scannedDataObject['NiCr-Ni']){ niCrInput.value=appState.scannedDataObject['NiCr-Ni']; niCrInput.disabled=false; hasNiCrCheckbox.checked=true }else{ niCrInput.disabled=true; hasNiCrCheckbox.checked=false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'),'ok') }
+    
+    function saveFormAsJson(){ const data=getFormData(); const jsonString=JSON.stringify(data,null,2); const blob=new Blob([jsonString],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; const today=new Date().toISOString().slice(0,10); a.download=`thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showMessage(t('messages.saveSuccess'),'ok') }
+    
+    function loadJsonIntoForm(event){ const file=event.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=(e)=>{ try{ const data=JSON.parse(e.target.result); appState.scannedDataObject=data; populateFormFromScan(); showMessage(t('messages.loadSuccess'),'ok') }catch(error){ ErrorHandler.handle(error, 'LoadJSON'); }finally{ event.target.value=null } }; reader.readAsText(file) }
+    
+    function makeCollapsible(el){ if(!el||el.dataset.collapsibleApplied)return; el.dataset.collapsibleApplied='true'; const toggle=()=>{ if(el.classList.contains('expanded'))return; el.classList.add('expanded') }; const overlay=el.querySelector('.collapsible-overlay'); if(overlay){ overlay.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); toggle() }) } el.addEventListener('click',(e)=>{ const tag=(e.target.tagName||'').toLowerCase(); if(['input','select','textarea','button','label','summary','details'].includes(tag)||e.target.closest('.collapsible-overlay'))return; toggle() }) }
+    
+    const fieldMap={ 'HK.Nr.':'HK', 'KKS':'KKS', 'Leistung':'P', 'Strom':'I', 'Spannung':'U', 'Widerstand':'R', 'Regler':'Reg', 'Sicherheitsregler/Begrenzer':'Sich', 'Wächter':'Wäch', 'Projekt Nr.':'Proj', 'Anzahl Heizkabeleinheiten':'Anz', 'Trennkasten':'TB', 'Heizkabeltyp':'HKT', 'Schaltung':'Sch', 'PT 100':'PT100', 'NiCr-Ni':'NiCr', 'geprüft von':'Chk', 'am':'Date', 'Dokumentation': 'Doc' };
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
+
 });
+
