@@ -25,12 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeSwitcher = document.querySelector('.theme-switcher');
     const docLinkContainer = document.getElementById('doc-link-container');
     const legalInfoContainer = document.getElementById('legal-info');
+    const eventLogOutput = document.getElementById('event-log-output'); // NEU
 
     // --- State Variables ---
     let isNfcActionActive = false;
     let isCooldownActive = false;
     let abortController = null;
     let scannedDataObject = null;
+    let eventLog = []; // NEU
 
     // --- App Initialization ---
     fetch('/ThiXX/config.json').then(res => res.ok ? res.json() : Promise.reject('config.json not found')).then(initializeApp).catch(err => { console.warn('Konfigurationsdatei nicht geladen, Fallback wird verwendet.', err); initializeApp({ design: "default" }); });
@@ -42,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         setupReadTabInitialState();
-        switchTab('read-tab'); // Ensure correct initial state
+        switchTab('read-tab'); 
     }
     
     if ('serviceWorker' in navigator) {
@@ -62,6 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('has_PT100').addEventListener('change', (e) => { document.getElementById('PT 100').disabled = !e.target.checked; });
         document.getElementById('has_NiCr-Ni').addEventListener('change', (e) => { document.getElementById('NiCr-Ni').disabled = !e.target.checked; });
     }
+
+    // --- NEUE LOGGING FUNKTIONEN ---
+    function renderLog() {
+        if (!eventLogOutput) return;
+        eventLogOutput.innerHTML = eventLog
+            .map(entry => `<div class="log-entry ${entry.type}"><span class="log-timestamp">${entry.timestamp}</span> ${entry.message}</div>`)
+            .join('');
+    }
+
+    function addLogEntry(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        eventLog.unshift({ timestamp, message, type }); // unshift statt push, um neueste oben zu haben
+        if (eventLog.length > 5) {
+            eventLog.pop();
+        }
+        renderLog();
+    }
+    // --- ENDE LOGGING FUNKTIONEN ---
 
     async function isUrlCached(url) {
         if (!('caches' in window)) return false;
@@ -179,13 +199,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showMessage(text,type='info',duration=4000){messageBanner.textContent=text;messageBanner.className='message-banner';messageBanner.classList.add(type);messageBanner.classList.remove('hidden');setTimeout(()=>messageBanner.classList.add('hidden'),duration)}
+    function showMessage(text,type='info',duration=4000){
+        messageBanner.textContent=text;
+        messageBanner.className='message-banner';
+        messageBanner.classList.add(type);
+        messageBanner.classList.remove('hidden');
+        setTimeout(()=>messageBanner.classList.add('hidden'),duration);
+        addLogEntry(text, type); // Log-Eintrag hinzufügen
+    }
+
     function setTodaysDate(){const today=new Date();const yyyy=today.getFullYear();const mm=String(today.getMonth()+1).padStart(2,'0');const dd=String(today.getDate()).padStart(2,'0');document.getElementById('am').value=`${yyyy}-${mm}-${dd}`}
     function setNfcBadge(state,message=''){const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');const states={unsupported:['NFC nicht unterstützt','err'],idle:[isWriteMode?'Schreiben starten':'Lesen starten','info'],scanning:['Scannen...','info'],writing:['Schreiben...','info'],success:[message||'Erfolgreich!','ok'],error:[message||'Fehler','err'],cooldown:['Bitte warten...','info']};const[text,className]=states[state]||states['idle'];nfcStatusBadge.textContent=text;nfcStatusBadge.className='nfc-badge';nfcStatusBadge.classList.add(className)}
     function getReadableError(error){const errorMap={'NotAllowedError':'Zugriff verweigert. Bitte NFC-Berechtigung erteilen.','NotSupportedError':'NFC wird nicht unterstützt.','NotReadableError':'Tag konnte nicht gelesen werden.','NetworkError':'Netzwerkfehler beim NFC-Zugriff.','InvalidStateError':'Ungültiger Zustand. Bitte App neu laden.','DataError':'Daten konnten nicht verarbeitet werden.','AbortError':'Vorgang abgebrochen.'};return errorMap[error.name]||error.message||'Unbekannter Fehler'}
     function startCooldown(){isCooldownActive=true;setNfcBadge('cooldown');setTimeout(()=>{isCooldownActive=false;setNfcBadge('idle')},2000)}
     function abortNfcAction(){if(abortController){abortController.abort();abortController=null}isNfcActionActive=false}
-    async function handleNfcAction(){if(isNfcActionActive||isCooldownActive){return}if(!('NDEFReader'in window)){showMessage('Web NFC wird auf diesem Gerät nicht unterstützt.','err');return}isNfcActionActive=true;abortController=new AbortController();const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');try{const ndef=new NDEFReader();if(isWriteMode){setNfcBadge('writing');showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...','info');generateAndShowPayload();const payload=payloadOutput.value;if(new TextEncoder().encode(payload).length>880){throw new Error('Daten sind zu groß für den NFC-Tag.')}await ndef.write(payload,{signal:abortController.signal});setNfcBadge('success','Tag geschrieben!');showMessage('Daten erfolgreich auf den Tag geschrieben.','ok');startCooldown()}else{setNfcBadge('scanning');showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...','info');await new Promise((resolve,reject)=>{const onAbort=()=>{ndef.onreading=null;ndef.onreadingerror=null;reject(new DOMException('Vorgang abgebrochen.','AbortError'))};abortController.signal.addEventListener('abort',onAbort,{once:true});ndef.onreading=(event)=>{abortController.signal.removeEventListener('abort',onAbort);resolve(event)};ndef.onreadingerror=(event)=>{abortController.signal.removeEventListener('abort',onAbort);reject(new DOMException('Tag konnte nicht gelesen werden.','NotReadableError'))};ndef.scan({signal:abortController.signal}).catch(err=>{abortController.signal.removeEventListener('abort',onAbort);reject(err)})}).then((event)=>{abortNfcAction();const firstRecord=event.message.records[0];if(firstRecord&&firstRecord.recordType==='text'){const text=new TextDecoder().decode(firstRecord.data);processNfcData(text);setNfcBadge('success','Tag gelesen!');showMessage('NFC-Tag erfolgreich gelesen!','ok')}else{throw new Error('Kein Text auf dem Tag gefunden.')}startCooldown()})}}catch(error){abortNfcAction();const readableError=getReadableError(error);setNfcBadge('error',readableError);showMessage(readableError,'err');startCooldown()}finally{isNfcActionActive=false}}
+    
+    async function handleNfcAction() {
+        if (isNfcActionActive || isCooldownActive) { return; }
+        if (!('NDEFReader' in window)) {
+            showMessage('Web NFC wird auf diesem Gerät nicht unterstützt.', 'err');
+            return;
+        }
+        isNfcActionActive = true;
+        abortController = new AbortController();
+        const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"]').classList.contains('active');
+
+        try {
+            const ndef = new NDEFReader();
+            if (isWriteMode) {
+                setNfcBadge('writing');
+                showMessage('Bitte NFC-Tag zum Schreiben an das Gerät halten...', 'info');
+                generateAndShowPayload();
+                const payload = payloadOutput.value;
+                if (new TextEncoder().encode(payload).length > 880) {
+                    throw new Error('Daten sind zu groß für den NFC-Tag.');
+                }
+                await ndef.write(payload, { signal: abortController.signal });
+                setNfcBadge('success', 'Tag geschrieben!');
+                showMessage('Daten erfolgreich auf den Tag geschrieben.', 'ok');
+                startCooldown();
+            } else {
+                setNfcBadge('scanning');
+                showMessage('Bitte NFC-Tag zum Lesen an das Gerät halten...', 'info');
+                await new Promise((resolve, reject) => {
+                    const onAbort = () => {
+                        ndef.onreading = null;
+                        ndef.onreadingerror = null;
+                        reject(new DOMException('Vorgang abgebrochen.', 'AbortError'));
+                    };
+                    abortController.signal.addEventListener('abort', onAbort, { once: true });
+                    ndef.onreading = (event) => {
+                        abortController.signal.removeEventListener('abort', onAbort);
+                        resolve(event);
+                    };
+                    ndef.onreadingerror = (event) => {
+                        abortController.signal.removeEventListener('abort', onAbort);
+                        reject(new DOMException('Tag konnte nicht gelesen werden.', 'NotReadableError'));
+                    };
+                    ndef.scan({ signal: abortController.signal }).catch(err => {
+                        abortController.signal.removeEventListener('abort', onAbort);
+                        reject(err);
+                    });
+                }).then((event) => {
+                    abortNfcAction();
+                    console.log('NFC Scan-Ergebnis:', event);
+
+                    const records = event.message.records;
+                    if (!records || records.length === 0) {
+                        throw new Error('NFC-Tag ist leer.');
+                    }
+                    
+                    const textRecord = records.find(record => record.recordType === 'text');
+
+                    if (textRecord) {
+                        const text = new TextDecoder().decode(textRecord.data);
+                        processNfcData(text);
+                        setNfcBadge('success', 'Tag gelesen!');
+                        showMessage('NFC-Tag erfolgreich gelesen!', 'ok');
+                    } else {
+                        throw new Error('Kein bekannter Textinhalt gefunden.');
+                    }
+                    startCooldown();
+                });
+            }
+        } catch (error) {
+            abortNfcAction();
+            const readableError = getReadableError(error);
+            setNfcBadge('error', readableError);
+            showMessage(readableError, 'err');
+            startCooldown();
+        } finally {
+            isNfcActionActive = false;
+        }
+    }
+
     function processNfcData(text){rawDataOutput.value=text;try{scannedDataObject=parseNfcText(text);displayParsedData(scannedDataObject);readActions.classList.remove('hidden');readResultContainer.classList.add('expanded')}catch(e){showMessage(`Fehler beim Verarbeiten: ${e.message}`,'err');setupReadTabInitialState();scannedDataObject=null}}
     function parseNfcText(text){const data={};text=text.trim();if(text.startsWith('v1')){const content=text.substring(2).trim();const regex=/([^:\n]+):([^\n]*)/g;let match;while((match=regex.exec(content))!==null){const key=reverseFieldMap[match[1].trim()]||match[1].trim();data[key]=match[2].trim()}if(Object.keys(data).length===0)throw new Error("v1-Format, aber keine Daten gefunden.");return data}throw new Error("Kein bekanntes Format erkannt.")}
     function createDataPair(label,value,unit=''){if(!value)return'';return`
