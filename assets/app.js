@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'default': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'stixx': { appName: "STIXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#e45d45", secondary: "#6c6b66" } },
         'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
-        'sigx': { appName: "SIGX NFC Tool", theme: "dark", lockTheme: true, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
+        // KORREKTUR: lockTheme auf false gesetzt, damit der Theme-Switcher sichtbar ist
+        'sigx': { appName: "SIGX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
     };
 
     // --- DOM Element References ---
@@ -88,16 +89,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const lang = navigator.language.split('-')[0];
         const supportedLangs = ['de', 'en', 'es', 'fr'];
         const selectedLang = supportedLangs.includes(lang) ? lang : 'de';
+        
+        // KORREKTUR: Pfad zu den Sprachdateien ohne /assets/
+        const path = `/ThiXX/lang/${selectedLang}.json`;
 
         try {
-            const response = await fetch(`/ThiXX/assets/lang/${selectedLang}.json`);
-            if (!response.ok) throw new Error(`Language file for ${selectedLang} not found`);
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`Language file for ${selectedLang} not found at ${path}`);
             appState.translations = await response.json();
             document.documentElement.lang = selectedLang;
         } catch (error) {
             console.error('Could not load translations, falling back to German.', error);
             try {
-                const response = await fetch(`/ThiXX/assets/lang/de.json`);
+                // KORREKTUR: Fallback-Pfad ebenfalls korrigiert
+                const fallbackPath = `/ThiXX/lang/de.json`;
+                const response = await fetch(fallbackPath);
                 appState.translations = await response.json();
                 document.documentElement.lang = 'de';
             } catch (fallbackError) {
@@ -225,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragments = { main: document.createDocumentFragment(), section1: document.createDocumentFragment(), section2: document.createDocumentFragment(), section3: document.createDocumentFragment(), footer: document.createDocumentFragment() };
         const addPair = (frag, label, val, unit) => { const el = createDataPair(label, val, unit); if (el) frag.appendChild(el); };
         
-        addPair(fragments.main, 'HK.Nr.', data['HK.Nr.']);
-        addPair(fragments.main, 'KKS', data['KKS']);
+        addPair(fragments.main, t('form.HK.Nr.'), data['HK.Nr.']);
+        addPair(fragments.main, t('form.KKS'), data['KKS']);
         addPair(fragments.section1, t('form.Leistung'), data['Leistung'], 'kW');
         addPair(fragments.section1, t('form.Strom'), data['Strom'], 'A');
         addPair(fragments.section1, t('form.Spannung'), data['Spannung'], 'V');
@@ -402,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setNfcBadge('cooldown');
         setTimeout(()=>{
             appState.isCooldownActive=false;
-            setNfcBadge('idle');
+            if ('NDEFReader' in window) setNfcBadge('idle');
         }, CONFIG.COOLDOWN_DURATION)
     }
 
@@ -425,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderLog() {
         if (!eventLogOutput) return;
-        eventLogOutput.innerHTML = ''; // Leeren, um XSS zu verhindern
+        eventLogOutput.innerHTML = '';
         
         appState.eventLog.forEach(entry => {
             const div = document.createElement('div');
@@ -467,7 +473,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function checkNfcSupport(){ if('NDEFReader' in window){ setNfcBadge('idle') } else { setNfcBadge('unsupported'); nfcFallback.classList.remove('hidden'); nfcStatusBadge.disabled=true } }
     
-    function switchTab(tabId) { abortNfcAction(); document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); tabContents.forEach(content => content.classList.remove('active')); document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); document.getElementById(tabId).classList.add('active'); if (legalInfoContainer) { legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab' && tabId !== 'write-tab'); } if ('NDEFReader' in window) { setNfcBadge('idle'); } if (tabId === 'write-tab') { updatePayloadOnChange(); } }
+    function switchTab(tabId) { 
+        abortNfcAction(); 
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); 
+        tabContents.forEach(content => content.classList.remove('active')); 
+        document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); 
+        document.getElementById(tabId).classList.add('active'); 
+        
+        if (legalInfoContainer) { 
+            legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab');
+        } 
+        
+        if ('NDEFReader' in window) { 
+            setNfcBadge('idle'); 
+        } 
+        
+        if (tabId === 'write-tab') { 
+            updatePayloadOnChange(); 
+        } 
+    }
     
     function showMessage(text,type='info',duration=4000){ messageBanner.textContent=text; messageBanner.className='message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(()=>messageBanner.classList.add('hidden'),duration); addLogEntry(text, type); }
     

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- FIX: Strengere Content Security Policy für erhöhte Sicherheit -->
+    <!-- Strikte Content Security Policy für erhöhte Sicherheit -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
     
     <title>ThiXX - NFC PWA</title>
@@ -25,6 +25,7 @@
                   <span class="logo-gray">XX</span>
                 </h1>
                 <div class="theme-switcher">
+                    <!-- KORREKTUR: data-i18n-title wird verwendet, damit Emojis nicht überschrieben werden -->
                     <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
@@ -59,6 +60,21 @@
                             <summary data-i18n="showEvents"></summary>
                             <div id="event-log-output"></div>
                         </details>
+                    </div>
+                    <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
+                </div>
+                 <!-- KORREKTUR: Impressum-Container ist jetzt hier, um nur auf der "Lesen"-Seite angezeigt zu werden -->
+                <div id="legal-info" class="collapsible hidden">
+                    <h2 data-i18n="legalTitle"></h2>
+                    <div class="legal-content">
+                        <p><strong data-i18n="imprintTitle"></strong><br>
+                        Angaben gemäß § 5 TMG:<br>
+                        Günter Struck<br>
+                        Musterstraße 1<br>
+                        12345 Musterstadt</p>
+                        <div class="legal-links">
+                            <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicyLink"></a>
+                        </div>
                     </div>
                     <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
@@ -127,20 +143,6 @@
                     </div>
                     <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
-            </div>
-             <div id="legal-info" class="collapsible hidden">
-                <h2 data-i18n="legalTitle"></h2>
-                <div class="legal-content">
-                    <p><strong data-i18n="imprintTitle"></strong><br>
-                    Angaben gemäß § 5 TMG:<br>
-                    Günter Struck<br>
-                    Musterstraße 1<br>
-                    12345 Musterstadt</p>
-                    <div class="legal-links">
-                        <a href="https://raw.githubusercontent.com/gunterstruck/ThiXX/main/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicyLink"></a>
-                    </div>
-                </div>
-                <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
             </div>
         </main>
         
