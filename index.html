@@ -8,7 +8,24 @@
     <title>ThiXX - NFC PWA</title>
     <link rel="manifest" href="/ThiXX/manifest.webmanifest">
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
-    <link rel="apple-touch-icon" href="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png">
+
+    <script>
+      (function() {
+        // Versucht, das zuletzt genutzte Theme aus dem Speicher zu laden
+        let theme = localStorage.getItem('thixx-theme');
+        
+        // Wenn kein Theme gespeichert ist (z.B. erster Besuch), 
+        // wird 'customer-brand' als Standard festgelegt.
+        if (!theme) {
+          theme = 'customer-brand';
+        }
+        
+        // Setzt das 'data-theme'-Attribut auf das <html>-Element,
+        // bevor die Seite sichtbar wird.
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <link rel="apple-touch-icon" href="/ThiXX/assets/THiXX_Icon_Grau6C66_Transparent_192x192.png">
     <meta name="theme-color" content="#FCFCFD">
 </head>
 <body>
