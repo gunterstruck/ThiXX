@@ -360,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         setNfcBadge('success', t('status.tagWritten'));
                         showMessage(t('messages.writeSuccess'), 'ok');
                         
-                        // FIX 2: Robuste Grace Period zur Verhinderung von Race Conditions
                         appState.gracePeriodTimeoutId = setTimeout(() => {
                             if (appState.gracePeriodTimeoutId !== null) {
                                 abortNfcAction();
@@ -368,7 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD);
 
-                        // Stiller Scan, um den NFC-Chip für die Dauer der Grace Period zu blockieren
                         ndef.onreading = () => {};
                         ndef.scan({ signal: appState.abortController.signal }).catch(error => {
                             if (error.name !== 'AbortError') {
@@ -376,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         });
                         
-                        return; // Beendet die Funktion; die Grace Period kümmert sich um das Aufräumen
+                        return;
 
                     } catch (error) {
                         console.warn(`Write attempt ${attempt} failed:`, error);
@@ -464,7 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function abortNfcAction(){
         clearTimeout(appState.nfcTimeoutId);
 
-        // Aufräumen des Grace-Period-Timers, falls er aktiv ist
         if (appState.gracePeriodTimeoutId) {
             clearTimeout(appState.gracePeriodTimeoutId);
             appState.gracePeriodTimeoutId = null;
@@ -533,12 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
     
-    // FIX 1: Memory Leak bei Blob URLs behoben
     function updateManifest(design) {
         const manifestLink = document.querySelector('link[rel="manifest"]');
         if (!manifestLink) return;
 
-        // Alte Blob URL freigeben, um Speicherlecks zu verhindern
         const oldHref = manifestLink.href;
         if (oldHref && oldHref.startsWith('blob:')) {
             URL.revokeObjectURL(oldHref);
@@ -610,7 +605,26 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     
     function populateFormFromScan(){ if(!appState.scannedDataObject){ showMessage(t('messages.noDataToCopy'),'err'); return } form.reset(); setTodaysDate(); for(const[key,value]of Object.entries(appState.scannedDataObject)){ const input=form.elements[key]; if(input){ if(input.type==='radio'){ form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{ if(radio.value===value)radio.checked=true }) }else if(input.type==='checkbox'){ input.checked=(value==='true'||value==='on') }else{ input.value=value } } } const pt100Input=document.getElementById('PT 100'); const hasPt100Checkbox=document.getElementById('has_PT100'); if(appState.scannedDataObject['PT 100']){ pt100Input.value=appState.scannedDataObject['PT 100']; pt100Input.disabled=false; hasPt100Checkbox.checked=true }else{ pt100Input.disabled=true; hasPt100Checkbox.checked=false } const niCrInput=document.getElementById('NiCr-Ni'); const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni'); if(appState.scannedDataObject['NiCr-Ni']){ niCrInput.value=appState.scannedDataObject['NiCr-Ni']; niCrInput.disabled=false; hasNiCrCheckbox.checked=true }else{ niCrInput.disabled=true; hasNiCrCheckbox.checked=false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'),'ok') }
     
-    function saveFormAsJson(){ const data=getFormData(); const jsonString=JSON.stringify(data,null,2); const blob=new Blob([jsonString],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; const today=new Date().toISOString().slice(0,10); a.download=`thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showMessage(t('messages.saveSuccess'),'ok') }
+    function saveFormAsJson(){
+        const data = getFormData();
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const today = new Date().toISOString().slice(0, 10);
+        a.download = `thixx-${today}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // WICHTIG: Nach dem Download aufräumen, mit kurzem Delay
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showMessage(t('messages.saveSuccess'), 'ok');
+    }
     
     function loadJsonIntoForm(event){ const file=event.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=(e)=>{ try{ const data=JSON.parse(e.target.result); appState.scannedDataObject=data; populateFormFromScan(); showMessage(t('messages.loadSuccess'),'ok') }catch(error){ ErrorHandler.handle(error, 'LoadJSON'); }finally{ event.target.value=null } }; reader.readAsText(file) }
     
