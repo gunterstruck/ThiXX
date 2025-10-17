@@ -2,8 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration and Constants ---
     const CONFIG = {
         COOLDOWN_DURATION: 2000,
-        // NEU: Eine 2.5-sekündige Schonfrist nach erfolgreichem Schreiben,
-        // um zu verhindern, dass das Betriebssystem die Kontrolle übernimmt.
         WRITE_SUCCESS_GRACE_PERIOD: 2500,
         MAX_PAYLOAD_SIZE: 880,
         DEBOUNCE_DELAY: 300,
@@ -21,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scannedDataObject: null,
         eventLog: [],
         nfcTimeoutId: null,
+        gracePeriodTimeoutId: null, // Hinzugefügt, um den Grace-Period-Timer zu verwalten
     };
 
     // --- Design Templates ---
@@ -358,30 +357,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         await ndef.write(message, { signal: appState.abortController.signal });
                         clearTimeout(appState.nfcTimeoutId);
                         
-                        // --- NEUE "GRACE PERIOD" LOGIK ---
-                        // 1. Erfolg sofort dem Nutzer anzeigen.
                         setNfcBadge('success', t('status.tagWritten'));
                         showMessage(t('messages.writeSuccess'), 'ok');
                         
-                        // 2. Einen Timer für die Schonfrist starten.
-                        setTimeout(() => {
-                            if (appState.isNfcActionActive) {
+                        // FIX 2: Robuste Grace Period zur Verhinderung von Race Conditions
+                        appState.gracePeriodTimeoutId = setTimeout(() => {
+                            if (appState.gracePeriodTimeoutId !== null) {
                                 abortNfcAction();
                                 startCooldown();
                             }
                         }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD);
 
-                        // 3. Einen stillen Scan starten, um den NFC-Leser zu blockieren.
-                        // Der onreading-Handler ist leer, da wir nichts tun wollen.
+                        // Stiller Scan, um den NFC-Chip für die Dauer der Grace Period zu blockieren
                         ndef.onreading = () => {};
                         ndef.scan({ signal: appState.abortController.signal }).catch(error => {
-                            // Ein AbortError wird hier erwartet und ist normal.
                             if (error.name !== 'AbortError') {
                                 console.warn("Silent scan during grace period caught an unexpected error:", error);
                             }
                         });
                         
-                        return; // Wichtig: Die Funktion hier beenden. Der Timeout kümmert sich um den Rest.
+                        return; // Beendet die Funktion; die Grace Period kümmert sich um das Aufräumen
 
                     } catch (error) {
                         console.warn(`Write attempt ${attempt} failed:`, error);
@@ -468,6 +463,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function abortNfcAction(){
         clearTimeout(appState.nfcTimeoutId);
+
+        // Aufräumen des Grace-Period-Timers, falls er aktiv ist
+        if (appState.gracePeriodTimeoutId) {
+            clearTimeout(appState.gracePeriodTimeoutId);
+            appState.gracePeriodTimeoutId = null;
+        }
+        
         if(appState.abortController && !appState.abortController.signal.aborted){
             appState.abortController.abort(new DOMException('User aborted', 'AbortError'));
         }
@@ -501,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function isUrlCached(url) { 
         if (!('caches' in window)) return false; 
         try { 
-            const cache = await caches.open('thixx-docs-v1'); // Use constant name
+            const cache = await caches.open('thixx-docs-v1');
             const request = new Request(url, { mode: 'no-cors' });
             const response = await cache.match(request); 
             return !!response; 
@@ -531,7 +533,34 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
     
-    function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
+    // FIX 1: Memory Leak bei Blob URLs behoben
+    function updateManifest(design) {
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (!manifestLink) return;
+
+        // Alte Blob URL freigeben, um Speicherlecks zu verhindern
+        const oldHref = manifestLink.href;
+        if (oldHref && oldHref.startsWith('blob:')) {
+            URL.revokeObjectURL(oldHref);
+        }
+
+        const newManifest = {
+            name: design.appName,
+            short_name: design.appName.split(' ')[0],
+            start_url: "/ThiXX/index.html",
+            scope: "/ThiXX/",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: design.brandColors.primary || "#f04e37",
+            orientation: "portrait-primary",
+            icons: [
+                { src: design.icons.icon192, sizes: "192x192", type: "image/png" },
+                { src: design.icons.icon512, sizes: "512x512", type: "image/png" }
+            ]
+        };
+        const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' });
+        manifestLink.href = URL.createObjectURL(blob);
+    }
     
 
 function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
@@ -591,3 +620,4 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 
 });
+
