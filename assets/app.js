@@ -2,11 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration and Constants ---
     const CONFIG = {
         COOLDOWN_DURATION: 2000,
+        // NEU: Eine 2.5-sekündige Schonfrist nach erfolgreichem Schreiben,
+        // um zu verhindern, dass das Betriebssystem die Kontrolle übernimmt.
+        WRITE_SUCCESS_GRACE_PERIOD: 2500,
         MAX_PAYLOAD_SIZE: 880,
         DEBOUNCE_DELAY: 300,
         MAX_LOG_ENTRIES: 15,
-        NFC_WRITE_TIMEOUT: 5000, 
-        MAX_WRITE_RETRIES: 3, 
+        NFC_WRITE_TIMEOUT: 5000,
+        MAX_WRITE_RETRIES: 3,
     };
 
     // --- Application State ---
@@ -17,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abortController: null,
         scannedDataObject: null,
         eventLog: [],
-        nfcTimeoutId: null, 
+        nfcTimeoutId: null,
     };
 
     // --- Design Templates ---
@@ -349,21 +352,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     }]
                 };
 
-                console.log("=== NFC Write Debug ===");
-                console.log("Payload Size:", new TextEncoder().encode(payload).length, "Bytes");
-                console.log("Payload Content:", payload);
-                console.log("Writing NDEF Message:", message);
-
                 for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) {
                     try {
-                        console.log(`Write attempt ${attempt}/${CONFIG.MAX_WRITE_RETRIES}...`);
                         showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT);
                         await ndef.write(message, { signal: appState.abortController.signal });
                         clearTimeout(appState.nfcTimeoutId);
+                        
+                        // --- NEUE "GRACE PERIOD" LOGIK ---
+                        // 1. Erfolg sofort dem Nutzer anzeigen.
                         setNfcBadge('success', t('status.tagWritten'));
                         showMessage(t('messages.writeSuccess'), 'ok');
-                        startCooldown();
-                        return;
+                        
+                        // 2. Einen Timer für die Schonfrist starten.
+                        setTimeout(() => {
+                            if (appState.isNfcActionActive) {
+                                abortNfcAction();
+                                startCooldown();
+                            }
+                        }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD);
+
+                        // 3. Einen stillen Scan starten, um den NFC-Leser zu blockieren.
+                        // Der onreading-Handler ist leer, da wir nichts tun wollen.
+                        ndef.onreading = () => {};
+                        ndef.scan({ signal: appState.abortController.signal }).catch(error => {
+                            // Ein AbortError wird hier erwartet und ist normal.
+                            if (error.name !== 'AbortError') {
+                                console.warn("Silent scan during grace period caught an unexpected error:", error);
+                            }
+                        });
+                        
+                        return; // Wichtig: Die Funktion hier beenden. Der Timeout kümmert sich um den Rest.
+
                     } catch (error) {
                         console.warn(`Write attempt ${attempt} failed:`, error);
                         if (attempt === CONFIG.MAX_WRITE_RETRIES || error.name === 'TimeoutError' || error.name === 'AbortError') {
@@ -479,12 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // KORREKTUR: Cache-Prüfung verwendet jetzt `no-cors`, um mit dem Service Worker übereinzustimmen
     async function isUrlCached(url) { 
         if (!('caches' in window)) return false; 
         try { 
-            const cache = await caches.open(DOC_CACHE_NAME); 
-            // Wichtig: Die Anfrage muss mit dem übereinstimmen, was der Service Worker speichert.
+            const cache = await caches.open('thixx-docs-v1'); // Use constant name
             const request = new Request(url, { mode: 'no-cors' });
             const response = await cache.match(request); 
             return !!response; 
@@ -505,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.onclick = () => window.open(url, '_blank');
 
             if (navigator.serviceWorker.controller) { 
-                navigator.service-worker.controller.postMessage({ action: 'cache-doc', url: url }); 
+                navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); 
             } 
         } else { 
             showMessage(t('docDownloadLater'), 'info'); 
@@ -574,4 +591,3 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 
 });
-
