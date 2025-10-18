@@ -46,7 +46,8 @@
     "copySuccess": "Datos copiados al formulario.",
     "saveSuccess": "Datos guardados como archivo JSON.",
     "loadSuccess": "Archivo JSON cargado y aplicado al formulario correctamente.",
-    "loadError": "Error al cargar el archivo JSON: {message}"
+    "loadError": "Error al cargar el archivo JSON: {message}",
+    "writeAttempt": "Intento de escritura {attempt}/{total}... Por favor, mantenga el móvil quieto."
   },
   "errors": {
     "unknown": "Ha ocurrido un error desconocido.",
@@ -58,8 +59,10 @@
     "NotSupportedError": "Su navegador no es compatible con NFC.",
     "NotFoundError": "No se encontró ningún dispositivo NFC compatible.",
     "NotReadableError": "No se pudo leer la etiqueta NFC.",
-    "NetworkError": "Se ha producido un error de red durante el acceso a NFC.",
-    "AbortError": "La operación ha sido cancelada."
+    "NetworkError": "La conexión con la etiqueta es inestable. Por favor, mantenga el móvil quieto y directamente sobre la etiqueta NFC.",
+    "AbortError": "La operación ha sido cancelada por el usuario.",
+    "WriteTimeoutError": "Tiempo de escritura agotado. Por favor, retire el móvil de la etiqueta e inténtelo de nuevo.",
+    "tagEmpty": "La etiqueta NFC está vacía o no se ha podido leer."
   },
   "form": {
     "HK.Nr.": "Nº CC",
@@ -87,4 +90,3 @@
     "am": "en (Fecha)"
   }
 }
-

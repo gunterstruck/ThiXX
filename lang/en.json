@@ -46,7 +46,8 @@
     "copySuccess": "Data copied to form.",
     "saveSuccess": "Data saved as JSON file.",
     "loadSuccess": "JSON file successfully loaded and applied to form.",
-    "loadError": "Error loading JSON file: {message}"
+    "loadError": "Error loading JSON file: {message}",
+    "writeAttempt": "Write attempt {attempt}/{total}... Please hold the phone steady."
   },
   "errors": {
     "unknown": "An unknown error occurred.",
@@ -58,8 +59,10 @@
     "NotSupportedError": "NFC is not supported by your browser.",
     "NotFoundError": "No compatible NFC device found.",
     "NotReadableError": "The NFC tag could not be read.",
-    "NetworkError": "A network error occurred during NFC access.",
-    "AbortError": "The operation was aborted."
+    "NetworkError": "Connection to the tag is unstable. Please hold the phone steady and directly on the NFC tag.",
+    "AbortError": "The operation was aborted by the user.",
+    "WriteTimeoutError": "Write operation timed out. Please remove the phone from the tag and try again.",
+    "tagEmpty": "The NFC tag is empty or could not be read."
   },
   "form": {
     "HK.Nr.": "HC No.",
@@ -87,4 +90,3 @@
     "am": "on (Date)"
   }
 }
-
