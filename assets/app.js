@@ -3,11 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const CONFIG = {
         COOLDOWN_DURATION: 2000,
         WRITE_SUCCESS_GRACE_PERIOD: 2500,
-        MAX_PAYLOAD_SIZE: 880,
+        MAX_PAYLOAD_SIZE: 880, // Note: URL length is the new constraint
         DEBOUNCE_DELAY: 300,
         MAX_LOG_ENTRIES: 15,
         NFC_WRITE_TIMEOUT: 5000,
         MAX_WRITE_RETRIES: 3,
+        BASE_URL: 'https://gunterstruck.github.io/ThiXX/index.html' // Base URL for generating links
     };
 
     // --- Application State ---
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scannedDataObject: null,
         eventLog: [],
         nfcTimeoutId: null,
-        gracePeriodTimeoutId: null, // Hinzugefügt, um den Grace-Period-Timer zu verwalten
+        gracePeriodTimeoutId: null,
     };
 
     // --- Design Templates ---
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DOM Element References ---
     const tabsContainer = document.querySelector('.tabs');
+    const writeTabButton = document.querySelector('.tab-link[data-tab="write-tab"]');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
     const copyToFormBtn = document.getElementById('copy-to-form-btn');
@@ -140,8 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             if (error.name === 'NetworkError') {
-                 const payloadByteSize = new TextEncoder().encode(payloadOutput.value).length;
-                 if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) {
+                 const urlPayload = generateUrlFromForm();
+                 if (urlPayload.length > CONFIG.MAX_PAYLOAD_SIZE) {
                      return t('messages.payloadTooLarge');
                  }
             }
@@ -179,10 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupEventListeners();
         setTodaysDate();
-        checkNfcSupport();
+        checkNfcSupportAndSetupUI();
         initCollapsibles();
-        setupReadTabInitialState();
-        switchTab('read-tab'); 
+
+        // **NEU: URL-Parameter beim Start verarbeiten**
+        if (!processUrlParameters()) {
+            setupReadTabInitialState();
+        }
     }
 
     main();
@@ -307,9 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (docUrl && !isValidDocUrl(docUrl)) {
             errors.push(t('errors.invalidDocUrl'));
         }
-        generateAndShowPayload();
-        const payloadByteSize = new TextEncoder().encode(payloadOutput.value).length;
-        if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) {
+        const urlPayload = generateUrlFromForm();
+        if (urlPayload.length > CONFIG.MAX_PAYLOAD_SIZE) {
             errors.push(t('messages.payloadTooLarge'));
         }
         return errors;
@@ -342,12 +346,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 setNfcBadge('writing');
 
-                const payload = payloadOutput.value;
+                // **NEU: URL generieren und als URL-Record schreiben**
+                const urlPayload = generateUrlFromForm();
                 const message = {
                     records: [{
-                        recordType: "text",
-                        data: payload,
-                        lang: document.documentElement.lang || 'de'
+                        recordType: "url",
+                        data: urlPayload
                     }]
                 };
 
@@ -391,12 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 ndef.onreading = (event) => {
                     clearTimeout(appState.nfcTimeoutId);
                     try {
-                        const textRecord = event.message.records.find(r => r.recordType === 'text');
-                        if (textRecord) {
-                            const text = new TextDecoder().decode(textRecord.data);
-                            processNfcData(text);
-                            setNfcBadge('success', t('status.tagRead'));
-                            showMessage(t('messages.readSuccess'), 'ok');
+                        // **NEU: Nach URL-Record suchen und weiterleiten**
+                        const urlRecord = event.message.records.find(r => r.recordType === 'url');
+                        if (urlRecord) {
+                            const url = new TextDecoder().decode(urlRecord.data);
+                            // Einfachste Methode: Seite mit der gelesenen URL neu laden
+                            window.location.href = url;
                         } else {
                             if (event.message.records.length === 0) throw new Error(t('errors.tagEmpty'));
                             throw new Error(t('messages.noKnownContent'));
@@ -435,19 +439,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return sanitized;
     }
     
-    function processNfcData(text) {
-        rawDataOutput.value = text;
-        try {
-            let parsedData = parseNfcText(text);
-            appState.scannedDataObject = sanitizeNfcData(parsedData);
-            displayParsedData(appState.scannedDataObject);
+    // **NEU: Verarbeitet URL-Parameter beim Laden der Seite**
+    function processUrlParameters() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.toString() === '') {
+            return false; // Keine Parameter vorhanden
+        }
+
+        const data = {};
+        for (const [shortKey, value] of params.entries()) {
+            const fullKey = reverseFieldMap[shortKey];
+            if (fullKey) {
+                data[fullKey] = value;
+            }
+        }
+
+        if (Object.keys(data).length > 0) {
+            const sanitizedData = sanitizeNfcData(data);
+            appState.scannedDataObject = sanitizedData;
+            displayParsedData(sanitizedData);
+            rawDataOutput.value = window.location.href; // Zeige die volle URL in den Rohdaten an
             readActions.classList.remove('hidden');
             readResultContainer.classList.add('expanded');
-        } catch (e) {
-            showMessage(t('messages.processingError', { replace: { message: e.message } }), 'err');
-            setupReadTabInitialState();
-            appState.scannedDataObject = null;
+            switchTab('read-tab'); // Sicherstellen, dass der Lese-Tab aktiv ist
+            return true;
         }
+        return false;
     }
     
     function startCooldown(){
@@ -558,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
 
-function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
+    function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
     
     function setupReadTabInitialState(){ 
         protocolCard.innerHTML = '';
@@ -572,7 +589,20 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     
     function initCollapsibles(){ document.querySelectorAll('.collapsible').forEach(el=>makeCollapsible(el)) }
     
-    function checkNfcSupport(){ if('NDEFReader' in window){ setNfcBadge('idle') } else { setNfcBadge('unsupported'); nfcFallback.classList.remove('hidden'); nfcStatusBadge.disabled=true } }
+    // **ÜBERARBEITET: Prüft NFC und passt die UI entsprechend an (blendet Schreib-Tab aus)**
+    function checkNfcSupportAndSetupUI() {
+        if ('NDEFReader' in window) {
+            setNfcBadge('idle');
+        } else {
+            setNfcBadge('unsupported');
+            nfcFallback.classList.remove('hidden');
+            nfcStatusBadge.disabled = true;
+            // Verstecke den Schreib-Tab, wenn NFC nicht unterstützt wird
+            if(writeTabButton) {
+                writeTabButton.classList.add('hidden');
+            }
+        }
+    }
     
     function switchTab(tabId) { 
         abortNfcAction(); 
@@ -589,19 +619,30 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     
     function showMessage(text,type='info',duration=4000){ messageBanner.textContent=text; messageBanner.className='message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(()=>messageBanner.classList.add('hidden'),duration); addLogEntry(text, type); }
     
-    function setTodaysDate(){ const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0'); document.getElementById('am').value=`${yyyy}-${mm}-${dd}` }
+    function setTodaysDate(){ const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0'); const dateInput = document.getElementById('am'); if(dateInput) dateInput.value=`${yyyy}-${mm}-${dd}` }
     
     function setNfcBadge(state,message=''){ const isWriteMode=document.querySelector('.tab-link[data-tab="write-tab"].active'); const states={ unsupported: [t('status.unsupported'), 'err'], idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'], scanning: [t('status.scanning'), 'info'], writing: [t('status.writing'), 'info'], success: [message || t('status.success'), 'ok'], error: [message || t('status.error'), 'err'], cooldown: [t('status.cooldown'), 'info'] }; const[text,className]=states[state]||states['idle']; nfcStatusBadge.textContent=text; nfcStatusBadge.className='nfc-badge'; nfcStatusBadge.classList.add(className) }
     
-    function parseNfcText(text){ const data={}; text=text.trim(); if (text === '') { throw new Error(t('errors.tagEmpty')); } if(text.startsWith('v1')){ const content=text.substring(2).trim(); if (content === '') { return {}; } const regex=/([^:\n]+):([^\n]*)/g; let match; while((match=regex.exec(content))!==null){ const key=reverseFieldMap[match[1].trim()]||match[1].trim(); data[key]=match[2].trim() } if(Object.keys(data).length===0)throw new Error(t('errors.v1NoData')); return data } throw new Error(t('errors.unknownFormat')) }
+    // **ENTFERNT: Die alte parseNfcText Funktion wird nicht mehr benötigt.**
     
-    function updatePayloadOnChange(){ if(document.querySelector('.tab-link[data-tab="write-tab"].active')){ generateAndShowPayload() } }
+    function updatePayloadOnChange(){ if(document.querySelector('.tab-link[data-tab="write-tab"].active')){ const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; payloadSize.classList.toggle('limit-exceeded', byteCount > CONFIG.MAX_PAYLOAD_SIZE); } }
     
-    function generateAndShowPayload(){ const formData=getFormData(); const payload=formatToCompact(formData); payloadOutput.value=payload; const byteCount=new TextEncoder().encode(payload).length; payloadSize.textContent=`${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; payloadSize.classList.toggle('limit-exceeded',byteCount>CONFIG.MAX_PAYLOAD_SIZE) }
+    // **NEU: Generiert die vollständige URL aus den Formulardaten**
+    function generateUrlFromForm() {
+        const formData = getFormData();
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(formData)) {
+            const shortKey = fieldMap[key];
+            if (shortKey) {
+                params.append(shortKey, value);
+            }
+        }
+        return `${CONFIG.BASE_URL}?${params.toString()}`;
+    }
     
-    function getFormData(){ const formData=new FormData(form); const data={}; for(const[key,value]of formData.entries()){ if(value.trim())data[key]=value.trim() } if(!document.getElementById('has_PT100').checked)delete data['PT 100']; if(!document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data }
+    function getFormData(){ const formData=new FormData(form); const data={}; for(const[key,value]of formData.entries()){ if(value.trim())data[key]=value.trim() } if(document.getElementById('has_PT100') && !document.getElementById('has_PT100').checked)delete data['PT 100']; if(document.getElementById('has_NiCr-Ni') && !document.getElementById('has_NiCr-Ni').checked)delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data }
     
-    function formatToCompact(data){ let compactString='v1'; const parts=[]; for(const[key,shortKey]of Object.entries(fieldMap)){ if(data[key])parts.push(`${shortKey}:${data[key]}`) } if(parts.length>0)compactString+='\n'+parts.join('\n'); return compactString }
+    // **ENTFERNT: Die formatToCompact Funktion wird nicht mehr benötigt.**
     
     function populateFormFromScan(){ if(!appState.scannedDataObject){ showMessage(t('messages.noDataToCopy'),'err'); return } form.reset(); setTodaysDate(); for(const[key,value]of Object.entries(appState.scannedDataObject)){ const input=form.elements[key]; if(input){ if(input.type==='radio'){ form.querySelectorAll(`input[name="${key}"]`).forEach(radio=>{ if(radio.value===value)radio.checked=true }) }else if(input.type==='checkbox'){ input.checked=(value==='true'||value==='on') }else{ input.value=value } } } const pt100Input=document.getElementById('PT 100'); const hasPt100Checkbox=document.getElementById('has_PT100'); if(appState.scannedDataObject['PT 100']){ pt100Input.value=appState.scannedDataObject['PT 100']; pt100Input.disabled=false; hasPt100Checkbox.checked=true }else{ pt100Input.disabled=true; hasPt100Checkbox.checked=false } const niCrInput=document.getElementById('NiCr-Ni'); const hasNiCrCheckbox=document.getElementById('has_NiCr-Ni'); if(appState.scannedDataObject['NiCr-Ni']){ niCrInput.value=appState.scannedDataObject['NiCr-Ni']; niCrInput.disabled=false; hasNiCrCheckbox.checked=true }else{ niCrInput.disabled=true; hasNiCrCheckbox.checked=false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'),'ok') }
     
@@ -618,7 +659,6 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
         a.click();
         document.body.removeChild(a);
         
-        // WICHTIG: Nach dem Download aufräumen, mit kurzem Delay
         setTimeout(() => {
             URL.revokeObjectURL(url);
         }, 100);
@@ -634,4 +674,3 @@ function applyTheme(themeName) { const themeButtons = document.querySelectorAll(
     const reverseFieldMap=Object.fromEntries(Object.entries(fieldMap).map(([k,v])=>[v,k]));
 
 });
-
