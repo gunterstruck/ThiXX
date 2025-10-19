@@ -1,28 +1,54 @@
-const APP_CACHE_NAME = 'thixx-501'; // Version erhöht, um das Update zu erzwingen
+const APP_CACHE_NAME = 'thixx-robust-v1'; // Version erhöht für Update
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
-// Alle Assets, die für die App-Shell benötigt werden
 const APP_ASSETS_TO_CACHE = [
     '/ThiXX/index.html',
     '/ThiXX/offline.html',
     '/ThiXX/assets/style.css',
     '/ThiXX/assets/app.js',
+    '/ThiXX/assets/theme-bootstrap.js', // Neue Datei hinzugefügt
     '/ThiXX/config.json',
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
     '/ThiXX/lang/de.json',
-    '/ThiXX/lang/en.json',
-    '/ThiXX/lang/es.json',
-    '/ThiXX/lang/fr.json'
+    '/ThiXX/lang/en.json', // Wird fehlertolerant gecached
+    '/ThiXX/lang/es.json', // Wird fehlertolerant gecached
+    '/ThiXX/lang/fr.json'  // Wird fehlertolerant gecached
 ];
+
+/**
+ * ROBUSTHEITS-UPDATE (Fehlertolerantes Caching):
+ * Diese Funktion ersetzt `cache.addAll()`. Sie versucht, jede URL einzeln
+ * zu cachen. Wenn eine Ressource nicht gefunden wird (z.B. eine optionale
+ * Sprachdatei), wird nur eine Warnung ausgegeben, und der Service Worker
+ * setzt die Installation mit den restlichen Dateien fort. Dies verhindert,
+ * dass ein einziger 404-Fehler die gesamte Offline-Fähigkeit der App blockiert.
+ *
+ * @param {Cache} cache - Die Cache-Instanz, zu der hinzugefügt wird.
+ * @param {string[]} urls - Ein Array von URLs, die gecached werden sollen.
+ */
+async function safeCacheAddAll(cache, urls) {
+  console.log('[Service Worker] Starting robust caching of assets.');
+  let successCount = 0;
+  for (const url of urls) {
+    try {
+      await cache.add(url);
+      successCount++;
+    } catch (err) {
+      console.warn(`[Service Worker] Skipping asset: ${url} failed to cache.`, err);
+    }
+  }
+  console.log(`[Service Worker] Robust caching finished. Successfully cached ${successCount} of ${urls.length} assets.`);
+}
+
 
 // Install-Event: Cachen der App-Shell
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(APP_CACHE_NAME)
             .then((cache) => {
-                console.log('[Service Worker] Caching App Shell');
-                return cache.addAll(APP_ASSETS_TO_CACHE);
+                // Verwende die neue, robuste Caching-Funktion
+                return safeCacheAddAll(cache, APP_ASSETS_TO_CACHE);
             })
             .then(() => self.skipWaiting())
     );
@@ -53,41 +79,27 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname.endsWith('.pdf')) {
         event.respondWith(
             caches.open(DOC_CACHE_NAME).then(async (cache) => {
-                // KORREKTUR: Wir müssen mit der gleichen `no-cors`-Anfrage suchen, wie sie gespeichert wurde.
                 const noCorsRequest = new Request(request.url, { mode: 'no-cors' });
                 const cachedResponse = await cache.match(noCorsRequest);
                 if (cachedResponse) {
-                    console.log('[Service Worker] Serving doc from cache:', url.href);
-                    // Wir müssen eine "richtige" Antwort zurückgeben, damit der Browser sie anzeigen kann.
-                    // Wir erstellen eine neue Antwort aus dem (opakem) Cache-Body.
                     return new Response(cachedResponse.body, {
-                        headers: {
-                            'Content-Type': 'application/pdf',
-                        },
+                        headers: { 'Content-Type': 'application/pdf' },
                     });
                 }
-                console.log('[Service Worker] Doc not in cache, fetching from network:', url.href);
                 return fetch(request);
             })
         );
         return;
     }
-
-    // Strategie für externe Anfragen (keine PDFs): Network only.
-    if (url.origin !== self.origin) {
-        event.respondWith(fetch(request));
-        return;
-    }
     
-    // Strategie: "Cache First", damit die App offline startet.
+    // "Cache First" für Navigationsanfragen, damit die App offline startet.
     if (request.mode === 'navigate') {
         event.respondWith(
             caches.match(request)
                 .then(cachedResponse => {
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    return fetch(request).catch(() => {
+                    // Wenn im Cache, liefere von dort. Ansonsten Netzwerk.
+                    // Bei Netzwerkfehler, zeige die Offline-Seite.
+                    return cachedResponse || fetch(request).catch(() => {
                         return caches.match('/ThiXX/offline.html');
                     });
                 })
@@ -95,7 +107,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Fallback-Strategie für andere App-Assets (JS, CSS, etc.)
+    // "Stale-While-Revalidate" für andere App-Assets (JS, CSS, etc.)
+    // Liefert schnell aus dem Cache, aktualisiert aber im Hintergrund.
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             const fetchPromise = fetch(request).then(networkResponse => {
@@ -112,13 +125,10 @@ self.addEventListener('fetch', (event) => {
 // Message-Event: Lauscht auf Anweisungen von der App.
 self.addEventListener('message', (event) => {
     if (event.data && event.data.action === 'cache-doc') {
-        console.log('[Service Worker] Caching instruction received:', event.data.url);
         event.waitUntil(
             caches.open(DOC_CACHE_NAME)
                 .then(cache => cache.add(new Request(event.data.url, { mode: 'no-cors' })))
-                .then(() => console.log('[Service Worker] Doc cached successfully:', event.data.url))
                 .catch(err => console.error('[Service Worker] Failed to cache doc:', err))
         );
     }
 });
-
