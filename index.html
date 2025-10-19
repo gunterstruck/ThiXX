@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
     
     <title>ThiXX - NFC PWA</title>
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="manifest" href="/ThiXX/manifest.webmanifest">
+    <link rel="stylesheet" href="/ThiXX/assets/style.css">
 
     <script>
       (function() {
-        let theme = localStorage.getItem('thixx-theme') || 'customer-brand';
+        // Versucht, das zuletzt genutzte Theme aus dem Speicher zu laden
+        let theme = localStorage.getItem('thixx-theme');
+        
+        // Wenn kein Theme gespeichert ist (z.B. erster Besuch), 
+        // wird 'customer-brand' als Standard festgelegt.
+        if (!theme) {
+          theme = 'customer-brand';
+        }
+        
+        // Setzt das 'data-theme'-Attribut auf das <html>-Element,
+        // bevor die Seite sichtbar wird.
         document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
-    <link rel="apple-touch-icon" href="assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png">
+    <!-- KORREKTUR: Der Dateiname wurde korrigiert (6C6B66 statt 6C66). -->
+    <link rel="apple-touch-icon" href="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png">
     <meta name="theme-color" content="#FCFCFD">
 </head>
 <body>
@@ -23,13 +34,18 @@
         <header>
             <div class="header-content">
                 <h1 class="logo">
-                  <span class="logo-orange">T</span><span class="logo-orange">H</span><span class="i-letter"><span class="i-dot"></span></span><span class="logo-gray">XX</span>
+                  <span class="logo-orange">T</span>
+                  <span class="logo-orange">H</span>
+                  <span class="i-letter">
+                    <span class="i-dot"></span>
+                  </span>
+                  <span class="logo-gray">XX</span>
                 </h1>
                 <div class="theme-switcher">
-                    <button type="button" class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
-                    <button type="button" class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
-                    <button type="button" class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
-                        <img src="assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" alt="Kunden-Logo" width="29" height="29">
+                    <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
+                    <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
+                    <button class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
+                        <img src="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" alt="Kunden-Logo" width="29" height="29">
                     </button>
                 </div>
             </div>
@@ -37,18 +53,19 @@
         </header>
 
         <div class="tabs">
-            <button type="button" class="tab-link active" data-tab="read-tab" data-i18n="readNfcTab"></button>
-            <button type="button" class="tab-link" data-tab="write-tab" data-i18n="writeNfcTab"></button>
+            <button class="tab-link active" data-tab="read-tab" data-i18n="readNfcTab"></button>
+            <button class="tab-link" data-tab="write-tab" data-i18n="writeNfcTab"></button>
         </div>
 
         <main>
             <div id="read-tab" class="tab-content active">
                 <div id="read-result" class="collapsible">
                     <h2 data-i18n="acceptanceProtocol"></h2>
-                    <div id="protocol-card" class="protocol-card"></div>
+                    <div id="protocol-card" class="protocol-card">
+                        </div>
                     <div id="doc-link-container" class="doc-link-container"></div>
                     <div id="read-actions" class="read-actions-container hidden">
-                        <button type="button" id="copy-to-form-btn" class="btn" data-i18n="copyToForm"></button>
+                        <button id="copy-to-form-btn" class="btn" data-i18n="copyToForm"></button>
                         <details class="raw-data-details">
                             <summary data-i18n="showRawData"></summary>
                             <textarea id="raw-data-output" readonly></textarea>
@@ -67,43 +84,43 @@
                     <h2 data-i18n="acceptanceProtocol"></h2>
                     <form id="nfc-write-form" novalidate>
                         <div class="form-grid">
-                            <div class="form-group"><label for="hk_nr" data-i18n="form.HK.Nr."></label><input type="text" id="hk_nr" name="hk_nr"></div>
-                            <div class="form-group"><label for="kks" data-i18n="form.KKS"></label><input type="text" id="kks" name="kks"></div>
-                            <div class="form-group"><label for="leistung" data-i18n="form.Leistung"></label><input type="number" step="0.1" id="leistung" name="leistung"></div>
-                            <div class="form-group"><label for="strom" data-i18n="form.Strom"></label><input type="number" step="0.1" id="strom" name="strom"></div>
-                            <div class="form-group"><label for="spannung" data-i18n="form.Spannung"></label><input type="number" id="spannung" name="spannung"></div>
-                            <div class="form-group"><label for="widerstand" data-i18n="form.Widerstand"></label><input type="number" step="0.1" id="widerstand" name="widerstand"></div>
-                            <div class="form-group"><label for="regler" data-i18n="form.Regler"></label><input type="number" id="regler" name="regler"></div>
-                            <div class="form-group"><label for="sicherheitsregler_begrenzer" data-i18n="form.Sicherheitsregler/Begrenzer"></label><input type="number" id="sicherheitsregler_begrenzer" name="sicherheitsregler_begrenzer"></div>
-                            <div class="form-group"><label for="waechter" data-i18n="form.Wächter"></label><input type="number" id="waechter" name="waechter"></div>
-                            <div class="form-group"><label for="projekt_nr" data-i18n="form.Projekt Nr."></label><input type="text" id="projekt_nr" name="projekt_nr"></div>
-                            <div class="form-group full-width"><label for="dokumentation" data-i18n="form.Dokumentation"></label><input type="url" id="dokumentation" name="dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
-                            <div class="form-group"><label for="anzahl_heizkabeleinheiten" data-i18n="form.Anzahl Heizkabeleinheiten"></label><input type="number" id="anzahl_heizkabeleinheiten" name="anzahl_heizkabeleinheiten"></div>
-                            <div class="form-group"><label for="trennkasten" data-i18n="form.Trennkasten"></label><input type="number" id="trennkasten" name="trennkasten"></div>
-                            <div class="form-group full-width"><label for="heizkabeltyp" data-i18n="form.Heizkabeltyp"></label><input type="text" id="heizkabeltyp" name="heizkabeltyp"></div>
+                            <div class="form-group"><label for="HK.Nr." data-i18n="form.HK.Nr."></label><input type="text" id="HK.Nr." name="HK.Nr."></div>
+                            <div class="form-group"><label for="KKS" data-i18n="form.KKS"></label><input type="text" id="KKS" name="KKS"></div>
+                            <div class="form-group"><label for="Leistung" data-i18n="form.Leistung"></label><input type="number" step="0.1" id="Leistung" name="Leistung"></div>
+                            <div class="form-group"><label for="Strom" data-i18n="form.Strom"></label><input type="number" step="0.1" id="Strom" name="Strom"></div>
+                            <div class="form-group"><label for="Spannung" data-i18n="form.Spannung"></label><input type="number" id="Spannung" name="Spannung"></div>
+                            <div class="form-group"><label for="Widerstand" data-i18n="form.Widerstand"></label><input type="number" step="0.1" id="Widerstand" name="Widerstand"></div>
+                            <div class="form-group"><label for="Regler" data-i18n="form.Regler"></label><input type="number" id="Regler" name="Regler"></div>
+                            <div class="form-group"><label for="Sicherheitsregler/Begrenzer" data-i18n="form.Sicherheitsregler/Begrenzer"></label><input type="number" id="Sicherheitsregler/Begrenzer" name="Sicherheitsregler/Begrenzer"></div>
+                            <div class="form-group"><label for="Wächter" data-i18n="form.Wächter"></label><input type="number" id="Wächter" name="Wächter"></div>
+                            <div class="form-group"><label for="Projekt Nr." data-i18n="form.Projekt Nr."></label><input type="text" id="Projekt Nr." name="Projekt Nr."></div>
+                            <div class="form-group full-width"><label for="Dokumentation" data-i18n="form.Dokumentation"></label><input type="url" id="Dokumentation" name="Dokumentation" placeholder="https://beispiel.de/anleitung.pdf"></div>
+                            <div class="form-group"><label for="Anzahl Heizkabeleinheiten" data-i18n="form.Anzahl Heizkabeleinheiten"></label><input type="number" id="Anzahl Heizkabeleinheiten" name="Anzahl Heizkabeleinheiten"></div>
+                            <div class="form-group"><label for="Trennkasten" data-i18n="form.Trennkasten"></label><input type="number" id="Trennkasten" name="Trennkasten"></div>
+                            <div class="form-group full-width"><label for="Heizkabeltyp" data-i18n="form.Heizkabeltyp"></label><input type="text" id="Heizkabeltyp" name="Heizkabeltyp"></div>
                         </div>
                         
                         <fieldset class="form-group">
                             <legend data-i18n="form.Schaltung"></legend>
                             <div class="radio-group">
-                                <label><input type="radio" name="schaltung" value="Stern" checked> <span data-i18n="form.schaltungOptions.stern"></span></label>
-                                <label><input type="radio" name="schaltung" value="Dreieck"> <span data-i18n="form.schaltungOptions.dreieck"></span></label>
-                                <label><input type="radio" name="schaltung" value="Wechselstrom"> <span data-i18n="form.schaltungOptions.wechselstrom"></span></label>
+                                <label><input type="radio" name="Schaltung" value="Stern" checked> <span data-i18n="form.schaltungOptions.stern"></span></label>
+                                <label><input type="radio" name="Schaltung" value="Dreieck"> <span data-i18n="form.schaltungOptions.dreieck"></span></label>
+                                <label><input type="radio" name="Schaltung" value="Wechselstrom"> <span data-i18n="form.schaltungOptions.wechselstrom"></span></label>
                             </div>
                         </fieldset>
 
                         <fieldset class="form-group">
                             <legend data-i18n="form.Messwertgeber"></legend>
                             <div class="checkbox-group">
-                                <label><input type="checkbox" id="has_pt100" name="has_pt100"> PT 100</label>
-                                <input type="number" id="pt100" name="pt100" min="0" value="0" disabled>
-                                <label><input type="checkbox" id="has_nicr_ni" name="has_nicr_ni"> NiCr-Ni</label>
-                                <input type="number" id="nicr_ni" name="nicr_ni" min="0" value="0" disabled>
+                                <label><input type="checkbox" id="has_PT100" name="has_PT100"> PT 100</label>
+                                <input type="number" id="PT 100" name="PT 100" min="0" value="0" disabled>
+                                <label><input type="checkbox" id="has_NiCr-Ni" name="has_NiCr-Ni"> NiCr-Ni</label>
+                                <input type="number" id="NiCr-Ni" name="NiCr-Ni" min="0" value="0" disabled>
                             </div>
                         </fieldset>
                         
                         <div class="form-grid">
-                            <div class="form-group"><label for="geprueft_von" data-i18n="form.geprüft von"></label><input type="text" id="geprueft_von" name="geprueft_von"></div>
+                            <div class="form-group"><label for="geprüft von" data-i18n="form.geprüft von"></label><input type="text" id="geprüft von" name="geprüft von"></div>
                             <div class="form-group"><label for="am" data-i18n="form.am"></label><input type="date" id="am" name="am"></div>
                         </div>
                     </form>
@@ -117,7 +134,8 @@
                     </div>
 
                     <div class="file-operations">
-                         <button type="button" id="save-json-btn" class="btn" data-i18n="saveToJson"></button>
+                         <button id="save-json-btn" class="btn" data-i18n="saveToJson"></button>
+                         <!-- Das Label löst nun per JavaScript den Klick auf das Input-Feld aus -->
                          <label id="load-json-label" class="btn file-input-label" data-i18n="loadFromJson">
                              <input type="file" id="load-json-input" accept=".json" class="visually-hidden">
                          </label>
@@ -144,10 +162,10 @@
         
         <footer>
             <div id="message-banner" class="message-banner hidden" role="alert"></div>
-            <div id="nfc-fallback" class="message-banner err hidden" data-i18n="nfcFallback"></div>
+            <div id="nfc-fallback" class="message-banner err hidden" data-i18n="nfcFallback">
+            </div>
         </footer>
     </div>
-    <script src="assets/app.js"></script>
+    <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
-
