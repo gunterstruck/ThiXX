@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-shell-v160';
+const APP_CACHE_NAME = 'thixx-shell-v152';
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 // Alle Assets, die für die App-Shell benötigt werden

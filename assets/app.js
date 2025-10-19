@@ -494,43 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function setNfcBadge(state, message = '') { const isWrite = document.querySelector('.tab-link[data-tab="write-tab"].active'); const states = { unsupported: [t('status.unsupported'), 'err'], idle: [isWrite ? t('status.startWriting') : t('status.startReading'), 'info'], scanning: [t('status.scanning'), 'info'], writing: [t('status.writing'), 'info'], success: [message || t('status.success'), 'ok'], error: [message || t('status.error'), 'err'], cooldown: [t('status.cooldown'), 'info'] }; const [text, className] = states[state] || states.idle; nfcStatusBadge.textContent = text; nfcStatusBadge.className = `nfc-badge ${className}`; }
     function populateFormFromScan() { if (!appState.scannedDataObject) { showMessage(t('messages.noDataToCopy'), 'err'); return; } form.reset(); setTodaysDate(); Object.entries(appState.scannedDataObject).forEach(([key, value]) => { const input = form.elements[key]; if (input) { if (input.type === 'radio') { form.querySelector(`input[name="${key}"][value="${value}"]`)?.setAttribute('checked', true); } else if (input.type === 'checkbox') { input.checked = (value === 'true' || value === 'on'); } else { input.value = value; } } }); ['pt100', 'nicr_ni'].forEach(id => { const hasCheckbox = document.getElementById(`has_${id}`); const numInput = document.getElementById(id); if (numInput && hasCheckbox) { const hasValue = appState.scannedDataObject[id]; hasCheckbox.checked = !!hasValue; numInput.disabled = !hasValue; if (hasValue) numInput.value = hasValue; } }); switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'), 'ok'); }
     function saveFormAsJson() { const data = getFormData(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `thixx-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 100); showMessage(t('messages.saveSuccess'), 'ok'); }
-    
-    /**
-     * Handles the file loading process for JSON data.
-     * It includes specific error handling for malformed JSON files.
-     * @param {Event} event - The change event from the file input.
-     */
-    function loadJsonIntoForm(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                // Attempt to parse the file content as JSON
-                appState.scannedDataObject = JSON.parse(e.target.result);
-                populateFormFromScan();
-                showMessage(t('messages.loadSuccess'), 'ok');
-            } catch (error) {
-                const context = 'LoadJSON';
-                // Check if the error is a JSON parsing error
-                if (error instanceof SyntaxError) {
-                    // Provide a user-friendly, specific error message
-                    const userMessage = 'Die JSON-Datei hat ein ungültiges Format und konnte nicht gelesen werden.';
-                    console.error(`[${context}]`, error);
-                    showMessage(userMessage, 'err');
-                    addLogEntry(`${context}: ${userMessage}`, 'err');
-                } else {
-                    // Use the generic error handler for all other types of errors
-                    ErrorHandler.handle(error, context);
-                }
-            } finally {
-                // Reset the file input to allow uploading the same file again
-                event.target.value = null;
-            }
-        };
-        reader.readAsText(file);
-    }
-
+    function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { appState.scannedDataObject = JSON.parse(e.target.result); populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok'); } catch (error) { ErrorHandler.handle(error, 'LoadJSON'); } finally { event.target.value = null; } }; reader.readAsText(file); }
     function addLogEntry(message, type = 'info') { const timestamp = new Date().toLocaleTimeString(); appState.eventLog.unshift({ timestamp, message, type }); if (appState.eventLog.length > CONFIG.MAX_LOG_ENTRIES) appState.eventLog.pop(); renderLog(); }
     function renderLog() { if (!eventLogOutput) return; eventLogOutput.innerHTML = appState.eventLog.map(e => `<div class="log-entry ${e.type}"><span class="log-timestamp">${e.timestamp}</span> ${e.message}</div>`).join(''); }
     function makeCollapsible(el) { if (!el || el.dataset.collapsibleApplied) return; el.dataset.collapsibleApplied = 'true'; const toggle = () => el.classList.add('expanded'); const overlay = el.querySelector('.collapsible-overlay'); if (overlay) { overlay.addEventListener('click', e => { e.stopPropagation(); toggle(); }); } el.addEventListener('click', e => { if (!e.target.closest('input, select, textarea, button, label, summary, details, .collapsible-overlay')) toggle(); }); }
