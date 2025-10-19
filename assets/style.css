@@ -287,6 +287,22 @@ footer { padding: 1.5rem 0; text-align: center; }
 :root[data-theme="thixx"] .message-banner.info, :root[data-theme="customer-brand"] .message-banner.info { color: #0c5460; background-color: #cce5ff; border-color: #b8daff; }
 .hidden { display: none !important; }
 
+/* VERBESSERUNG (PRIO 4): Stile für die Update-Benachrichtigung */
+#update-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    position: fixed;
+    top: 1.5rem;
+    bottom: auto;
+}
+#update-banner .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: var(--surface-light); border-radius: 10px; }
 ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); border-radius: 10px; }

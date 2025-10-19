@@ -1,18 +1,26 @@
 /**
- * ROBUSTHEITS-UPDATE (Theme-Flickern):
- * Dieses Skript wird vor dem Rest der Seite geladen, um das Theme aus dem
- * localStorage zu lesen und sofort auf das <html>-Element anzuwenden.
- * Dies verhindert ein "Aufblitzen" des Standard-Themes (FOUC - Flash of Unstyled Content),
- * bevor das Haupt-JavaScript die Kontrolle übernimmt.
- * Es wurde ausgelagert, um die Content Security Policy (CSP) zu erfüllen.
+ * ROBUSTHEITS-UPDATE (Theme-Flickern & UX):
+ * Dieses Skript wird vor dem Rest der Seite geladen, um das Theme festzulegen.
+ * 1. Es liest das Theme aus dem localStorage.
+ * 2. Falls kein Theme gespeichert ist (erster Besuch), erkennt es die
+ * Systemeinstellung des Nutzers (hell/dunkel) und wendet sie an.
+ * 3. Dies verhindert ein "Flickern" und verbessert die User Experience.
  */
 (function() {
   try {
-    const theme = localStorage.getItem('thixx-theme') || 'customer-brand';
+    let theme = localStorage.getItem('thixx-theme');
+    if (!theme) {
+        // Wenn kein Theme im Speicher ist, prüfe die Systemeinstellung
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+        } else {
+            // Standard-Fallback, falls weder localStorage noch Systemeinstellung vorhanden
+            theme = 'customer-brand'; 
+        }
+    }
     document.documentElement.setAttribute('data-theme', theme);
   } catch (e) {
-    console.error('Failed to set theme from localStorage', e);
-    // Fallback auf ein Standard-Theme, falls localStorage blockiert ist.
+    console.error('Failed to set theme from localStorage or system preference', e);
     document.documentElement.setAttribute('data-theme', 'customer-brand');
   }
 })();

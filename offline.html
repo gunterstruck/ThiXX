@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="de">
+<!-- ROBUSTHEITS-UPDATE (Theme-Fix): data-theme auf <html> verschoben. -->
+<html lang="de" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline - ThiXX</title>
     <link rel="stylesheet" href="/ThiXX/assets/style.css">
     <style>
-        /* Zusätzliche Stile nur für diese Seite */
         body {
             display: flex;
             justify-content: center;
@@ -35,12 +35,10 @@
         }
     </style>
 </head>
-<body data-theme="dark">
-    <!-- ROBUSTHEITS-UPDATE (UX) -->
+<body>
     <div class="offline-container">
         <h1>Sie sind offline</h1>
         <p>Bitte stellen Sie eine Internetverbindung her und versuchen Sie es erneut.</p>
-        <!-- Ein Button, um die Seite neu zu laden, sobald eine Verbindung besteht -->
         <button class="btn" onclick="location.reload()">Erneut versuchen</button>
     </div>
 </body>
