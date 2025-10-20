@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration and Constants ---
     const SCOPE = '/ThiXX/';
     const BASE_URL = new URL('index.html', location.origin + SCOPE).href;
-    const LOCAL_STORAGE_NFC_KEY = 'thixx-nfc-pending-data';
+    // ENTFERNT: localStorage Bridge Schlüssel
 
     const CONFIG = {
         COOLDOWN_DURATION: 2000,
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         translations: {}, isNfcActionActive: false, isCooldownActive: false,
         abortController: null, scannedDataObject: null, eventLog: [],
         nfcTimeoutId: null, gracePeriodTimeoutId: null,
-        isSafariBridgeMode: false,
+        // ENTFERNT: Safari Bridge Mode Flag
     };
 
     // --- Design Templates ---
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const debounce = (func, wait) => { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
     function isValidDocUrl(url) { if (!url || typeof url !== 'string') return false; try { const parsed = new URL(url); return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')); } catch { return false; } }
     const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isPwaDisplayMode = () => window.matchMedia('(display-mode: standalone)').matches;
+    // ENTFERNT: isPwaDisplayMode ist nicht mehr für die Kernlogik nötig.
 
     // --- Internationalization (i18n) ---
     function t(key, options = {}) { let text = key.split('.').reduce((obj, i) => obj?.[i], appState.translations); if (!text) { console.warn(`Translation not found for key: ${key}`); return key; } if (options.replace) { for (const [placeholder, value] of Object.entries(options.replace)) { text = text.replace(`{${placeholder}}`, value); } } return text; }
@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         
-        const dataProcessed = processLocalStorageBridge() || processUrlParameters();
-        if (!dataProcessed) {
+        // VEREINFACHT: Nur noch die URL-Parameter direkt verarbeiten.
+        if (!processUrlParameters()) {
             setupReadTabInitialState();
             switchTab('read-tab');
         }
@@ -141,14 +141,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyConfig(config) {
         const selectedDesign = designs[config.design] || designs['thixx_standard'];
-        if (!isIOS()) { updateManifest(selectedDesign); }
+        
+        // VEREINFACHT: Das dynamische Manifest wird nur noch für Nicht-iOS-Geräte erstellt.
+        // Für iOS wird das Standard-Manifest verwendet, aber die App ist nicht "installierbar".
+        if (!isIOS()) { 
+            updateManifest(selectedDesign); 
+        }
+
         const currentTheme = document.documentElement.getAttribute('data-theme');
         if (currentTheme !== selectedDesign.theme) { applyTheme(selectedDesign.theme); }
         if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); }
         const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
         if (customerBtnImg && selectedDesign.icons?.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; }
-        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
-        if (appleIcon && selectedDesign.icons?.icon192) { appleIcon.href = selectedDesign.icons.icon192; }
+        // ENTFERNT: Der apple-touch-icon Link wird aus dem HTML entfernt, daher hier keine Aktion nötig.
         if (selectedDesign.brandColors?.primary) { document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); }
         if (selectedDesign.brandColors?.secondary) { document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); }
     }
@@ -158,68 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
     async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); appState.gracePeriodTimeoutId = setTimeout(() => { if (appState.gracePeriodTimeoutId !== null) { abortNfcAction(); startCooldown(); } }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD); return; } catch (error) { console.warn(`Write attempt ${attempt} failed:`, error); if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) { throw error; } await new Promise(resolve => setTimeout(resolve, 200)); } } }
 
     // --- Data Processing & Form Handling ---
-    function parseAndDisplayDataFromParams(params) {
+    // VEREINFACHT: Diese Funktion verarbeitet jetzt IMMER die URL-Parameter direkt.
+    function processUrlParameters() {
+        const params = new URLSearchParams(window.location.search);
         if (params.toString() === '') return false;
+
         const data = {};
         for (const [shortKey, value] of params.entries()) {
             const fullKey = reverseFieldMap[shortKey];
             if (fullKey) data[fullKey] = decodeURIComponent(value);
         }
+
         if (Object.keys(data).length > 0) {
             appState.scannedDataObject = data;
             displayParsedData(data);
-            rawDataOutput.value = `${CONFIG.BASE_URL}?${params.toString()}`;
+            rawDataOutput.value = window.location.href;
             readActions.classList.remove('hidden');
             readResultContainer.classList.add('expanded');
             switchTab('read-tab');
             showMessage(t('messages.readSuccess'), 'ok');
+            history.replaceState(null, '', window.location.pathname); // Bereinigt die URL in der Adressleiste
             return true;
         }
+
         return false;
-    }
-
-    function processLocalStorageBridge() {
-        if (!isPwaDisplayMode()) return false; 
-        const urlString = localStorage.getItem(LOCAL_STORAGE_NFC_KEY);
-        if (!urlString) return false;
-        localStorage.removeItem(LOCAL_STORAGE_NFC_KEY); 
-        try {
-            const url = new URL(urlString);
-            return parseAndDisplayDataFromParams(url.searchParams);
-        } catch (error) {
-            ErrorHandler.handle(error, 'LocalStorageBridge');
-            return false;
-        }
-    }
-
-    function processUrlParameters() {
-        const params = new URLSearchParams(window.location.search);
-        if (params.toString() === '') return false;
-
-        if (!isPwaDisplayMode()) {
-            localStorage.setItem(LOCAL_STORAGE_NFC_KEY, window.location.href);
-            protocolCard.innerHTML = ''; 
-            const infoElement = document.createElement('div');
-            infoElement.className = 'placeholder-text';
-            
-            infoElement.innerHTML = `
-                <p class="ios-bridge-title">${t('iosBridge.dataReceived')}</p>
-                <p class="ios-bridge-message">${t('iosBridge.pleaseOpenPWA')}</p>
-            `;
-            protocolCard.appendChild(infoElement);
-            switchTab('read-tab');
-            readResultContainer.classList.add('expanded');
-
-            appState.isSafariBridgeMode = true;
-            setNfcBadge('hidden');
-            return true; 
-        }
-
-        const processed = parseAndDisplayDataFromParams(params);
-        if (processed) {
-            history.replaceState(null, '', window.location.pathname);
-        }
-        return processed;
     }
 
     function getFormData() { const formData = new FormData(form); const data = {}; for (const [key, value] of formData.entries()) { if (String(value).trim()) data[key] = String(value).trim(); } if (!document.getElementById('has_PT100')?.checked) delete data['PT 100']; if (!document.getElementById('has_NiCr-Ni')?.checked) delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data; }
@@ -247,23 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
     
-    // ✅ FINALE KORREKTUR: Badge-Handling robust gemacht
     function setNfcBadge(state, message = '') {
-        // Wenn im Safari-Bridge-Modus, Badge IMMER ausblenden und Funktion beenden.
-        if (appState.isSafariBridgeMode) {
-            nfcStatusBadge.classList.add('hidden');
-            return;
-        }
-
-        // Spezialfall, um das Badge manuell auszublenden (z.B. state === 'hidden')
-        if (state === 'hidden') {
-            nfcStatusBadge.classList.add('hidden');
-            return;
-        }
-
-        // Normaler Badge-Betrieb: Sicherstellen, dass das Badge sichtbar ist.
-        nfcStatusBadge.classList.remove('hidden');
-    
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); 
         const states = { 
             unsupported: [t('status.unsupported'), 'err'], 

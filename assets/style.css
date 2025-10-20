@@ -383,15 +383,5 @@ footer { padding: 1.5rem 0; text-align: center; }
     text-decoration: underline;
 }
 
-/* NEUE STILE FÜR IOS-BRIDGE */
-.ios-bridge-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-}
+/* ENTFERNT: Nicht mehr benötigte Stile für iOS-Bridge */
 
-.ios-bridge-message {
-    color: var(--light-text-color);
-    line-height: 1.6;
-}
