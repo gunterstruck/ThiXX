@@ -205,13 +205,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if ('NDEFReader' in window) {
             setNfcBadge('idle');
         } else {
-            setNfcBadge('unsupported');
-            nfcFallback.classList.remove('hidden');
+            // iOS-OPTIMIERUNG: Unterschiedliches Verhalten je nach Plattform
+            if (isIOS()) {
+                // Auf iOS: NFC-Lesen funktioniert nativ
+                // → Keine irreführenden Fehlermeldungen anzeigen
+                // → Badge komplett ausblenden
+                nfcStatusBadge.classList.add('hidden');
+                
+                // Footer-Hinweis NICHT anzeigen (bleibt .hidden)
+                // nfcFallback bleibt hidden - User braucht keinen Hinweis
+                
+            } else {
+                // Auf Desktop/anderen Browsern: Wirklich kein NFC
+                // → Hinweise sind korrekt und hilfreich
+                setNfcBadge('unsupported');
+                nfcFallback.classList.remove('hidden');
+            }
+            
             nfcStatusBadge.disabled = true;
             
-            // UX-VERBESSERUNG: Schreib-Tab bei fehlender NFC-Unterstützung ausblenden
-            // Betrifft: iOS Safari, Desktop-Browser und alle anderen Geräte ohne NFC-Writer
-            // Dies vermeidet Verwirrung und zeigt nur funktionale Features
+            // UX-VERBESSERUNG: Schreib-Tab ausblenden (bereits implementiert)
             const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
             if (writeTab) {
                 writeTab.style.display = 'none';
