@@ -73,10 +73,10 @@ self.addEventListener('fetch', (event) => {
                 } catch (error) {
                     console.log('[Service Worker] Network fetch for PDF failed, trying cache.');
                     const cachedResponse = await cache.match(noCorsRequest);
-                    if (cachedResponse) {
-                        // Da die gecachte Antwort opaque sein kann, muss der Content-Type manuell gesetzt werden.
-                        return new Response(cachedResponse.body, { headers: { 'Content-Type': 'application/pdf' } });
-                    }
+// Korrekte Implementierung
+if (cachedResponse) {
+    return cachedResponse;
+}
                     // Wenn auch im Cache nichts ist, Fehler werfen.
                     throw error;
                 }

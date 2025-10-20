@@ -1,1 +1,96 @@
-{"appTitle": "ThiXX NFC Tool","readNfcTab": "NFC lesen","writeNfcTab": "NFC schreiben","acceptanceProtocol": "Abnahmeprotokoll","copyToForm": "In Formular übernehmen","showRawData": "Rohdaten anzeigen","showEvents": "Letzte Ereignisse anzeigen","saveToJson": "Auf Smartphone speichern","loadFromJson": "Von Smartphone laden","legalTitle": "Rechtliches","imprintTitle": "Impressum","privacyPolicyLink": "Datenschutzerklärung","nfcFallback": "Web NFC wird nicht unterstützt. Bitte verwenden Sie Chrome auf Android.","placeholderRead": "Noch keine Daten gelesen. Scannen Sie einen NFC-Tag, um die Daten hier anzuzeigen.","collapsibleHint": "Tippen zum Öffnen","themeDark": "Dunkles Design","themeLight": "Helles Design","themeCustomer": "Kunden-Design","docOpenOffline": "Anleitung offline öffnen ✓","docDownload": "Betriebsanleitung herunterladen ↓","docDownloadLater": "Offline - Später herunterladen","docDownloadPending": "Download ausstehend...","status": {"unsupported": "NFC nicht unterstützt","startReading": "Lesen: Tag berühren","startWriting": "Schreiben starten","scanning": "Scannen...","writing": "Schreiben...","success": "Erfolgreich!","error": "Fehler","cooldown": "Bitte warten...","tagRead": "Tag gelesen!","tagWritten": "Tag geschrieben!"},"messages": {"scanToReadInfo": "Zum Einlesen, NFC-Tag einfach mit dem Handy berühren. Die App wird automatisch geöffnet.","nfcNotSupported": "Web NFC wird auf diesem Gerät nicht unterstützt.","readPrompt": "Bitte NFC-Tag zum Lesen an das Gerät halten...","writePrompt": "Bitte NFC-Tag zum Schreiben an das Gerät halten...","payloadTooLarge": "Daten sind zu groß für den NFC-Tag (max. 880 Bytes).","writeSuccess": "Daten erfolgreich auf den Tag geschrieben.","readSuccess": "NFC-Tag erfolgreich gelesen und Daten importiert!","noKnownContent": "Kein bekannter Textinhalt auf dem NFC-Tag gefunden.","processingError": "Fehler beim Verarbeiten der Tag-Daten: {message}","noDataToCopy": "Keine gescannten Daten zum Übernehmen vorhanden.","copySuccess": "Daten in Formular übernommen.","saveSuccess": "Daten als JSON-Datei gespeichert.","loadSuccess": "JSON-Datei erfolgreich geladen und in Formular übernommen.","loadError": "Fehler beim Laden der JSON-Datei: {message}","writeAttempt": "Schreibversuch {attempt}/{total}... Bitte Tag ruhig halten."},"errors": {"unknown": "Ein unbekannter Fehler ist aufgetreten.","v1NoData": "v1-Format, aber keine Daten gefunden.","unknownFormat": "Kein bekanntes Tag-Format erkannt.","invalidVoltage": "Spannung muss zwischen 0 und 1000 liegen.","invalidDocUrl": "Die Dokumentations-URL ist ungültig.","NotAllowedError": "Zugriff verweigert. Bitte erteilen Sie die NFC-Berechtigung.","NotSupportedError": "NFC wird von Ihrem Browser nicht unterstützt.","NotFoundError": "Kein kompatibles NFC-Gerät gefunden.","NotReadableError": "Der NFC-Tag konnte nicht gelesen werden.","NetworkError": "Verbindung zum Tag instabil. Bitte Handy ruhig und direkt an den NFC-Tag halten.","AbortError": "Der Vorgang wurde vom Benutzer abgebrochen.","WriteTimeoutError": "Zeitüberschreitung. Bitte nehmen Sie das Handy vom Tag weg und versuchen Sie es dann erneut.","tagEmpty": "Der NFC-Tag ist leer oder nicht lesbar."},"form": {"HK.Nr.": "HK.Nr.","KKS": "KKS","Leistung": "Leistung (kW)","Strom": "Strom (A)","Spannung": "Spannung (V)","Widerstand": "Widerstand (Ω)","Regler": "Regler (°C)","Sicherheitsregler/Begrenzer": "Sicherheitsregler/Begrenzer (°C)","Wächter": "Wächter (°C)","Projekt Nr.": "Projekt Nr.","Dokumentation": "Dokumentation (URL)","Anzahl Heizkabeleinheiten": "Anzahl Heizkabeleinheiten (Stk)","Trennkasten": "Trennkasten (Stk)","Heizkabeltyp": "Heizkabeltyp","Schaltung": "Schaltung","schaltungOptions": {"stern": "Stern","dreieck": "Dreieck","wechselstrom": "Wechselstrom"},"Messwertgeber": "Messwertgeber","geprüft von": "geprüft von","am": "am (Datum)"}}
+{
+  "appTitle": "THiXX NFC Werkzeug",
+  "readNfcTab": "NFC Lesen",
+  "writeNfcTab": "NFC Schreiben",
+  "acceptanceProtocol": "Abnahmeprotokoll",
+  "copyToForm": "In Formular kopieren",
+  "showRawData": "Rohdaten anzeigen",
+  "showEvents": "Ereignisprotokoll anzeigen",
+  "collapsibleHint": "Zum Ausklappen tippen",
+  "saveToJson": "Als JSON speichern",
+  "loadFromJson": "Aus JSON laden",
+  "legalTitle": "Rechtliche Hinweise",
+  "imprintTitle": "Impressum",
+  "privacyPolicyLink": "Datenschutzerklärung",
+  "nfcFallback": "NFC wird von Ihrem Gerät oder Browser nicht unterstützt.",
+  "placeholderRead": "Halten Sie Ihr Gerät an einen NFC-Tag, um die Daten hier anzuzeigen.",
+  "docOpenOffline": "Dokumentation (offline) öffnen",
+  "docDownload": "Dokumentation herunterladen & offline speichern",
+  "docDownloadLater": "Offline, Download bei nächster Verbindung.",
+  "docDownloadPending": "Download ausstehend...",
+  "updateAvailable": "Neue Version verfügbar!",
+  "updateReload": "Jetzt aktualisieren",
+
+  "iosBridge": {
+    "dataReceived": "Daten empfangen!",
+    "pleaseOpenPWA": "Bitte öffnen Sie jetzt die ThiXX App von Ihrem Home-Bildschirm, um die Daten zu importieren."
+  },
+
+  "themeDark": "Dunkles Design",
+  "themeLight": "Helles Design",
+  "themeCustomer": "Kunden-Design",
+
+  "form": {
+    "HK.Nr.": "HK-Nr.",
+    "KKS": "KKS",
+    "Leistung": "Leistung (kW)",
+    "Strom": "Strom (A)",
+    "Spannung": "Spannung (V)",
+    "Widerstand": "Widerstand (Ω)",
+    "Regler": "Regler (°C)",
+    "Sicherheitsregler/Begrenzer": "Begrenzer (°C)",
+    "Wächter": "Wächter (°C)",
+    "Projekt Nr.": "Projekt-Nr.",
+    "Dokumentation": "Dokumentation (URL)",
+    "Anzahl Heizkabeleinheiten": "Anzahl HK-Einheiten",
+    "Trennkasten": "Anzahl Trennkästen",
+    "Heizkabeltyp": "Heizkabeltyp",
+    "Schaltung": "Schaltung",
+    "schaltungOptions": {
+      "stern": "Stern",
+      "dreieck": "Dreieck",
+      "wechselstrom": "Wechselstrom"
+    },
+    "Messwertgeber": "Messwertgeber",
+    "geprüft von": "Geprüft von",
+    "am": "Datum"
+  },
+
+  "status": {
+    "unsupported": "NFC nicht unterstützt",
+    "startReading": "Zum Lesen an Tag halten",
+    "startWriting": "Bereit zum Schreiben",
+    "scanning": "Scanne...",
+    "writing": "Schreibe... an Tag halten!",
+    "success": "Erfolgreich!",
+    "tagWritten": "Tag beschrieben!",
+    "error": "Fehler",
+    "cooldown": "Kurze Pause..."
+  },
+
+  "messages": {
+    "readSuccess": "NFC-Tag erfolgreich gelesen.",
+    "writeSuccess": "NFC-Tag erfolgreich beschrieben!",
+    "writeAttempt": "Schreibversuch {attempt} von {total}. Tag ruhig halten.",
+    "copySuccess": "Daten ins Formular kopiert.",
+    "noDataToCopy": "Keine Daten zum Kopieren vorhanden.",
+    "saveSuccess": "Formulardaten als JSON-Datei gespeichert.",
+    "loadSuccess": "Daten aus JSON-Datei geladen.",
+    "scanToReadInfo": "Zum Lesen einfach Gerät an einen Tag halten.",
+    "payloadTooLarge": "Daten überschreiten die maximale NFC-Tag-Größe!"
+  },
+
+  "errors": {
+    "NotAllowedError": "Berechtigung für NFC wurde verweigert.",
+    "NotSupportedError": "NFC wird auf diesem Gerät nicht unterstützt.",
+    "NotFoundError": "Kein kompatibler NFC-Tag gefunden.",
+    "NotReadableError": "Der NFC-Tag konnte nicht gelesen werden.",
+    "NetworkError": "Netzwerkfehler. Prüfen Sie die Verbindung.",
+    "AbortError": "NFC-Vorgang abgebrochen.",
+    "WriteTimeoutError": "Zeitüberschreitung beim Schreiben. Bitte erneut versuchen.",
+    "unknown": "Ein unbekannter Fehler ist aufgetreten.",
+    "invalidVoltage": "Spannung muss zwischen 0 und 1000V liegen.",
+    "invalidDocUrl": "Die Dokumentations-URL ist ungültig."
+  }
+}
+

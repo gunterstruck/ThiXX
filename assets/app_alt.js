@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration and Constants ---
     const SCOPE = '/ThiXX/';
     const BASE_URL = new URL('index.html', location.origin + SCOPE).href;
+    // NEU: Schlüssel für die localStorage Bridge
     const LOCAL_STORAGE_NFC_KEY = 'thixx-nfc-pending-data';
 
     const CONFIG = {
@@ -20,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         translations: {}, isNfcActionActive: false, isCooldownActive: false,
         abortController: null, scannedDataObject: null, eventLog: [],
         nfcTimeoutId: null, gracePeriodTimeoutId: null,
-        isSafariBridgeMode: false,
     };
 
     // --- Design Templates ---
@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const debounce = (func, wait) => { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
     function isValidDocUrl(url) { if (!url || typeof url !== 'string') return false; try { const parsed = new URL(url); return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')); } catch { return false; } }
     const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    // NEU: Hilfsfunktion zur Prüfung, ob die App als PWA läuft.
     const isPwaDisplayMode = () => window.matchMedia('(display-mode: standalone)').matches;
 
     // --- Internationalization (i18n) ---
@@ -106,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         
+        // MODIFIZIERT: Geänderte Startlogik zur Priorisierung der localStorage Bridge
         const dataProcessed = processLocalStorageBridge() || processUrlParameters();
         if (!dataProcessed) {
             setupReadTabInitialState();
@@ -158,6 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); appState.gracePeriodTimeoutId = setTimeout(() => { if (appState.gracePeriodTimeoutId !== null) { abortNfcAction(); startCooldown(); } }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD); return; } catch (error) { console.warn(`Write attempt ${attempt} failed:`, error); if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) { throw error; } await new Promise(resolve => setTimeout(resolve, 200)); } } }
 
     // --- Data Processing & Form Handling ---
+
+    // NEU: Refaktorisierte Logik zum Parsen und Anzeigen von Daten
     function parseAndDisplayDataFromParams(params) {
         if (params.toString() === '') return false;
         const data = {};
@@ -178,11 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
+    // NEU: Funktion zum Lesen der Daten aus dem localStorage (wird nur in der PWA relevant)
     function processLocalStorageBridge() {
-        if (!isPwaDisplayMode()) return false; 
+        if (!isPwaDisplayMode()) return false; // Diese Funktion nur in der PWA ausführen
+
         const urlString = localStorage.getItem(LOCAL_STORAGE_NFC_KEY);
         if (!urlString) return false;
-        localStorage.removeItem(LOCAL_STORAGE_NFC_KEY); 
+
+        localStorage.removeItem(LOCAL_STORAGE_NFC_KEY); // WICHTIG: Sofort löschen!
+
         try {
             const url = new URL(urlString);
             return parseAndDisplayDataFromParams(url.searchParams);
@@ -192,31 +200,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // MODIFIZIERT: processUrlParameters implementiert jetzt die "Schreib"-Logik für die Bridge
     function processUrlParameters() {
         const params = new URLSearchParams(window.location.search);
         if (params.toString() === '') return false;
 
+        // Wenn wir Parameter haben, aber NICHT im PWA-Modus sind (also in Safari)...
         if (!isPwaDisplayMode()) {
             localStorage.setItem(LOCAL_STORAGE_NFC_KEY, window.location.href);
-            protocolCard.innerHTML = ''; 
+            protocolCard.innerHTML = ''; // Leere den Standard-Platzhalter
             const infoElement = document.createElement('div');
             infoElement.className = 'placeholder-text';
-            
             infoElement.innerHTML = `
-                <p class="ios-bridge-title">${t('iosBridge.dataReceived')}</p>
-                <p class="ios-bridge-message">${t('iosBridge.pleaseOpenPWA')}</p>
+                <p style="font-size: 1.2rem; font-weight: 600;">${t('iosBridge.dataReceived')}</p>
+                <p>${t('iosBridge.pleaseOpenPWA')}</p>
             `;
             protocolCard.appendChild(infoElement);
             switchTab('read-tab');
             readResultContainer.classList.add('expanded');
-
-            appState.isSafariBridgeMode = true;
-            setNfcBadge('hidden');
-            return true; 
+            // Verhindere, dass die App versucht, die NFC-Badge etc. zu initialisieren
+            document.getElementById('nfc-status-badge').classList.add('hidden');
+            return true; // Daten wurden "verarbeitet" (an localStorage übergeben)
         }
 
+        // Wenn wir in der PWA sind, verarbeite die URL-Parameter direkt
         const processed = parseAndDisplayDataFromParams(params);
         if (processed) {
+            // Bereinige die URL in der Adressleiste der PWA
             history.replaceState(null, '', window.location.pathname);
         }
         return processed;
@@ -246,43 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchTab(tabId) { abortNfcAction(); document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); tabContents.forEach(content => content.classList.remove('active')); document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); document.getElementById(tabId).classList.add('active'); if (legalInfoContainer) { legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); } if ('NDEFReader' in window) setNfcBadge('idle'); if (tabId === 'write-tab') updatePayloadOnChange(); }
     function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
-    
-    // ✅ FINALE KORREKTUR: Badge-Handling robust gemacht
-    function setNfcBadge(state, message = '') {
-        // Wenn im Safari-Bridge-Modus, Badge IMMER ausblenden und Funktion beenden.
-        if (appState.isSafariBridgeMode) {
-            nfcStatusBadge.classList.add('hidden');
-            return;
-        }
-
-        // Spezialfall, um das Badge manuell auszublenden (z.B. state === 'hidden')
-        if (state === 'hidden') {
-            nfcStatusBadge.classList.add('hidden');
-            return;
-        }
-
-        // Normaler Badge-Betrieb: Sicherstellen, dass das Badge sichtbar ist.
-        nfcStatusBadge.classList.remove('hidden');
-    
-        const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); 
-        const states = { 
-            unsupported: [t('status.unsupported'), 'err'], 
-            idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'],
-            scanning: [t('status.scanning'), 'info'], 
-            writing: [t('status.writing'), 'info'], 
-            success: [message || t('status.success'), 'ok'], 
-            error: [message || t('status.error'), 'err'], 
-            cooldown: [t('status.cooldown'), 'info']
-        }; 
-        const [text, className] = states[state] || states['idle']; 
-        nfcStatusBadge.textContent = text; 
-        nfcStatusBadge.className = 'nfc-badge'; 
-        nfcStatusBadge.classList.add(className);
-    }
-    
+    function setNfcBadge(state, message = '') { const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); const states = { unsupported: [t('status.unsupported'), 'err'], idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'], scanning: [t('status.scanning'), 'info'], writing: [t('status.writing'), 'info'], success: [message || t('status.success'), 'ok'], error: [message || t('status.error'), 'err'], cooldown: [t('status.cooldown'), 'info'] }; const [text, className] = states[state] || states['idle']; nfcStatusBadge.textContent = text; nfcStatusBadge.className = 'nfc-badge'; nfcStatusBadge.classList.add(className) }
     function populateFormFromScan() { if (!appState.scannedDataObject) { showMessage(t('messages.noDataToCopy'), 'err'); return } form.reset(); setTodaysDate(); for (const [key, value] of Object.entries(appState.scannedDataObject)) { const input = form.elements[key]; if (input) { if (input.type === 'radio') { form.querySelectorAll(`input[name="${key}"]`).forEach(radio => { if (radio.value === value) radio.checked = true }) } else if (input.type === 'checkbox') { input.checked = (value === 'true' || value === 'on') } else { input.value = value } } } const pt100Input = document.getElementById('PT 100'); const hasPt100Checkbox = document.getElementById('has_PT100'); if (appState.scannedDataObject['PT 100']) { pt100Input.value = appState.scannedDataObject['PT 100']; pt100Input.disabled = false; hasPt100Checkbox.checked = true } else { pt100Input.disabled = true; hasPt100Checkbox.checked = false } const niCrInput = document.getElementById('NiCr-Ni'); const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni'); if (appState.scannedDataObject['NiCr-Ni']) { niCrInput.disabled = false; hasNiCrCheckbox.checked = true; niCrInput.value = appState.scannedDataObject['NiCr-Ni']; } else { niCrInput.disabled = true; hasNiCrCheckbox.checked = false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'), 'ok') }
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
     function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
     function makeCollapsible(el) { if (!el || el.dataset.collapsibleApplied) return; el.dataset.collapsibleApplied = 'true'; const toggle = () => { if (el.classList.contains('expanded')) return; el.classList.add('expanded') }; const overlay = el.querySelector('.collapsible-overlay'); if (overlay) { overlay.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle() }) } el.addEventListener('click', (e) => { const tag = (e.target.tagName || '').toLowerCase(); if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) return; toggle() }) }
 });
-

@@ -196,7 +196,6 @@ h1.logo {
 .tab-link::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); opacity: 0; transition: opacity 0.3s ease; border-radius: 12px; z-index: -1; }
 .tab-link:hover::before { opacity: 0.1; }
 .tab-link.active { color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
-/* KORREKTUR: Das unnötige '!important' wurde entfernt. Die Spezifität ist ausreichend. */
 :root[data-theme="thixx"] .tab-link.active, :root[data-theme="customer-brand"] .tab-link.active { color: white; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
 .tab-link.active::before { opacity: 1; }
 .tab-link span { position: relative; z-index: 1; }
@@ -223,7 +222,6 @@ h1.logo {
 #copy-to-form-btn { width: 100%; margin-bottom: 0; }
 .file-operations .btn { flex: 1 1 220px; text-align: center; }
 .file-input-label { display: inline-block; }
-/* KORREKTUR: Klasse zum visuellen Verstecken des Inputs, ohne die Funktionalität zu beeinträchtigen */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -287,7 +285,6 @@ footer { padding: 1.5rem 0; text-align: center; }
 :root[data-theme="thixx"] .message-banner.info, :root[data-theme="customer-brand"] .message-banner.info { color: #0c5460; background-color: #cce5ff; border-color: #b8daff; }
 .hidden { display: none !important; }
 
-/* VERBESSERUNG (PRIO 4): Stile für die Update-Benachrichtigung */
 #update-banner {
     display: flex;
     justify-content: space-between;
@@ -336,9 +333,8 @@ footer { padding: 1.5rem 0; text-align: center; }
     box-shadow: 0 8px 30px rgba(88, 101, 242, 0.5);
 }
 
-/* NEUE STILE FÜR IMPRESSUM/DATENSCHUTZ */
 #legal-info {
-    margin-top: 1.5rem; /* Abstand zum oberen Container */
+    margin-top: 1.5rem; 
     background: rgba(var(--surface-color-rgb), 0.6);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(var(--border-color-rgb), 0.3);
@@ -385,4 +381,17 @@ footer { padding: 1.5rem 0; text-align: center; }
 .legal-links a:hover {
     color: var(--primary-light);
     text-decoration: underline;
+}
+
+/* NEUE STILE FÜR IOS-BRIDGE */
+.ios-bridge-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.ios-bridge-message {
+    color: var(--light-text-color);
+    line-height: 1.6;
 }
