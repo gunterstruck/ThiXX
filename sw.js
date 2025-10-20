@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-robust-v4'; // Version erhöht, um Update auszulösen
+const APP_CACHE_NAME = 'thixx-robust-v5'; // Version erhöht, um Update auszulösen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 /*
@@ -93,10 +93,16 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           } catch (error) {
             console.log('[Service Worker] Navigate fetch failed, trying cache fallbacks.');
-            const cached = await caches.match(request);
+            
+            // ✅ KORREKTUR IMPLEMENTIERT: ignoreSearch: true ist entscheidend,
+            // um Anfragen wie 'index.html?param=wert' gegen das gecachte 'index.html' zu matchen.
+            const cached = await caches.match(request, { ignoreSearch: true });
             if (cached) return cached;
+            
+            // Diese Fallbacks sind weiterhin sinnvoll, falls der erste Match aus irgendeinem Grund fehlschlägt.
             const shell = await caches.match('/ThiXX/index.html');
             if (shell) return shell;
+            
             return await caches.match('/ThiXX/offline.html');
           }
         })());
@@ -126,5 +132,7 @@ self.addEventListener('message', (event) => {
                 .then(cache => cache.add(new Request(event.data.url, { mode: 'no-cors' })))
                 .catch(err => console.error('[Service Worker] Failed to cache doc:', err))
         );
+    } else if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
     }
 });
