@@ -2,8 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration and Constants ---
     const SCOPE = '/ThiXX/';
     const BASE_URL = new URL('index.html', location.origin + SCOPE).href;
-    // ENTFERNT: localStorage Bridge Schlüssel
-
     const CONFIG = {
         COOLDOWN_DURATION: 2000,
         WRITE_SUCCESS_GRACE_PERIOD: 2500,
@@ -20,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
         translations: {}, isNfcActionActive: false, isCooldownActive: false,
         abortController: null, scannedDataObject: null, eventLog: [],
         nfcTimeoutId: null, gracePeriodTimeoutId: null,
-        // ENTFERNT: Safari Bridge Mode Flag
     };
 
     // --- Design Templates ---
@@ -61,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const debounce = (func, wait) => { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
     function isValidDocUrl(url) { if (!url || typeof url !== 'string') return false; try { const parsed = new URL(url); return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')); } catch { return false; } }
     const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    // ENTFERNT: isPwaDisplayMode ist nicht mehr für die Kernlogik nötig.
 
     // --- Internationalization (i18n) ---
     function t(key, options = {}) { let text = key.split('.').reduce((obj, i) => obj?.[i], appState.translations); if (!text) { console.warn(`Translation not found for key: ${key}`); return key; } if (options.replace) { for (const [placeholder, value] of Object.entries(options.replace)) { text = text.replace(`{${placeholder}}`, value); } } return text; }
@@ -106,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         
-        // VEREINFACHT: Nur noch die URL-Parameter direkt verarbeiten.
         if (!processUrlParameters()) {
             setupReadTabInitialState();
             switchTab('read-tab');
@@ -142,8 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyConfig(config) {
         const selectedDesign = designs[config.design] || designs['thixx_standard'];
         
-        // VEREINFACHT: Das dynamische Manifest wird nur noch für Nicht-iOS-Geräte erstellt.
-        // Für iOS wird das Standard-Manifest verwendet, aber die App ist nicht "installierbar".
         if (!isIOS()) { 
             updateManifest(selectedDesign); 
         }
@@ -153,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); }
         const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
         if (customerBtnImg && selectedDesign.icons?.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; }
-        // ENTFERNT: Der apple-touch-icon Link wird aus dem HTML entfernt, daher hier keine Aktion nötig.
         if (selectedDesign.brandColors?.primary) { document.documentElement.style.setProperty('--primary-color-override', selectedDesign.brandColors.primary); }
         if (selectedDesign.brandColors?.secondary) { document.documentElement.style.setProperty('--secondary-color-override', selectedDesign.brandColors.secondary); }
     }
@@ -163,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); appState.gracePeriodTimeoutId = setTimeout(() => { if (appState.gracePeriodTimeoutId !== null) { abortNfcAction(); startCooldown(); } }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD); return; } catch (error) { console.warn(`Write attempt ${attempt} failed:`, error); if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) { throw error; } await new Promise(resolve => setTimeout(resolve, 200)); } } }
 
     // --- Data Processing & Form Handling ---
-    // VEREINFACHT: Diese Funktion verarbeitet jetzt IMMER die URL-Parameter direkt.
     function processUrlParameters() {
         const params = new URLSearchParams(window.location.search);
         if (params.toString() === '') return false;
@@ -182,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             readResultContainer.classList.add('expanded');
             switchTab('read-tab');
             showMessage(t('messages.readSuccess'), 'ok');
-            history.replaceState(null, '', window.location.pathname); // Bereinigt die URL in der Adressleiste
+            history.replaceState(null, '', window.location.pathname); 
             return true;
         }
 
@@ -209,7 +200,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
     function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
     function initCollapsibles() { document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el)) }
-    function checkNfcSupport() { if ('NDEFReader' in window) { setNfcBadge('idle') } else { setNfcBadge('unsupported'); nfcFallback.classList.remove('hidden'); nfcStatusBadge.disabled = true } }
+    
+    function checkNfcSupport() {
+        if ('NDEFReader' in window) {
+            setNfcBadge('idle');
+        } else {
+            setNfcBadge('unsupported');
+            nfcFallback.classList.remove('hidden');
+            nfcStatusBadge.disabled = true;
+            
+            // UX-VERBESSERUNG: Schreib-Tab bei fehlender NFC-Unterstützung ausblenden
+            // Betrifft: iOS Safari, Desktop-Browser und alle anderen Geräte ohne NFC-Writer
+            // Dies vermeidet Verwirrung und zeigt nur funktionale Features
+            const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
+            if (writeTab) {
+                writeTab.style.display = 'none';
+            }
+        }
+    }
+
     function switchTab(tabId) { abortNfcAction(); document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); tabContents.forEach(content => content.classList.remove('active')); document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); document.getElementById(tabId).classList.add('active'); if (legalInfoContainer) { legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); } if ('NDEFReader' in window) setNfcBadge('idle'); if (tabId === 'write-tab') updatePayloadOnChange(); }
     function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
