@@ -234,43 +234,73 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
     function initCollapsibles() { document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el)) }
     
+    // BUGFIX #1: Correctly handle UI for iOS without breaking navigation.
     function checkNfcSupport() {
         if ('NDEFReader' in window) {
             setNfcBadge('idle');
         } else {
-            // iOS-OPTIMIERUNG: Unterschiedliches Verhalten je nach Plattform
             if (isIOS()) {
-                // Auf iOS: NFC-Lesen funktioniert nativ
-                // → Keine irreführenden Fehlermeldungen anzeigen
-                // → Badge komplett ausblenden
-                nfcStatusBadge.classList.add('hidden');
-                
-                // Footer-Hinweis NICHT anzeigen (bleibt .hidden)
-                // nfcFallback bleibt hidden - User braucht keinen Hinweis
-                
+                // Hide the write tab, as it's not functional on iOS.
+                const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
+                if (writeTab) {
+                    writeTab.style.display = 'none';
+                }
+                setNfcBadge('idle'); 
+                nfcStatusBadge.disabled = true; // Badge is for display only on iOS
             } else {
-                // Auf Desktop/anderen Browsern: Wirklich kein NFC
-                // → Hinweise sind korrekt und hilfreich
+                // Fallback for other non-supported browsers (e.g., Desktop Firefox)
                 setNfcBadge('unsupported');
                 nfcFallback.classList.remove('hidden');
-            }
-            
-            nfcStatusBadge.disabled = true;
-            
-            // UX-VERBESSERUNG: Schreib-Tab ausblenden (bereits implementiert)
-            const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
-            if (writeTab) {
-                writeTab.style.display = 'none';
+                nfcStatusBadge.disabled = true;
+                const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
+                if (writeTab) {
+                    writeTab.style.display = 'none';
+                }
             }
         }
     }
 
-    function switchTab(tabId) { abortNfcAction(); document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); tabContents.forEach(content => content.classList.remove('active')); document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active'); document.getElementById(tabId).classList.add('active'); if (legalInfoContainer) { legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); } if ('NDEFReader' in window) setNfcBadge('idle'); if (tabId === 'write-tab') updatePayloadOnChange(); }
+    // BUGFIX #2: Only update badge in switchTab if NFC is supported.
+    function switchTab(tabId) { 
+        abortNfcAction(); 
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); 
+        tabContents.forEach(content => content.classList.remove('active')); 
+
+        const activeTabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+        if(activeTabLink) {
+             activeTabLink.classList.add('active');
+        }
+       
+        document.getElementById(tabId).classList.add('active'); 
+        
+        if (legalInfoContainer) { 
+            legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); 
+        } 
+        
+        // FIX: Only change badge if NFC is actually supported by the platform.
+        if ('NDEFReader' in window || isIOS()) {
+            setNfcBadge('idle');
+        }
+        
+        if (tabId === 'write-tab') updatePayloadOnChange(); 
+    }
+
     function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
     
     function setNfcBadge(state, message = '') {
         const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); 
+
+        if (isIOS()) {
+            const [text, className] = isWriteMode
+                ? [t('status.iosWriteProtected'), 'info']
+                : [t('status.iosRead'), 'info'];
+            nfcStatusBadge.textContent = text;
+            nfcStatusBadge.className = 'nfc-badge';
+            nfcStatusBadge.classList.add(className);
+            return;
+        }
+
         const states = { 
             unsupported: [t('status.unsupported'), 'err'], 
             idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'],
@@ -290,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
     function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
     
-    // MODIFICATION: Logic updated to allow toggling (expanding and collapsing).
     function makeCollapsible(el) {
         if (!el || el.dataset.collapsibleApplied) return;
         el.dataset.collapsibleApplied = 'true';
@@ -304,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // The overlay only expands, it doesn't collapse.
                 if (!el.classList.contains('expanded')) {
                     el.classList.add('expanded');
                 }
@@ -312,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         el.addEventListener('click', (e) => {
-            // Prevent action if the click was on an interactive element.
             const interactiveTags = ['input', 'select', 'textarea', 'button', 'label', 'summary', 'details', 'a'];
             if (interactiveTags.includes(e.target.tagName.toLowerCase()) || e.target.closest('.collapsible-overlay')) {
                 return;
