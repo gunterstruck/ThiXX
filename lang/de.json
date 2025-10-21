@@ -23,7 +23,7 @@
     "themeLight": "Helles Design",
     "themeCustomer": "Kunden-Design",
     "form": {
-        "HK.Nr.": "HK-Nr.",
+        "HK-Nr": "HK-Nr.",
         "KKS": "KKS",
         "Leistung": "Leistung",
         "Strom": "Strom",
@@ -32,7 +32,7 @@
         "Regler": "Regler",
         "Sicherheitsregler/Begrenzer": "Sicherheitsregler/-begrenzer",
         "Wächter": "Wächter",
-        "Projekt Nr.": "Projekt-Nr.",
+        "Projekt-Nr": "Projekt-Nr.",
         "Dokumentation": "Dokumentation (URL)",
         "Anzahl Heizkabeleinheiten": "Anzahl Heizkabeleinheiten",
         "Trennkasten": "Trennkasten",
@@ -85,4 +85,5 @@
     },
     "nfcFallback": "Ihr Browser unterstützt WebNFC nicht. Bitte verwenden Sie Chrome auf Android."
 }
+
 

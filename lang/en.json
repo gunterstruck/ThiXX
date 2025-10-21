@@ -23,7 +23,7 @@
     "themeLight": "Light Theme",
     "themeCustomer": "Customer Theme",
     "form": {
-        "HK.Nr.": "HC-No.",
+        "HK-Nr": "HC-No.",
         "KKS": "KKS",
         "Leistung": "Power",
         "Strom": "Current",
@@ -32,7 +32,7 @@
         "Regler": "Controller",
         "Sicherheitsregler/Begrenzer": "Safety Controller/Limiter",
         "Wächter": "Monitor",
-        "Projekt Nr.": "Project No.",
+        "Projekt-Nr": "Project No.",
         "Dokumentation": "Documentation (URL)",
         "Anzahl Heizkabeleinheiten": "Number of Heating Cable Units",
         "Trennkasten": "Junction Box",
@@ -85,4 +85,5 @@
     },
     "nfcFallback": "Your browser does not support WebNFC. Please use Chrome on Android."
 }
+
 

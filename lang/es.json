@@ -23,7 +23,7 @@
     "themeLight": "Tema Claro",
     "themeCustomer": "Tema del Cliente",
     "form": {
-        "HK.Nr.": "Nº CC",
+        "HK-Nr": "Nº CC",
         "KKS": "KKS",
         "Leistung": "Potencia",
         "Strom": "Corriente",
@@ -32,7 +32,7 @@
         "Regler": "Controlador",
         "Sicherheitsregler/Begrenzer": "Controlador/Limitador de Seguridad",
         "Wächter": "Monitor",
-        "Projekt Nr.": "Nº de Proyecto",
+        "Projekt-Nr": "Nº de Proyecto",
         "Dokumentation": "Documentación (URL)",
         "Anzahl Heizkabeleinheiten": "Número de Unidades de Cable Calefactor",
         "Trennkasten": "Caja de Conexiones",
@@ -85,4 +85,5 @@
     },
     "nfcFallback": "Su navegador no es compatible con WebNFC. Por favor, use Chrome en Android."
 }
+
 
