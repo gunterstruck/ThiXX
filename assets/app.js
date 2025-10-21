@@ -117,14 +117,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleNiCrNiChange = (e) => { const el = document.getElementById('NiCr-Ni'); if (el) el.disabled = !e.target.checked; };
     const debouncedUpdatePayload = debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY);
 
+    // FIX & OPTIMIZATION: Add null-checks and iOS-specific listener registration.
     function setupEventListeners() {
         tabsContainer.addEventListener('click', handleTabClick);
         themeSwitcher.addEventListener('click', handleThemeChange);
         nfcStatusBadge.addEventListener('click', handleNfcAction);
-        copyToFormBtn.addEventListener('click', populateFormFromScan);
-        saveJsonBtn.addEventListener('click', saveFormAsJson);
-        if (loadJsonLabel) { loadJsonLabel.addEventListener('click', () => { loadJsonInput.click(); }); }
-        loadJsonInput.addEventListener('change', loadJsonIntoForm);
+
+        // On iOS, some buttons are hidden, so their listeners are unnecessary.
+        if (!isIOS()) {
+            if (copyToFormBtn) {
+                copyToFormBtn.addEventListener('click', populateFormFromScan);
+            }
+            if(saveJsonBtn) saveJsonBtn.addEventListener('click', saveFormAsJson);
+            if(loadJsonInput) loadJsonInput.addEventListener('change', loadJsonIntoForm);
+            // FIX: Ensure both label and input exist before adding listener.
+            if (loadJsonLabel && loadJsonInput) {
+                loadJsonLabel.addEventListener('click', () => { loadJsonInput.click(); });
+            }
+        }
+        
         form.addEventListener('input', debouncedUpdatePayload);
         form.addEventListener('change', updatePayloadOnChange);
         reloadButton.addEventListener('click', handleReloadClick);
@@ -132,18 +143,20 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('has_NiCr-Ni')?.addEventListener('change', handleNiCrNiChange);
     }
 
-    /**
-     * Best Practice: Provides a function to clean up event listeners.
-     * While not strictly necessary in this app's page-reload lifecycle,
-     * it's crucial for future evolution into a Single Page App (SPA) to prevent memory leaks.
-     */
+    // FIX: Add null-check in cleanup function.
     function cleanupEventListeners() {
         tabsContainer.removeEventListener('click', handleTabClick);
         themeSwitcher.removeEventListener('click', handleThemeChange);
         nfcStatusBadge.removeEventListener('click', handleNfcAction);
-        copyToFormBtn.removeEventListener('click', populateFormFromScan);
-        saveJsonBtn.removeEventListener('click', saveFormAsJson);
-        loadJsonInput.removeEventListener('change', loadJsonIntoForm);
+        
+        if (!isIOS()) {
+            if (copyToFormBtn) {
+                copyToFormBtn.removeEventListener('click', populateFormFromScan);
+            }
+            if (saveJsonBtn) saveJsonBtn.removeEventListener('click', saveFormAsJson);
+            if (loadJsonInput) loadJsonInput.removeEventListener('change', loadJsonIntoForm);
+        }
+
         form.removeEventListener('input', debouncedUpdatePayload);
         form.removeEventListener('change', updatePayloadOnChange);
         reloadButton.removeEventListener('click', handleReloadClick);
@@ -234,21 +247,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
     function initCollapsibles() { document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el)) }
     
-    // BUGFIX #1: Correctly handle UI for iOS without breaking navigation.
     function checkNfcSupport() {
         if ('NDEFReader' in window) {
             setNfcBadge('idle');
         } else {
             if (isIOS()) {
-                // Hide the write tab, as it's not functional on iOS.
-                const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
-                if (writeTab) {
-                    writeTab.style.display = 'none';
-                }
+                // MODIFICATION: Hide the entire tabs container and the copy button on iOS for a cleaner UI.
+                tabsContainer.classList.add('hidden');
+                if (copyToFormBtn) copyToFormBtn.classList.add('hidden');
                 setNfcBadge('idle'); 
-                nfcStatusBadge.disabled = true; // Badge is for display only on iOS
+                nfcStatusBadge.disabled = true;
             } else {
-                // Fallback for other non-supported browsers (e.g., Desktop Firefox)
                 setNfcBadge('unsupported');
                 nfcFallback.classList.remove('hidden');
                 nfcStatusBadge.disabled = true;
@@ -260,24 +269,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // BUGFIX #2: Only update badge in switchTab if NFC is supported.
     function switchTab(tabId) { 
         abortNfcAction(); 
-        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); 
-        tabContents.forEach(content => content.classList.remove('active')); 
 
-        const activeTabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
-        if(activeTabLink) {
-             activeTabLink.classList.add('active');
+        // MODIFICATION: Tab link logic is skipped on iOS as tabs are hidden.
+        if (!isIOS()) {
+            document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
+            const activeTabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+            if(activeTabLink) {
+                 activeTabLink.classList.add('active');
+            }
         }
        
+        tabContents.forEach(content => content.classList.remove('active')); 
         document.getElementById(tabId).classList.add('active'); 
         
         if (legalInfoContainer) { 
             legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); 
         } 
         
-        // FIX: Only change badge if NFC is actually supported by the platform.
         if ('NDEFReader' in window || isIOS()) {
             setNfcBadge('idle');
         }
@@ -288,8 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
     
+    // FIX: Add null-check for the write-tab element.
     function setNfcBadge(state, message = '') {
-        const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); 
+        const writeTab = document.getElementById('write-tab');
+        const isWriteMode = writeTab?.classList.contains('active') || false;
 
         if (isIOS()) {
             const [text, className] = isWriteMode
@@ -316,7 +328,63 @@ document.addEventListener('DOMContentLoaded', () => {
         nfcStatusBadge.classList.add(className);
     }
     
-    function populateFormFromScan() { if (!appState.scannedDataObject) { showMessage(t('messages.noDataToCopy'), 'err'); return } form.reset(); setTodaysDate(); for (const [key, value] of Object.entries(appState.scannedDataObject)) { const input = form.elements[key]; if (input) { if (input.type === 'radio') { form.querySelectorAll(`input[name="${key}"]`).forEach(radio => { if (radio.value === value) radio.checked = true }) } else if (input.type === 'checkbox') { input.checked = (value === 'true' || value === 'on') } else { input.value = value } } } const pt100Input = document.getElementById('PT 100'); const hasPt100Checkbox = document.getElementById('has_PT100'); if (appState.scannedDataObject['PT 100']) { pt100Input.value = appState.scannedDataObject['PT 100']; pt100Input.disabled = false; hasPt100Checkbox.checked = true } else { pt100Input.disabled = true; hasPt100Checkbox.checked = false } const niCrInput = document.getElementById('NiCr-Ni'); const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni'); if (appState.scannedDataObject['NiCr-Ni']) { niCrInput.disabled = false; hasNiCrCheckbox.checked = true; niCrInput.value = appState.scannedDataObject['NiCr-Ni']; } else { niCrInput.disabled = true; hasNiCrCheckbox.checked = false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'), 'ok') }
+    // FIX: Add iOS guard and consistent null-checks.
+    function populateFormFromScan() {
+        // This function should not be callable on iOS as the button is hidden.
+        if (isIOS()) {
+            showMessage(t('messages.noDataToCopy'), 'err');
+            return;
+        }
+
+        if (!appState.scannedDataObject) { 
+            showMessage(t('messages.noDataToCopy'), 'err'); 
+            return;
+        } 
+        form.reset(); 
+        setTodaysDate(); 
+        for (const [key, value] of Object.entries(appState.scannedDataObject)) { 
+            const input = form.elements[key]; 
+            if (input) { 
+                if (input.type === 'radio') { 
+                    form.querySelectorAll(`input[name="${key}"]`).forEach(radio => { 
+                        if (radio.value === value) radio.checked = true;
+                    });
+                } else if (input.type === 'checkbox') { 
+                    input.checked = (value === 'true' || value === 'on');
+                } else { 
+                    input.value = value;
+                } 
+            } 
+        } 
+        const pt100Input = document.getElementById('PT 100'); 
+        const hasPt100Checkbox = document.getElementById('has_PT100'); 
+        if (appState.scannedDataObject['PT 100']) {
+            if (pt100Input) {
+                pt100Input.value = appState.scannedDataObject['PT 100']; 
+                pt100Input.disabled = false; 
+            }
+            if(hasPt100Checkbox) hasPt100Checkbox.checked = true;
+        } else { 
+            if(pt100Input) pt100Input.disabled = true; 
+            if(hasPt100Checkbox) hasPt100Checkbox.checked = false;
+        } 
+        const niCrInput = document.getElementById('NiCr-Ni'); 
+        const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni'); 
+        if (appState.scannedDataObject['NiCr-Ni']) {
+            if (niCrInput) {
+                niCrInput.disabled = false; 
+                niCrInput.value = appState.scannedDataObject['NiCr-Ni']; 
+            }
+            if(hasNiCrCheckbox) hasNiCrCheckbox.checked = true; 
+        } else { 
+            if(niCrInput) niCrInput.disabled = true; 
+            if(hasNiCrCheckbox) hasNiCrCheckbox.checked = false;
+        } 
+        switchTab('write-tab'); 
+        document.getElementById('write-form-container').classList.add('expanded'); 
+        showMessage(t('messages.copySuccess'), 'ok');
+    }
+
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
     function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
     
