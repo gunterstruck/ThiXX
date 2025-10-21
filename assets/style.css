@@ -95,7 +95,15 @@ body::before {
 
 :root[data-theme="customer-brand"] body::before { opacity: 0.3; }
 
-.container { max-width: 900px; margin: 0 auto; padding: 1.5rem; position: relative; z-index: 1; }
+.container { 
+    max-width: 900px; 
+    margin: 0 auto; 
+    padding: 1.5rem; 
+    position: relative; 
+    z-index: 1;
+    /* FIX: Add padding to account for system navigation bars (e.g., on iOS) */
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
 
 header {
     display: flex;
@@ -195,7 +203,6 @@ h1.logo {
 .tab-link::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); opacity: 0; transition: opacity 0.3s ease; border-radius: 12px; z-index: -1; }
 .tab-link:hover::before { opacity: 0.1; }
 .tab-link.active { color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
-/* KORREKTUR: Das unnötige '!important' wurde entfernt. Die Spezifität ist ausreichend. */
 :root[data-theme="thixx"] .tab-link.active, :root[data-theme="customer-brand"] .tab-link.active { color: white; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
 .tab-link.active::before { opacity: 1; }
 .tab-link span { position: relative; z-index: 1; }
@@ -222,7 +229,6 @@ h1.logo {
 #copy-to-form-btn { width: 100%; margin-bottom: 0; }
 .file-operations .btn { flex: 1 1 220px; text-align: center; }
 .file-input-label { display: inline-block; }
-/* KORREKTUR: Klasse zum visuellen Verstecken des Inputs, ohne die Funktionalität zu beeinträchtigen */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -314,8 +320,7 @@ footer { padding: 1.5rem 0; text-align: center; }
 :root[data-theme="customer-brand"] .tab-link::before, :root[data-theme="customer-brand"] .btn.primary-btn { background: var(--primary-color); }
 
 .collapsible { position: relative; overflow: hidden; cursor: pointer; max-height: 8rem; transition: max-height 350ms ease-in-out; }
-/* MODIFICATION: Cursor remains a pointer to indicate it's still clickable. */
-.collapsible.expanded { max-height: 3000px; cursor: pointer; transition: max-height 500ms ease-in-out; }
+.collapsible.expanded { max-height: 3000px; cursor: default; transition: max-height 500ms ease-in-out; }
 .collapsible-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 4rem; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 0.75rem; color: var(--light-text-color); font-size: 0.8rem; font-weight: 600; user-select: none; background: linear-gradient( to bottom, transparent 0%, rgba(var(--surface-color-rgb), 0.9) 50%, rgba(var(--surface-color-rgb), 1) 100% ); transition: opacity 200ms ease; }
 .collapsible.expanded .collapsible-overlay { opacity: 0; pointer-events: none; }
 
@@ -394,7 +399,7 @@ footer { padding: 1.5rem 0; text-align: center; }
 
 @media (max-width: 400px) {
     /* Allgemein */
-    .container { padding: 1rem; }
+    .container { padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
     
     /* Header */
     h1.logo { font-size: 2rem; gap: 0.02em; }

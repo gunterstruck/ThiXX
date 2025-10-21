@@ -201,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleNfcAction() { if (appState.isNfcActionActive || appState.isCooldownActive) return; const writeTab = document.getElementById('write-tab'); const isWriteMode = writeTab?.classList.contains('active') || false; if (!isWriteMode) { showMessage(t('messages.scanToReadInfo'), 'info'); return; } appState.isNfcActionActive = true; appState.abortController = new AbortController(); appState.nfcTimeoutId = setTimeout(() => { if (appState.abortController && !appState.abortController.signal.aborted) { appState.abortController.abort(new DOMException('NFC Operation Timed Out', 'TimeoutError')); } }, CONFIG.NFC_WRITE_TIMEOUT); try { const ndef = new NDEFReader(); const validationErrors = validateForm(); if (validationErrors.length > 0) { throw new Error(validationErrors.join('\n')); } setNfcBadge('writing'); const urlPayload = generateUrlFromForm(); const message = { records: [{ recordType: "url", data: urlPayload }] }; await writeWithRetries(ndef, message); } catch (error) { clearTimeout(appState.nfcTimeoutId); if (error.name !== 'AbortError') { ErrorHandler.handle(error, 'NFCAction'); } else if (error.message === 'NFC Operation Timed Out') { const timeoutError = new DOMException('Write operation timed out.', 'TimeoutError'); ErrorHandler.handle(timeoutError, 'NFCAction'); } abortNfcAction(); startCooldown(); } }
     async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); 
     
-    // FIX: Race condition robustly handled by capturing timeoutId in a closure.
     const timeoutId = setTimeout(() => {
         if (appState.gracePeriodTimeoutId === timeoutId) {
             abortNfcAction();
@@ -229,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(rawDataOutput) rawDataOutput.value = window.location.href;
             if(readActions) readActions.classList.remove('hidden');
             switchTab('read-tab');
-            autoExpandToFitScreen(readResultContainer); // Auto-expand read results
+            autoExpandToFitScreen(readResultContainer); 
             showMessage(t('messages.readSuccess'), 'ok');
             history.replaceState(null, '', window.location.pathname); 
             return true;
@@ -388,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         switchTab('write-tab'); 
-        autoExpandToFitScreen(document.getElementById('write-form-container')); // Auto-expand form
+        autoExpandToFitScreen(document.getElementById('write-form-container')); 
         showMessage(t('messages.copySuccess'), 'ok');
     }
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
