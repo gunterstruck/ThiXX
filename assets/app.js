@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- DOM Element References ---
+    const headerElement = document.querySelector('header');
     const tabsContainer = document.querySelector('.tabs');
     const tabContents = document.querySelectorAll('.tab-content');
     const nfcStatusBadge = document.getElementById('nfc-status-badge');
@@ -117,51 +118,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleNiCrNiChange = (e) => { const el = document.getElementById('NiCr-Ni'); if (el) el.disabled = !e.target.checked; };
     const debouncedUpdatePayload = debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY);
 
-    // FIX & OPTIMIZATION: Add null-checks and iOS-specific listener registration.
     function setupEventListeners() {
-        tabsContainer.addEventListener('click', handleTabClick);
-        themeSwitcher.addEventListener('click', handleThemeChange);
-        nfcStatusBadge.addEventListener('click', handleNfcAction);
-
-        // On iOS, some buttons are hidden, so their listeners are unnecessary.
+        if(tabsContainer) tabsContainer.addEventListener('click', handleTabClick);
+        if(themeSwitcher) themeSwitcher.addEventListener('click', handleThemeChange);
+        if(nfcStatusBadge) nfcStatusBadge.addEventListener('click', handleNfcAction);
+        
+        // iOS: Diese Buttons sind hidden, Listener sind unnötig
         if (!isIOS()) {
             if (copyToFormBtn) {
                 copyToFormBtn.addEventListener('click', populateFormFromScan);
             }
             if(saveJsonBtn) saveJsonBtn.addEventListener('click', saveFormAsJson);
             if(loadJsonInput) loadJsonInput.addEventListener('change', loadJsonIntoForm);
-            // FIX: Ensure both label and input exist before adding listener.
             if (loadJsonLabel && loadJsonInput) {
-                loadJsonLabel.addEventListener('click', () => { loadJsonInput.click(); });
+                loadJsonLabel.addEventListener('click', () => { 
+                    loadJsonInput.click(); 
+                });
             }
         }
         
-        form.addEventListener('input', debouncedUpdatePayload);
-        form.addEventListener('change', updatePayloadOnChange);
-        reloadButton.addEventListener('click', handleReloadClick);
-        document.getElementById('has_PT100')?.addEventListener('change', handlePt100Change);
-        document.getElementById('has_NiCr-Ni')?.addEventListener('change', handleNiCrNiChange);
+        if(form) {
+            form.addEventListener('input', debouncedUpdatePayload);
+            form.addEventListener('change', updatePayloadOnChange);
+        }
+        if(reloadButton) reloadButton.addEventListener('click', handleReloadClick);
+        const pt100Checkbox = document.getElementById('has_PT100');
+        if(pt100Checkbox) pt100Checkbox.addEventListener('change', handlePt100Change);
+        const niCrNiCheckbox = document.getElementById('has_NiCr-Ni');
+        if(niCrNiCheckbox) niCrNiCheckbox.addEventListener('change', handleNiCrNiChange);
     }
 
-    // FIX: Add null-check in cleanup function.
+    /**
+     * Best Practice: Provides a function to clean up event listeners.
+     * While not strictly necessary in this app's page-reload lifecycle,
+     * it's crucial for future evolution into a Single Page App (SPA) to prevent memory leaks.
+     */
     function cleanupEventListeners() {
-        tabsContainer.removeEventListener('click', handleTabClick);
-        themeSwitcher.removeEventListener('click', handleThemeChange);
-        nfcStatusBadge.removeEventListener('click', handleNfcAction);
-        
+        if(tabsContainer) tabsContainer.removeEventListener('click', handleTabClick);
+        if(themeSwitcher) themeSwitcher.removeEventListener('click', handleThemeChange);
+        if(nfcStatusBadge) nfcStatusBadge.removeEventListener('click', handleNfcAction);
+    
         if (!isIOS()) {
             if (copyToFormBtn) {
                 copyToFormBtn.removeEventListener('click', populateFormFromScan);
             }
-            if (saveJsonBtn) saveJsonBtn.removeEventListener('click', saveFormAsJson);
-            if (loadJsonInput) loadJsonInput.removeEventListener('change', loadJsonIntoForm);
+            if(saveJsonBtn) saveJsonBtn.removeEventListener('click', saveFormAsJson);
+            if(loadJsonInput) loadJsonInput.removeEventListener('change', loadJsonIntoForm);
         }
-
-        form.removeEventListener('input', debouncedUpdatePayload);
-        form.removeEventListener('change', updatePayloadOnChange);
-        reloadButton.removeEventListener('click', handleReloadClick);
-        document.getElementById('has_PT100')?.removeEventListener('change', handlePt100Change);
-        document.getElementById('has_NiCr-Ni')?.removeEventListener('change', handleNiCrNiChange);
+    
+        if(form) {
+            form.removeEventListener('input', debouncedUpdatePayload);
+            form.removeEventListener('change', updatePayloadOnChange);
+        }
+        if(reloadButton) reloadButton.removeEventListener('click', handleReloadClick);
+        const pt100Checkbox = document.getElementById('has_PT100');
+        if(pt100Checkbox) pt100Checkbox.removeEventListener('change', handlePt100Change);
+        const niCrNiCheckbox = document.getElementById('has_NiCr-Ni');
+        if(niCrNiCheckbox) niCrNiCheckbox.removeEventListener('change', handleNiCrNiChange);
     }
 
     // --- UI & Display Logic ---
@@ -185,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- NFC Logic ---
-    async function handleNfcAction() { if (appState.isNfcActionActive || appState.isCooldownActive) return; const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); if (!isWriteMode) { showMessage(t('messages.scanToReadInfo'), 'info'); return; } appState.isNfcActionActive = true; appState.abortController = new AbortController(); appState.nfcTimeoutId = setTimeout(() => { if (appState.abortController && !appState.abortController.signal.aborted) { appState.abortController.abort(new DOMException('NFC Operation Timed Out', 'TimeoutError')); } }, CONFIG.NFC_WRITE_TIMEOUT); try { const ndef = new NDEFReader(); const validationErrors = validateForm(); if (validationErrors.length > 0) { throw new Error(validationErrors.join('\n')); } setNfcBadge('writing'); const urlPayload = generateUrlFromForm(); const message = { records: [{ recordType: "url", data: urlPayload }] }; await writeWithRetries(ndef, message); } catch (error) { clearTimeout(appState.nfcTimeoutId); if (error.name !== 'AbortError') { ErrorHandler.handle(error, 'NFCAction'); } else if (error.message === 'NFC Operation Timed Out') { const timeoutError = new DOMException('Write operation timed out.', 'TimeoutError'); ErrorHandler.handle(timeoutError, 'NFCAction'); } abortNfcAction(); startCooldown(); } }
+    async function handleNfcAction() { if (appState.isNfcActionActive || appState.isCooldownActive) return; const writeTab = document.getElementById('write-tab'); const isWriteMode = writeTab?.classList.contains('active') || false; if (!isWriteMode) { showMessage(t('messages.scanToReadInfo'), 'info'); return; } appState.isNfcActionActive = true; appState.abortController = new AbortController(); appState.nfcTimeoutId = setTimeout(() => { if (appState.abortController && !appState.abortController.signal.aborted) { appState.abortController.abort(new DOMException('NFC Operation Timed Out', 'TimeoutError')); } }, CONFIG.NFC_WRITE_TIMEOUT); try { const ndef = new NDEFReader(); const validationErrors = validateForm(); if (validationErrors.length > 0) { throw new Error(validationErrors.join('\n')); } setNfcBadge('writing'); const urlPayload = generateUrlFromForm(); const message = { records: [{ recordType: "url", data: urlPayload }] }; await writeWithRetries(ndef, message); } catch (error) { clearTimeout(appState.nfcTimeoutId); if (error.name !== 'AbortError') { ErrorHandler.handle(error, 'NFCAction'); } else if (error.message === 'NFC Operation Timed Out') { const timeoutError = new DOMException('Write operation timed out.', 'TimeoutError'); ErrorHandler.handle(timeoutError, 'NFCAction'); } abortNfcAction(); startCooldown(); } }
     async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); 
     
     // FIX: Race condition robustly handled by capturing timeoutId in a closure.
@@ -213,11 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Object.keys(data).length > 0) {
             appState.scannedDataObject = data;
             displayParsedData(data);
-            rawDataOutput.value = window.location.href;
-            readActions.classList.remove('hidden');
-            // MODIFICATION: Container starts collapsed by default after reading data.
-            // readResultContainer.classList.add('expanded'); // This line was removed.
+            if(rawDataOutput) rawDataOutput.value = window.location.href;
+            if(readActions) readActions.classList.remove('hidden');
             switchTab('read-tab');
+            autoExpandToFitScreen(readResultContainer); // Auto-expand read results
             showMessage(t('messages.readSuccess'), 'ok');
             history.replaceState(null, '', window.location.pathname); 
             return true;
@@ -228,8 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getFormData() { const formData = new FormData(form); const data = {}; for (const [key, value] of formData.entries()) { if (String(value).trim()) data[key] = String(value).trim(); } if (!document.getElementById('has_PT100')?.checked) delete data['PT 100']; if (!document.getElementById('has_NiCr-Ni')?.checked) delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data; }
     function generateUrlFromForm() { const params = new URLSearchParams(); const formData = getFormData(); for (const [key, value] of Object.entries(formData)) { const shortKey = fieldMap[key]; if (shortKey) params.append(shortKey, value); } return `${CONFIG.BASE_URL}?${params.toString()}`; }
-    function updatePayloadOnChange() { if (document.querySelector('.tab-link[data-tab="write-tab"].active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
-    function validateForm() { const errors = []; const voltage = parseFloat(form.elements['Spannung']?.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } const docUrl = form.elements['Dokumentation']?.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
+    function updatePayloadOnChange() { const writeTab = document.getElementById('write-tab'); if (writeTab?.classList.contains('active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
+    function validateForm() { const errors = []; const voltageInput = form.elements['Spannung']; if(voltageInput) { const voltage = parseFloat(voltageInput.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } } const docUrlInput = form.elements['Dokumentation']; if(docUrlInput) { const docUrl = docUrlInput.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
 
     // --- Helper & State Functions ---
     function startCooldown() { appState.isCooldownActive = true; setNfcBadge('cooldown'); setTimeout(() => { appState.isCooldownActive = false; if ('NDEFReader' in window) setNfcBadge('idle'); }, CONFIG.COOLDOWN_DURATION) }
@@ -244,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI/UX Functions ---
     function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const oldHref = manifestLink.href; if (oldHref && oldHref.startsWith('blob:')) { URL.revokeObjectURL(oldHref); } const newManifest = { name: design.appName, short_name: design.appName.split(' ')[0], start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
     function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
-    function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; readActions.classList.add('hidden'); }
+    function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; if(readActions) readActions.classList.add('hidden'); }
     function initCollapsibles() { document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el)) }
     
     function checkNfcSupport() {
@@ -252,37 +264,31 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('idle');
         } else {
             if (isIOS()) {
-                // MODIFICATION: Hide the entire tabs container and the copy button on iOS for a cleaner UI.
-                tabsContainer.classList.add('hidden');
-                if (copyToFormBtn) copyToFormBtn.classList.add('hidden');
+                if(tabsContainer) tabsContainer.classList.add('hidden');
+                if(copyToFormBtn) copyToFormBtn.classList.add('hidden');
                 setNfcBadge('idle'); 
-                nfcStatusBadge.disabled = true;
+                if(nfcStatusBadge) nfcStatusBadge.disabled = true;
             } else {
                 setNfcBadge('unsupported');
-                nfcFallback.classList.remove('hidden');
-                nfcStatusBadge.disabled = true;
-                const writeTab = document.querySelector('.tab-link[data-tab="write-tab"]');
-                if (writeTab) {
-                    writeTab.style.display = 'none';
-                }
+                if(nfcFallback) nfcFallback.classList.remove('hidden');
+                if(nfcStatusBadge) nfcStatusBadge.disabled = true;
+            }
+            
+            const writeTabLink = document.querySelector('.tab-link[data-tab="write-tab"]');
+            if (writeTabLink) {
+                writeTabLink.style.display = 'none';
             }
         }
     }
 
     function switchTab(tabId) { 
         abortNfcAction(); 
-
-        // MODIFICATION: Tab link logic is skipped on iOS as tabs are hidden.
-        if (!isIOS()) {
-            document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
-            const activeTabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
-            if(activeTabLink) {
-                 activeTabLink.classList.add('active');
-            }
-        }
-       
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active')); 
         tabContents.forEach(content => content.classList.remove('active')); 
-        document.getElementById(tabId).classList.add('active'); 
+        const activeTabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+        if(activeTabLink) activeTabLink.classList.add('active');
+        const activeTabContent = document.getElementById(tabId);
+        if(activeTabContent) activeTabContent.classList.add('active');
         
         if (legalInfoContainer) { 
             legalInfoContainer.classList.toggle('hidden', tabId !== 'read-tab'); 
@@ -295,21 +301,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabId === 'write-tab') updatePayloadOnChange(); 
     }
 
-    function showMessage(text, type = 'info', duration = 4000) { messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
+    function showMessage(text, type = 'info', duration = 4000) { if(!messageBanner) return; messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
     function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
     
-    // FIX: Add null-check for the write-tab element.
     function setNfcBadge(state, message = '') {
+        if(!nfcStatusBadge) return;
         const writeTab = document.getElementById('write-tab');
         const isWriteMode = writeTab?.classList.contains('active') || false;
 
         if (isIOS()) {
-            const [text, className] = isWriteMode
-                ? [t('status.iosWriteProtected'), 'info']
-                : [t('status.iosRead'), 'info'];
-            nfcStatusBadge.textContent = text;
+            nfcStatusBadge.textContent = t('status.iosRead');
             nfcStatusBadge.className = 'nfc-badge';
-            nfcStatusBadge.classList.add(className);
+            nfcStatusBadge.classList.add('info');
             return;
         }
 
@@ -328,9 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nfcStatusBadge.classList.add(className);
     }
     
-    // FIX: Add iOS guard and consistent null-checks.
     function populateFormFromScan() {
-        // This function should not be callable on iOS as the button is hidden.
         if (isIOS()) {
             showMessage(t('messages.noDataToCopy'), 'err');
             return;
@@ -339,10 +340,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!appState.scannedDataObject) { 
             showMessage(t('messages.noDataToCopy'), 'err'); 
             return;
-        } 
-        form.reset(); 
+        }
+
+        if(form) form.reset(); 
         setTodaysDate(); 
+
         for (const [key, value] of Object.entries(appState.scannedDataObject)) { 
+            if(!form) continue;
             const input = form.elements[key]; 
             if (input) { 
                 if (input.type === 'radio') { 
@@ -356,44 +360,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 } 
             } 
         } 
+
         const pt100Input = document.getElementById('PT 100'); 
         const hasPt100Checkbox = document.getElementById('has_PT100'); 
         if (appState.scannedDataObject['PT 100']) {
             if (pt100Input) {
-                pt100Input.value = appState.scannedDataObject['PT 100']; 
-                pt100Input.disabled = false; 
+                pt100Input.value = appState.scannedDataObject['PT 100'];
+                pt100Input.disabled = false;
             }
-            if(hasPt100Checkbox) hasPt100Checkbox.checked = true;
-        } else { 
-            if(pt100Input) pt100Input.disabled = true; 
-            if(hasPt100Checkbox) hasPt100Checkbox.checked = false;
-        } 
+            if (hasPt100Checkbox) hasPt100Checkbox.checked = true;
+        } else {
+            if (pt100Input) pt100Input.disabled = true;
+            if (hasPt100Checkbox) hasPt100Checkbox.checked = false;
+        }
+
         const niCrInput = document.getElementById('NiCr-Ni'); 
         const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni'); 
         if (appState.scannedDataObject['NiCr-Ni']) {
             if (niCrInput) {
-                niCrInput.disabled = false; 
-                niCrInput.value = appState.scannedDataObject['NiCr-Ni']; 
+                niCrInput.disabled = false;
+                niCrInput.value = appState.scannedDataObject['NiCr-Ni'];
             }
-            if(hasNiCrCheckbox) hasNiCrCheckbox.checked = true; 
-        } else { 
-            if(niCrInput) niCrInput.disabled = true; 
-            if(hasNiCrCheckbox) hasNiCrCheckbox.checked = false;
-        } 
+            if (hasNiCrCheckbox) hasNiCrCheckbox.checked = true;
+        } else {
+            if (niCrInput) niCrInput.disabled = true;
+            if (hasNiCrCheckbox) hasNiCrCheckbox.checked = false;
+        }
+
         switchTab('write-tab'); 
-        document.getElementById('write-form-container').classList.add('expanded'); 
+        autoExpandToFitScreen(document.getElementById('write-form-container')); // Auto-expand form
         showMessage(t('messages.copySuccess'), 'ok');
     }
-
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
     function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
     
+    function autoExpandToFitScreen(elementToExpand) {
+        if (!elementToExpand) return;
+
+        // Give the browser a moment to render content before measuring
+        requestAnimationFrame(() => {
+            const container = document.querySelector('.container');
+            if (!headerElement || !legalInfoContainer || !container) return;
+
+            const headerHeight = headerElement.offsetHeight;
+            const tabsHeight = (tabsContainer && !tabsContainer.classList.contains('hidden')) ? tabsContainer.offsetHeight : 0;
+            const legalHeight = legalInfoContainer.offsetHeight;
+            
+            const containerStyle = window.getComputedStyle(container);
+            const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
+
+            const otherElementsHeight = headerHeight + tabsHeight + legalHeight + containerPadding;
+            
+            // 32px buffer for margins between elements
+            const availableHeight = window.innerHeight - otherElementsHeight - 32;
+
+            const titleElement = elementToExpand.querySelector('h2');
+            const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;
+
+            const targetHeight = Math.max(availableHeight, minRequiredHeight);
+
+            elementToExpand.style.maxHeight = `${targetHeight}px`;
+            elementToExpand.classList.remove('expanded'); // Ensure inline style takes precedence
+        });
+    }
+
     function makeCollapsible(el) {
         if (!el || el.dataset.collapsibleApplied) return;
         el.dataset.collapsibleApplied = 'true';
 
         const toggle = () => {
-            el.classList.toggle('expanded');
+            const isFullyExpanded = el.classList.contains('expanded');
+            
+            // If it's fully expanded, collapse it completely.
+            if (isFullyExpanded) {
+                el.classList.remove('expanded');
+                el.style.maxHeight = ''; 
+            } else {
+                // If it's collapsed OR auto-expanded, the next state is always fully expanded.
+                el.style.maxHeight = ''; // Clear any auto-height
+                el.classList.add('expanded');
+            }
         };
 
         const overlay = el.querySelector('.collapsible-overlay');
@@ -401,9 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!el.classList.contains('expanded')) {
-                    el.classList.add('expanded');
-                }
+                // Overlay click always fully expands
+                el.style.maxHeight = ''; 
+                el.classList.add('expanded');
             });
         }
 
