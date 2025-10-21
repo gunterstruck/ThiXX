@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
         MAX_LOG_ENTRIES: 15,
         NFC_WRITE_TIMEOUT: 5000,
         MAX_WRITE_RETRIES: 3,
-        BASE_URL: BASE_URL
+        BASE_URL: BASE_URL,
+        SAFETY_BUFFER_PX: 60 // Puffer für die System-Navigationsleiste
     };
 
     // --- Application State ---
@@ -123,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(themeSwitcher) themeSwitcher.addEventListener('click', handleThemeChange);
         if(nfcStatusBadge) nfcStatusBadge.addEventListener('click', handleNfcAction);
         
-        // iOS: Diese Buttons sind hidden, Listener sind unnötig
         if (!isIOS()) {
             if (copyToFormBtn) {
                 copyToFormBtn.addEventListener('click', populateFormFromScan);
@@ -148,11 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(niCrNiCheckbox) niCrNiCheckbox.addEventListener('change', handleNiCrNiChange);
     }
 
-    /**
-     * Best Practice: Provides a function to clean up event listeners.
-     * While not strictly necessary in this app's page-reload lifecycle,
-     * it's crucial for future evolution into a Single Page App (SPA) to prevent memory leaks.
-     */
     function cleanupEventListeners() {
         if(tabsContainer) tabsContainer.removeEventListener('click', handleTabClick);
         if(themeSwitcher) themeSwitcher.removeEventListener('click', handleThemeChange);
@@ -189,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const currentTheme = document.documentElement.getAttribute('data-theme');
-        if (currentTheme !== selectedDesign.theme) { applyTheme(selectedDesign.theme); }
+        if (currentTheme !== selectedDesign.theme) { applyTheme(themeName); }
         if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); }
         const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
         if (customerBtnImg && selectedDesign.icons?.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; }
@@ -387,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         switchTab('write-tab'); 
-        autoExpandToFitScreen(document.getElementById('write-form-container')); 
+        autoExpandToFitScreen(document.getElementById('write-form-container'));
         showMessage(t('messages.copySuccess'), 'ok');
     }
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
@@ -409,11 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const otherElementsHeight = headerHeight + tabsHeight + legalHeight + containerPadding;
             
-            // FIX: Use visualViewport for accurate height, fallback to innerHeight
-            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-            
-            // 32px buffer for margins between elements
-            const availableHeight = viewportHeight - otherElementsHeight - 32;
+            // Verwende die Fensterhöhe und ziehe einen pauschalen Sicherheitsabstand ab
+            const viewportHeight = window.innerHeight;
+            const availableHeight = viewportHeight - otherElementsHeight - CONFIG.SAFETY_BUFFER_PX;
 
             const titleElement = elementToExpand.querySelector('h2');
             const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;

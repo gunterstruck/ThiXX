@@ -101,8 +101,12 @@ body::before {
     padding: 1.5rem; 
     position: relative; 
     z-index: 1;
-    /* FIX: Add padding to account for system navigation bars (e.g., on iOS) */
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    /* FIX: Add a robust, pauschal padding to the bottom */
+    padding-bottom: 80px;
+}
+
+main {
+    min-height: 60vh; /* Ensures a minimum height for the content area */
 }
 
 header {
@@ -292,7 +296,6 @@ footer { padding: 1.5rem 0; text-align: center; }
 :root[data-theme="thixx"] .message-banner.info, :root[data-theme="customer-brand"] .message-banner.info { color: #0c5460; background-color: #cce5ff; border-color: #b8daff; }
 .hidden { display: none !important; }
 
-/* VERBESSERUNG (PRIO 4): Stile für die Update-Benachrichtigung */
 #update-banner {
     display: flex;
     justify-content: space-between;
@@ -341,9 +344,8 @@ footer { padding: 1.5rem 0; text-align: center; }
     box-shadow: 0 8px 30px rgba(88, 101, 242, 0.5);
 }
 
-/* NEUE STILE FÜR IMPRESSUM/DATENSCHUTZ */
 #legal-info {
-    margin-top: 1.5rem; /* Abstand zum oberen Container */
+    margin-top: 1.5rem;
     background: rgba(var(--surface-color-rgb), 0.6);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(var(--border-color-rgb), 0.3);
@@ -392,28 +394,19 @@ footer { padding: 1.5rem 0; text-align: center; }
     text-decoration: underline;
 }
 
-/* ===================================================
-   RESPONSIVE OPTIMIERUNG FÜR KLEINE DISPLAYS
-   Ziel: iPhone SE (375px) und ähnliche Geräte
-   =================================================== */
-
 @media (max-width: 400px) {
-    /* Allgemein */
-    .container { padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+    .container { padding: 1rem; padding-bottom: calc(1rem + 80px); }
     
-    /* Header */
     h1.logo { font-size: 2rem; gap: 0.02em; }
     header { padding: 0.75rem 1rem; gap: 0.75rem; }
     .header-content { gap: 1rem; }
     .theme-btn { width: 36px; height: 36px; font-size: 1.1rem; }
     .nfc-badge { padding: 0.85rem 1.25rem; font-size: 0.9rem; }
     
-    /* Tabs */
     .tabs { padding: 0.25rem 1rem; gap: 0.5rem; }
     .tab-link { padding: 0.75rem 1rem; font-size: 0.9rem; }
     .tab-content { padding: 1.25rem; }
     
-    /* Protocol-Card (KRITISCH) */
     .protocol-card { padding: 1rem; gap: 0.5rem; }
     .protocol-card .data-pair {
         flex-direction: column;
@@ -430,7 +423,6 @@ footer { padding: 1.5rem 0; text-align: center; }
         max-width: 100%;
     }
     
-    /* Formulare */
     .form-grid { grid-template-columns: 1fr; gap: 1rem; }
     .form-group input,
     .form-group textarea,
@@ -438,7 +430,6 @@ footer { padding: 1.5rem 0; text-align: center; }
     fieldset { padding: 1rem; }
     fieldset legend { font-size: 0.85rem; }
     
-    /* Buttons */
     .btn { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
     .btn.doc-link-btn {
         white-space: normal;
@@ -447,7 +438,6 @@ footer { padding: 1.5rem 0; text-align: center; }
         line-height: 1.3;
     }
     
-    /* Text Overflow (KRITISCH) */
     textarea,
     .form-group input[type="url"],
     .form-group input[type="text"] { word-break: break-all; }
@@ -458,7 +448,6 @@ footer { padding: 1.5rem 0; text-align: center; }
         word-break: break-all;
     }
     
-    /* Message Banner */
     .message-banner {
         padding: 1rem;
         font-size: 0.9rem;
@@ -475,14 +464,11 @@ footer { padding: 1.5rem 0; text-align: center; }
     }
     #update-banner .btn { width: 100%; }
     
-    /* Collapsibles */
     .collapsible { max-height: 6rem; }
     .collapsible-overlay { font-size: 0.75rem; padding-bottom: 0.5rem; }
     
-    /* Details */
     .raw-data-details summary { padding: 0.6rem; font-size: 0.9rem; }
     
-    /* Legal Info */
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
