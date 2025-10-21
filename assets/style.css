@@ -315,7 +315,8 @@ footer { padding: 1.5rem 0; text-align: center; }
 :root[data-theme="customer-brand"] .tab-link::before, :root[data-theme="customer-brand"] .btn.primary-btn { background: var(--primary-color); }
 
 .collapsible { position: relative; overflow: hidden; cursor: pointer; max-height: 8rem; transition: max-height 350ms ease-in-out; }
-.collapsible.expanded { max-height: 3000px; cursor: default; transition: max-height 500ms ease-in-out; }
+/* MODIFICATION: Cursor remains a pointer to indicate it's still clickable. */
+.collapsible.expanded { max-height: 3000px; cursor: pointer; transition: max-height 500ms ease-in-out; }
 .collapsible-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 4rem; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 0.75rem; color: var(--light-text-color); font-size: 0.8rem; font-weight: 600; user-select: none; background: linear-gradient( to bottom, transparent 0%, rgba(var(--surface-color-rgb), 0.9) 50%, rgba(var(--surface-color-rgb), 1) 100% ); transition: opacity 200ms ease; }
 .collapsible.expanded .collapsible-overlay { opacity: 0; pointer-events: none; }
 
@@ -481,4 +482,3 @@ footer { padding: 1.5rem 0; text-align: center; }
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
-

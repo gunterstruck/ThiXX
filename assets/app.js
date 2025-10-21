@@ -109,25 +109,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     main();
 
+    // --- Event Handler Definitions for robust add/remove ---
+    const handleTabClick = (e) => { const tabLink = e.target.closest('.tab-link'); if (tabLink) switchTab(tabLink.dataset.tab); };
+    const handleThemeChange = (e) => { const themeBtn = e.target.closest('.theme-btn'); if (themeBtn) applyTheme(themeBtn.dataset.theme); };
+    const handleReloadClick = () => { navigator.serviceWorker.getRegistration().then(reg => { if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } }); };
+    const handlePt100Change = (e) => { const el = document.getElementById('PT 100'); if (el) el.disabled = !e.target.checked; };
+    const handleNiCrNiChange = (e) => { const el = document.getElementById('NiCr-Ni'); if (el) el.disabled = !e.target.checked; };
+    const debouncedUpdatePayload = debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY);
+
     function setupEventListeners() {
-        tabsContainer.addEventListener('click', (e) => { const tabLink = e.target.closest('.tab-link'); if (tabLink) switchTab(tabLink.dataset.tab); });
-        themeSwitcher.addEventListener('click', (e) => { const themeBtn = e.target.closest('.theme-btn'); if (themeBtn) applyTheme(themeBtn.dataset.theme); });
+        tabsContainer.addEventListener('click', handleTabClick);
+        themeSwitcher.addEventListener('click', handleThemeChange);
         nfcStatusBadge.addEventListener('click', handleNfcAction);
         copyToFormBtn.addEventListener('click', populateFormFromScan);
         saveJsonBtn.addEventListener('click', saveFormAsJson);
         if (loadJsonLabel) { loadJsonLabel.addEventListener('click', () => { loadJsonInput.click(); }); }
         loadJsonInput.addEventListener('change', loadJsonIntoForm);
-        form.addEventListener('input', debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY));
+        form.addEventListener('input', debouncedUpdatePayload);
         form.addEventListener('change', updatePayloadOnChange);
-        reloadButton.addEventListener('click', () => {
-            navigator.serviceWorker.getRegistration().then(reg => {
-                if (reg.waiting) {
-                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-            });
-        });
-        document.getElementById('has_PT100')?.addEventListener('change', (e) => { const el = document.getElementById('PT 100'); if (el) el.disabled = !e.target.checked; });
-        document.getElementById('has_NiCr-Ni')?.addEventListener('change', (e) => { const el = document.getElementById('NiCr-Ni'); if (el) el.disabled = !e.target.checked; });
+        reloadButton.addEventListener('click', handleReloadClick);
+        document.getElementById('has_PT100')?.addEventListener('change', handlePt100Change);
+        document.getElementById('has_NiCr-Ni')?.addEventListener('change', handleNiCrNiChange);
+    }
+
+    /**
+     * Best Practice: Provides a function to clean up event listeners.
+     * While not strictly necessary in this app's page-reload lifecycle,
+     * it's crucial for future evolution into a Single Page App (SPA) to prevent memory leaks.
+     */
+    function cleanupEventListeners() {
+        tabsContainer.removeEventListener('click', handleTabClick);
+        themeSwitcher.removeEventListener('click', handleThemeChange);
+        nfcStatusBadge.removeEventListener('click', handleNfcAction);
+        copyToFormBtn.removeEventListener('click', populateFormFromScan);
+        saveJsonBtn.removeEventListener('click', saveFormAsJson);
+        loadJsonInput.removeEventListener('change', loadJsonIntoForm);
+        form.removeEventListener('input', debouncedUpdatePayload);
+        form.removeEventListener('change', updatePayloadOnChange);
+        reloadButton.removeEventListener('click', handleReloadClick);
+        document.getElementById('has_PT100')?.removeEventListener('change', handlePt100Change);
+        document.getElementById('has_NiCr-Ni')?.removeEventListener('change', handleNiCrNiChange);
     }
 
     // --- UI & Display Logic ---
@@ -152,7 +173,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NFC Logic ---
     async function handleNfcAction() { if (appState.isNfcActionActive || appState.isCooldownActive) return; const isWriteMode = document.querySelector('.tab-link[data-tab="write-tab"].active'); if (!isWriteMode) { showMessage(t('messages.scanToReadInfo'), 'info'); return; } appState.isNfcActionActive = true; appState.abortController = new AbortController(); appState.nfcTimeoutId = setTimeout(() => { if (appState.abortController && !appState.abortController.signal.aborted) { appState.abortController.abort(new DOMException('NFC Operation Timed Out', 'TimeoutError')); } }, CONFIG.NFC_WRITE_TIMEOUT); try { const ndef = new NDEFReader(); const validationErrors = validateForm(); if (validationErrors.length > 0) { throw new Error(validationErrors.join('\n')); } setNfcBadge('writing'); const urlPayload = generateUrlFromForm(); const message = { records: [{ recordType: "url", data: urlPayload }] }; await writeWithRetries(ndef, message); } catch (error) { clearTimeout(appState.nfcTimeoutId); if (error.name !== 'AbortError') { ErrorHandler.handle(error, 'NFCAction'); } else if (error.message === 'NFC Operation Timed Out') { const timeoutError = new DOMException('Write operation timed out.', 'TimeoutError'); ErrorHandler.handle(timeoutError, 'NFCAction'); } abortNfcAction(); startCooldown(); } }
-    async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); appState.gracePeriodTimeoutId = setTimeout(() => { if (appState.gracePeriodTimeoutId !== null) { abortNfcAction(); startCooldown(); } }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD); return; } catch (error) { console.warn(`Write attempt ${attempt} failed:`, error); if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) { throw error; } await new Promise(resolve => setTimeout(resolve, 200)); } } }
+    async function writeWithRetries(ndef, message) { for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) { try { showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT); await ndef.write(message, { signal: appState.abortController.signal }); clearTimeout(appState.nfcTimeoutId); setNfcBadge('success', t('status.tagWritten')); showMessage(t('messages.writeSuccess'), 'ok'); 
+    
+    // FIX: Race condition robustly handled by capturing timeoutId in a closure.
+    const timeoutId = setTimeout(() => {
+        if (appState.gracePeriodTimeoutId === timeoutId) {
+            abortNfcAction();
+            startCooldown();
+        }
+    }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD);
+    appState.gracePeriodTimeoutId = timeoutId;
+
+    return; } catch (error) { console.warn(`Write attempt ${attempt} failed:`, error); if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) { throw error; } await new Promise(resolve => setTimeout(resolve, 200)); } } }
 
     // --- Data Processing & Form Handling ---
     function processUrlParameters() {
@@ -170,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             displayParsedData(data);
             rawDataOutput.value = window.location.href;
             readActions.classList.remove('hidden');
-            readResultContainer.classList.add('expanded');
+            // MODIFICATION: Container starts collapsed by default after reading data.
+            // readResultContainer.classList.add('expanded'); // This line was removed.
             switchTab('read-tab');
             showMessage(t('messages.readSuccess'), 'ok');
             history.replaceState(null, '', window.location.pathname); 
@@ -256,6 +289,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateFormFromScan() { if (!appState.scannedDataObject) { showMessage(t('messages.noDataToCopy'), 'err'); return } form.reset(); setTodaysDate(); for (const [key, value] of Object.entries(appState.scannedDataObject)) { const input = form.elements[key]; if (input) { if (input.type === 'radio') { form.querySelectorAll(`input[name="${key}"]`).forEach(radio => { if (radio.value === value) radio.checked = true }) } else if (input.type === 'checkbox') { input.checked = (value === 'true' || value === 'on') } else { input.value = value } } } const pt100Input = document.getElementById('PT 100'); const hasPt100Checkbox = document.getElementById('has_PT100'); if (appState.scannedDataObject['PT 100']) { pt100Input.value = appState.scannedDataObject['PT 100']; pt100Input.disabled = false; hasPt100Checkbox.checked = true } else { pt100Input.disabled = true; hasPt100Checkbox.checked = false } const niCrInput = document.getElementById('NiCr-Ni'); const hasNiCrCheckbox = document.getElementById('has_NiCr-Ni'); if (appState.scannedDataObject['NiCr-Ni']) { niCrInput.disabled = false; hasNiCrCheckbox.checked = true; niCrInput.value = appState.scannedDataObject['NiCr-Ni']; } else { niCrInput.disabled = true; hasNiCrCheckbox.checked = false } switchTab('write-tab'); document.getElementById('write-form-container').classList.add('expanded'); showMessage(t('messages.copySuccess'), 'ok') }
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
     function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
-    function makeCollapsible(el) { if (!el || el.dataset.collapsibleApplied) return; el.dataset.collapsibleApplied = 'true'; const toggle = () => { if (el.classList.contains('expanded')) return; el.classList.add('expanded') }; const overlay = el.querySelector('.collapsible-overlay'); if (overlay) { overlay.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle() }) } el.addEventListener('click', (e) => { const tag = (e.target.tagName || '').toLowerCase(); if (['input', 'select', 'textarea', 'button', 'label', 'summary', 'details'].includes(tag) || e.target.closest('.collapsible-overlay')) return; toggle() }) }
+    
+    // MODIFICATION: Logic updated to allow toggling (expanding and collapsing).
+    function makeCollapsible(el) {
+        if (!el || el.dataset.collapsibleApplied) return;
+        el.dataset.collapsibleApplied = 'true';
+
+        const toggle = () => {
+            el.classList.toggle('expanded');
+        };
+
+        const overlay = el.querySelector('.collapsible-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // The overlay only expands, it doesn't collapse.
+                if (!el.classList.contains('expanded')) {
+                    el.classList.add('expanded');
+                }
+            });
+        }
+
+        el.addEventListener('click', (e) => {
+            // Prevent action if the click was on an interactive element.
+            const interactiveTags = ['input', 'select', 'textarea', 'button', 'label', 'summary', 'details', 'a'];
+            if (interactiveTags.includes(e.target.tagName.toLowerCase()) || e.target.closest('.collapsible-overlay')) {
+                return;
+            }
+            toggle();
+        });
+    }
 });
 
