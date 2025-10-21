@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-robust-v6-9'; // Version erhöht, um Update auszulösen
+const APP_CACHE_NAME = 'thixx-robust-v5-5'; // Version erhöht, um Update auszulösen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 /*
@@ -84,24 +84,21 @@ self.addEventListener('fetch', (event) => {
         return;
     }
     
-    // ROBUSTHEITS-UPDATE (Navigation-Fallback): Network-First mit robustem Cache-Fallback
+    // ÄNDERUNG: "Cache First" anstelle von "Network First" für Navigationen
+    // Dies sorgt für einen sofortigen App-Start aus dem Cache.
     if (request.mode === 'navigate') {
         event.respondWith((async () => {
+          const cachedResponse = await caches.match(request, { ignoreSearch: true });
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
           try {
             const networkResponse = await fetch(request);
+            // Optional: Hier könnte man die Antwort in den Cache legen, wenn sie noch nicht da ist.
             return networkResponse;
           } catch (error) {
-            console.log('[Service Worker] Navigate fetch failed, trying cache fallbacks.');
-            
-            // ✅ KORREKTUR IMPLEMENTIERT: ignoreSearch: true ist entscheidend,
-            // um Anfragen wie 'index.html?param=wert' gegen das gecachte 'index.html' zu matchen.
-            const cached = await caches.match(request, { ignoreSearch: true });
-            if (cached) return cached;
-            
-            // Diese Fallbacks sind weiterhin sinnvoll, falls der erste Match aus irgendeinem Grund fehlschlägt.
-            const shell = await caches.match('/ThiXX/index.html');
-            if (shell) return shell;
-            
+            console.log('[Service Worker] Navigate fetch failed, falling back to offline page.');
             return await caches.match('/ThiXX/offline.html');
           }
         })());
@@ -135,3 +132,4 @@ self.addEventListener('message', (event) => {
         self.skipWaiting();
     }
 });
+

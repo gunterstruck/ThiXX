@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const eventLogOutput = document.getElementById('event-log-output');
     const updateBanner = document.getElementById('update-banner');
     const reloadButton = document.getElementById('reload-button');
+    const checkForUpdateBtn = document.getElementById('check-for-update-btn');
 
     // --- Data Mapping ---
     const fieldMap = { 'HK-Nr': 'HK', 'KKS': 'KKS', 'Leistung': 'P', 'Strom': 'I', 'Spannung': 'U', 'Widerstand': 'R', 'Regler': 'Reg', 'Sicherheitsregler/Begrenzer': 'Sich', 'Wächter': 'Wäch', 'Projekt-Nr': 'Proj', 'Anzahl Heizkabeleinheiten': 'Anz', 'Trennkasten': 'TB', 'Heizkabeltyp': 'HKT', 'Schaltung': 'Sch', 'PT 100': 'PT100', 'NiCr-Ni': 'NiCr', 'geprüft von': 'Chk', 'am': 'Date', 'Dokumentation': 'Doc' };
@@ -118,11 +119,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const handlePt100Change = (e) => { const el = document.getElementById('PT 100'); if (el) el.disabled = !e.target.checked; };
     const handleNiCrNiChange = (e) => { const el = document.getElementById('NiCr-Ni'); if (el) el.disabled = !e.target.checked; };
     const debouncedUpdatePayload = debounce(updatePayloadOnChange, CONFIG.DEBOUNCE_DELAY);
+    const handleCheckForUpdate = () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(reg => {
+                if (reg) {
+                    reg.update().then(newReg => {
+                        if (newReg.installing) {
+                            showMessage(t('messages.updateChecking'), 'info');
+                        } else if (newReg.waiting) {
+                            updateBanner.classList.remove('hidden');
+                        } else {
+                            showMessage(t('messages.noUpdateFound'), 'ok');
+                        }
+                    });
+                }
+            });
+        }
+    };
 
     function setupEventListeners() {
         if(tabsContainer) tabsContainer.addEventListener('click', handleTabClick);
         if(themeSwitcher) themeSwitcher.addEventListener('click', handleThemeChange);
         if(nfcStatusBadge) nfcStatusBadge.addEventListener('click', handleNfcAction);
+        if(checkForUpdateBtn) checkForUpdateBtn.addEventListener('click', handleCheckForUpdate);
         
         if (!isIOS()) {
             if (copyToFormBtn) {
@@ -152,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(tabsContainer) tabsContainer.removeEventListener('click', handleTabClick);
         if(themeSwitcher) themeSwitcher.removeEventListener('click', handleThemeChange);
         if(nfcStatusBadge) nfcStatusBadge.removeEventListener('click', handleNfcAction);
+        if(checkForUpdateBtn) checkForUpdateBtn.removeEventListener('click', handleCheckForUpdate);
     
         if (!isIOS()) {
             if (copyToFormBtn) {
@@ -184,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const currentTheme = document.documentElement.getAttribute('data-theme');
-        if (currentTheme !== selectedDesign.theme) { applyTheme(themeName); }
+        if (currentTheme !== selectedDesign.theme) { applyTheme(selectedDesign.theme); }
         if (selectedDesign.lockTheme) { if (themeSwitcher) themeSwitcher.classList.add('hidden'); } else { if (themeSwitcher) themeSwitcher.classList.remove('hidden'); }
         const customerBtnImg = document.querySelector('.theme-btn[data-theme="customer-brand"] img');
         if (customerBtnImg && selectedDesign.icons?.icon512) { customerBtnImg.src = selectedDesign.icons.icon512; }
@@ -452,5 +472,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
 
