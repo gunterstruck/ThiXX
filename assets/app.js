@@ -397,7 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function autoExpandToFitScreen(elementToExpand) {
         if (!elementToExpand) return;
 
-        // Give the browser a moment to render content before measuring
         requestAnimationFrame(() => {
             const container = document.querySelector('.container');
             if (!headerElement || !legalInfoContainer || !container) return;
@@ -411,8 +410,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const otherElementsHeight = headerHeight + tabsHeight + legalHeight + containerPadding;
             
+            // FIX: Use visualViewport for accurate height, fallback to innerHeight
+            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            
             // 32px buffer for margins between elements
-            const availableHeight = window.innerHeight - otherElementsHeight - 32;
+            const availableHeight = viewportHeight - otherElementsHeight - 32;
 
             const titleElement = elementToExpand.querySelector('h2');
             const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;
@@ -420,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetHeight = Math.max(availableHeight, minRequiredHeight);
 
             elementToExpand.style.maxHeight = `${targetHeight}px`;
-            elementToExpand.classList.remove('expanded'); // Ensure inline style takes precedence
+            elementToExpand.classList.remove('expanded');
         });
     }
 
@@ -431,13 +433,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const toggle = () => {
             const isFullyExpanded = el.classList.contains('expanded');
             
-            // If it's fully expanded, collapse it completely.
             if (isFullyExpanded) {
                 el.classList.remove('expanded');
                 el.style.maxHeight = ''; 
             } else {
-                // If it's collapsed OR auto-expanded, the next state is always fully expanded.
-                el.style.maxHeight = ''; // Clear any auto-height
+                el.style.maxHeight = ''; 
                 el.classList.add('expanded');
             }
         };
@@ -447,7 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Overlay click always fully expands
                 el.style.maxHeight = ''; 
                 el.classList.add('expanded');
             });
