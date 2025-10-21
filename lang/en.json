@@ -1,5 +1,5 @@
 {
-  "appTitle": "ThiXX NFC Tool",
+  "appTitle": "ThiXX - NFC PWA",
   "readNfcTab": "Read NFC",
   "writeNfcTab": "Write NFC",
   "acceptanceProtocol": "Acceptance Protocol",
@@ -15,49 +15,10 @@
   "updateAvailable": "A new version is available.",
   "updateReload": "Reload",
   "placeholderRead": "Hold your device near an NFC tag to see the data here.",
-  "docOpenOffline": "Open Document (Offline)",
-  "docDownload": "Download & Save Offline",
-  "docDownloadLater": "Offline, download when connected",
+  "docDownload": "Download Documentation",
+  "docDownloadLater": "Download when online",
   "docDownloadPending": "Download pending",
-  "themeDark": "Dark Theme",
-  "themeLight": "Light Theme",
-  "themeCustomer": "Customer Theme",
-  "nfcFallback": "Web NFC is not supported by your browser.",
-  "status": {
-    "unsupported": "NFC not supported",
-    "startReading": "Hold to tag to read",
-    "startWriting": "Hold to tag to write",
-    "iosRead": "Hold your iPhone near an NFC tag",
-    "iosWriteProtected": "Writing is not supported on iOS",
-    "writing": "Writing... hold to tag",
-    "tagWritten": "Tag written!",
-    "cooldown": "Cooldown...",
-    "success": "Success",
-    "error": "Error"
-  },
-  "messages": {
-    "readSuccess": "NFC tag read successfully!",
-    "writeSuccess": "NFC tag written successfully!",
-    "writeAttempt": "Write attempt {attempt} of {total}. Hold device to tag.",
-    "copySuccess": "Data copied to form.",
-    "saveSuccess": "Form data saved as JSON.",
-    "loadSuccess": "Data loaded from JSON.",
-    "noDataToCopy": "No data available to copy.",
-    "scanToReadInfo": "Hold to an NFC tag to read.",
-    "payloadTooLarge": "Data is too large for the NFC tag!"
-  },
-  "errors": {
-    "NotAllowedError": "Permission denied. Please try again.",
-    "NotSupportedError": "Web NFC is not supported on this device.",
-    "NotFoundError": "No compatible NFC tag was found.",
-    "NotReadableError": "The NFC tag could not be read.",
-    "NetworkError": "Network error while writing data.",
-    "AbortError": "Operation aborted by user.",
-    "WriteTimeoutError": "Write operation timed out.",
-    "invalidVoltage": "Voltage must be between 0 and 1000V.",
-    "invalidDocUrl": "The documentation URL is invalid.",
-    "unknown": "An unknown error occurred."
-  },
+  "docOpenOffline": "Open saved documentation",
   "form": {
     "HK.Nr.": "HC no.",
     "KKS": "KKS",
@@ -74,13 +35,54 @@
     "Trennkasten": "Junction box",
     "Heizkabeltyp": "Heating cable type",
     "Schaltung": "Circuit",
-    "Messwertgeber": "Sensor",
-    "geprüft von": "Checked by",
-    "am": "on",
     "schaltungOptions": {
       "stern": "Star",
       "dreieck": "Delta",
       "wechselstrom": "AC"
-    }
-  }
+    },
+    "Messwertgeber": "Sensor",
+    "geprüft von": "Checked by",
+    "am": "On"
+  },
+  "status": {
+    "unsupported": "NFC not supported",
+    "startReading": "Hold to tag to read",
+    "startWriting": "Start write process",
+    "scanning": "Scanning...",
+    "writing": "Writing... Hold to tag!",
+    "success": "Success!",
+    "tagWritten": "Tag written!",
+    "error": "Error",
+    "cooldown": "Cooling down...",
+    "iosRead": "Read NFC (iOS)",
+    "iosWriteProtected": "Writing not supported on iOS"
+  },
+  "messages": {
+    "scanToReadInfo": "Hold your device to a tag to read.",
+    "writeAttempt": "Write attempt {attempt} of {total}. Hold device to tag.",
+    "writeSuccess": "NFC tag written successfully!",
+    "readSuccess": "NFC tag read successfully!",
+    "copySuccess": "Data copied to form.",
+    "saveSuccess": "Protocol saved as JSON file.",
+    "loadSuccess": "Protocol loaded from JSON file.",
+    "payloadTooLarge": "Data too large for NFC tag!",
+    "noDataToCopy": "No data available to copy."
+  },
+  "errors": {
+    "NotAllowedError": "Permission for NFC was denied.",
+    "NotSupportedError": "Web NFC is not supported on this device/browser.",
+    "NotFoundError": "No compatible NFC tag was found.",
+    "NotReadableError": "The NFC tag could not be read.",
+    "NetworkError": "Network error during write. Data might be too large.",
+    "AbortError": "Operation aborted by user.",
+    "WriteTimeoutError": "Write operation timed out.",
+    "unknown": "An unknown error occurred.",
+    "invalidVoltage": "Voltage must be between 0 and 1000 V.",
+    "invalidDocUrl": "Invalid URL for documentation. Must start with https://."
+  },
+  "nfcFallback": "Your browser or device does not support Web NFC. Reading might be possible, but writing is not.",
+  "themeDark": "Dark Theme",
+  "themeLight": "Light Theme",
+  "themeCustomer": "Customer Theme"
 }
+

@@ -1,9 +1,9 @@
 {
-  "appTitle": "ThiXX NFC Tool",
+  "appTitle": "ThiXX - NFC PWA",
   "readNfcTab": "NFC Lesen",
   "writeNfcTab": "NFC Schreiben",
   "acceptanceProtocol": "Abnahmeprotokoll",
-  "collapsibleHint": "Zum Ausklappen tippen",
+  "collapsibleHint": "Zum Erweitern tippen",
   "copyToForm": "In Formular kopieren",
   "showRawData": "Rohdaten anzeigen",
   "showEvents": "Ereignisse anzeigen",
@@ -15,49 +15,10 @@
   "updateAvailable": "Eine neue Version ist verfügbar.",
   "updateReload": "Neu laden",
   "placeholderRead": "Halten Sie Ihr Gerät an einen NFC-Tag, um die Daten hier anzuzeigen.",
-  "docOpenOffline": "Dokument (offline) öffnen",
-  "docDownload": "Dokument herunterladen & offline speichern",
-  "docDownloadLater": "Offline, Download nach Verbindung",
+  "docDownload": "Dokumentation herunterladen",
+  "docDownloadLater": "Herunterladen, sobald online",
   "docDownloadPending": "Download ausstehend",
-  "themeDark": "Dunkles Design",
-  "themeLight": "Helles Design",
-  "themeCustomer": "Kunden-Design",
-  "nfcFallback": "Web NFC wird von Ihrem Browser nicht unterstützt.",
-  "status": {
-    "unsupported": "NFC nicht unterstützt",
-    "startReading": "Zum Lesen an Tag halten",
-    "startWriting": "Zum Schreiben an Tag halten",
-    "iosRead": "Halte dein iPhone an einen NFC-Tag",
-    "iosWriteProtected": "Schreiben auf iOS nicht unterstützt",
-    "writing": "Schreibe... an Tag halten",
-    "tagWritten": "Tag beschrieben!",
-    "cooldown": "Abkühlen...",
-    "success": "Erfolg",
-    "error": "Fehler"
-  },
-  "messages": {
-    "readSuccess": "NFC-Tag erfolgreich gelesen!",
-    "writeSuccess": "NFC-Tag erfolgreich beschrieben!",
-    "writeAttempt": "Schreibversuch {attempt} von {total}. Gerät an Tag halten.",
-    "copySuccess": "Daten ins Formular kopiert.",
-    "saveSuccess": "Formulardaten als JSON gespeichert.",
-    "loadSuccess": "Daten aus JSON geladen.",
-    "noDataToCopy": "Keine Daten zum Kopieren vorhanden.",
-    "scanToReadInfo": "Zum Lesen an einen NFC-Tag halten.",
-    "payloadTooLarge": "Daten sind zu groß für den NFC-Tag!"
-  },
-  "errors": {
-    "NotAllowedError": "Berechtigung verweigert. Bitte erneut versuchen.",
-    "NotSupportedError": "Web NFC wird von diesem Gerät nicht unterstützt.",
-    "NotFoundError": "Kein kompatibler NFC-Tag gefunden.",
-    "NotReadableError": "Der NFC-Tag konnte nicht gelesen werden.",
-    "NetworkError": "Netzwerkfehler beim Schreiben der Daten.",
-    "AbortError": "Vorgang vom Benutzer abgebrochen.",
-    "WriteTimeoutError": "Schreibvorgang hat zu lange gedauert.",
-    "invalidVoltage": "Spannung muss zwischen 0 und 1000V liegen.",
-    "invalidDocUrl": "Die Dokumentations-URL ist ungültig.",
-    "unknown": "Ein unbekannter Fehler ist aufgetreten."
-  },
+  "docOpenOffline": "Gespeicherte Doku öffnen",
   "form": {
     "HK.Nr.": "HK-Nr.",
     "KKS": "KKS",
@@ -74,13 +35,54 @@
     "Trennkasten": "Trennkasten",
     "Heizkabeltyp": "Heizkabeltyp",
     "Schaltung": "Schaltung",
-    "Messwertgeber": "Messwertgeber",
-    "geprüft von": "Geprüft von",
-    "am": "am",
     "schaltungOptions": {
       "stern": "Stern",
       "dreieck": "Dreieck",
       "wechselstrom": "Wechselstrom"
-    }
-  }
+    },
+    "Messwertgeber": "Messwertgeber",
+    "geprüft von": "Geprüft von",
+    "am": "Am"
+  },
+  "status": {
+    "unsupported": "NFC nicht unterstützt",
+    "startReading": "Zum Lesen an Tag halten",
+    "startWriting": "Schreibvorgang starten",
+    "scanning": "Scanne...",
+    "writing": "Schreibe... An Tag halten!",
+    "success": "Erfolgreich!",
+    "tagWritten": "Tag beschrieben!",
+    "error": "Fehler",
+    "cooldown": "Abkühlen...",
+    "iosRead": "NFC lesen (iOS)",
+    "iosWriteProtected": "Schreiben auf iOS nicht möglich"
+  },
+  "messages": {
+    "scanToReadInfo": "Halten Sie Ihr Gerät an einen Tag, um zu lesen.",
+    "writeAttempt": "Schreibversuch {attempt} von {total}. Gerät an Tag halten.",
+    "writeSuccess": "NFC-Tag erfolgreich beschrieben!",
+    "readSuccess": "NFC-Tag erfolgreich gelesen!",
+    "copySuccess": "Daten ins Formular kopiert.",
+    "saveSuccess": "Protokoll als JSON-Datei gespeichert.",
+    "loadSuccess": "Protokoll aus JSON-Datei geladen.",
+    "payloadTooLarge": "Daten zu groß für NFC-Tag!",
+    "noDataToCopy": "Keine Daten zum Kopieren vorhanden."
+  },
+  "errors": {
+    "NotAllowedError": "Berechtigung für NFC verweigert.",
+    "NotSupportedError": "Web NFC wird von diesem Gerät/Browser nicht unterstützt.",
+    "NotFoundError": "Kein kompatibler NFC-Tag gefunden.",
+    "NotReadableError": "Der NFC-Tag konnte nicht gelesen werden.",
+    "NetworkError": "Netzwerkfehler beim Schreiben. Daten könnten zu groß sein.",
+    "AbortError": "Vorgang vom Benutzer abgebrochen.",
+    "WriteTimeoutError": "Schreibvorgang hat zu lange gedauert.",
+    "unknown": "Ein unbekannter Fehler ist aufgetreten.",
+    "invalidVoltage": "Spannung muss zwischen 0 und 1000 V liegen.",
+    "invalidDocUrl": "Ungültige URL für Dokumentation. Muss mit https:// beginnen."
+  },
+  "nfcFallback": "Ihr Browser oder Gerät unterstützt Web NFC nicht. Lesen ist evtl. möglich, Schreiben jedoch nicht.",
+  "themeDark": "Dunkles Design",
+  "themeLight": "Helles Design",
+  "themeCustomer": "Kunden-Design"
 }
+
