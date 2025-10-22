@@ -15,7 +15,8 @@
             color: #212529;
         }
         h1, h2 {
-            color: #e45d45;
+            /* MODIFIED: Changed color to a dark gray */
+            color: #212529;
             border-bottom: 2px solid #e9ecef;
             padding-bottom: 0.5rem;
             margin-top: 2rem;
@@ -23,14 +24,18 @@
         h1 {
             font-size: 2.5rem;
             text-align: center;
+            /* NEW: Prevents text from overflowing its container */
+            word-wrap: break-word;
         }
         p, li {
             font-size: 1rem;
             color: #495057;
         }
         a {
-            color: #d54b2a;
+            /* MODIFIED: Changed color to a dark gray */
+            color: #212529;
             text-decoration: none;
+            font-weight: 600; /* Added for better visibility */
         }
         a:hover {
             text-decoration: underline;
@@ -63,7 +68,7 @@
         (Kontaktdaten bitte im Impressum der App entnehmen)</p>
 
         <h2>2. Datenverarbeitung in dieser App</h2>
-        <p><strong>Grundsatz:</strong> Die Nutzung der Kernfunktionen dieser App ist vollständig **ohne die Verarbeitung von personenbezogenen Daten** möglich. Die App wurde nach dem Prinzip der Datensparsamkeit (Privacy by Design) entwickelt.</p>
+        <p><strong>Grundsatz:</strong> Die Nutzung der Kernfunktionen dieser App ist vollständig <strong>ohne die Verarbeitung von personenbezogenen Daten</strong> möglich. Die App wurde nach dem Prinzip der Datensparsamkeit (Privacy by Design) entwickelt.</p>
         <ul>
             <li><strong>Keine Serververbindung:</strong> Die App speichert, verarbeitet und liest Daten ausschließlich lokal auf Ihrem Endgerät. Es findet keine Übertragung von NFC-Daten, Formulardaten oder sonstigen Nutzungsdaten an einen von uns betriebenen Server statt.</li>
             <li><strong>Kein Tracking:</strong> Wir verwenden keine Analyse-Tools, Cookies oder Tracking-Technologien (wie z.B. Google Analytics), um Ihr Nutzungsverhalten zu analysieren.</li>
@@ -87,3 +92,4 @@
     </div>
 </body>
 </html>
+
