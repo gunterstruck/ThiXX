@@ -433,6 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetHeight = Math.max(availableHeight, minRequiredHeight);
 
             elementToExpand.style.maxHeight = `${targetHeight}px`;
+            // Store the calculated auto-height for intelligent collapsing
+            elementToExpand.dataset.autoHeight = `${targetHeight}px`;
             elementToExpand.classList.remove('expanded');
         });
     }
@@ -446,8 +448,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (isFullyExpanded) {
                 el.classList.remove('expanded');
-                el.style.maxHeight = ''; 
+                // MODIFIED: When collapsing, check for a stored auto-height.
+                // This returns it to the 'fits on screen' state instead of fully collapsed.
+                if (el.dataset.autoHeight) {
+                    el.style.maxHeight = el.dataset.autoHeight;
+                } else {
+                    el.style.maxHeight = ''; // Fallback to default CSS height if no auto-height is set
+                }
             } else {
+                // When expanding, remove any inline max-height to let the 'expanded' class take full effect.
                 el.style.maxHeight = ''; 
                 el.classList.add('expanded');
             }
