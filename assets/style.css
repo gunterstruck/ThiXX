@@ -468,7 +468,7 @@ footer { padding: 1.5rem 0; text-align: center; }
     }
     #update-banner .btn { width: 100%; }
     
-    .collapsible { max-height: 6rem; }
+    .collapsible { max-height: 7.5rem; }
     .collapsible-overlay { font-size: 0.75rem; padding-bottom: 0.5rem; }
     
     .raw-data-details summary { padding: 0.6rem; font-size: 0.9rem; }
