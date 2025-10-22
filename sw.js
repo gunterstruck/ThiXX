@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-robust-v6-7'; // Version erhöht, um Update auszulösen
+const APP_CACHE_NAME = 'thixx-robust-v6-8'; // Version erhöht, um Update auszulösen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 /*
@@ -15,6 +15,8 @@ const APP_ASSETS_TO_CACHE = [
     '/ThiXX/config.json',
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
     '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
+    '/ThiXX/assets/icon-192.png',
+    '/ThiXX/assets/icon-512.png',
     '/ThiXX/lang/de.json',
     '/ThiXX/lang/en.json',
     '/ThiXX/lang/es.json',
@@ -132,4 +134,5 @@ self.addEventListener('message', (event) => {
         self.skipWaiting();
     }
 });
+
 

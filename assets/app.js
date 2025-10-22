@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Design Templates ---
     const designs = {
         'thixx_standard': { appName: "ThiXX NFC Tool", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
-        'sigx': { appName: "THiXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } }
+        'sigx': { appName: "THiXX NFC Tool", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } },
+        'othimm': { appName: "O.Thimm NFC Tool", theme: "customer-brand", lockTheme: true, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#d54b2a", secondary: "#6C6B66" } }
     };
 
     // --- DOM Element References ---
@@ -252,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
-    function getFormData() { const formData = new FormData(form); const data = {}; for (const [key, value] of formData.entries()) { if (String(value).trim()) data[key] = String(value).trim(); } if (!document.getElementById('has_PT100')?.checked) delete data['PT 100']; if (!document.getElementById('has_NiCr-Ni')?.checked) delete data['NiCr-Ni']; delete data['has_PT100']; delete data['has_NiCr-Ni']; return data; }
+    function getFormData() { const formData = new FormData(form); const data = {}; for (const [key, value] of formData.entries()) { if (String(value).trim()) data[key] = String(value).trim(); } if (!document.getElementById('has_PT100')?.checked) delete data['PT 100']; if (!document.getElementById('has_NiCr-Ni')?.checked) delete data['has_PT100']; delete data['has_NiCr-Ni']; return data; }
     function generateUrlFromForm() { const params = new URLSearchParams(); const formData = getFormData(); for (const [key, value] of Object.entries(formData)) { const shortKey = fieldMap[key]; if (shortKey) params.append(shortKey, value); } return `${CONFIG.BASE_URL}?${params.toString()}`; }
     function updatePayloadOnChange() { const writeTab = document.getElementById('write-tab'); if (writeTab?.classList.contains('active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
     function validateForm() { const errors = []; const voltageInput = form.elements['Spannung']; if(voltageInput) { const voltage = parseFloat(voltageInput.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } } const docUrlInput = form.elements['Dokumentation']; if(docUrlInput) { const docUrl = docUrlInput.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
@@ -481,3 +482,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
