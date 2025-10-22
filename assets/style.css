@@ -382,8 +382,6 @@ footer { padding: 1.5rem 0; text-align: center; }
 
 .legal-links {
     margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
 }
 
 .legal-links a {
@@ -396,6 +394,17 @@ footer { padding: 1.5rem 0; text-align: center; }
 .legal-links a:hover {
     color: var(--primary-light);
     text-decoration: underline;
+}
+
+/* NEW: Styling for the legal actions section */
+.legal-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
 }
 
 @media (max-width: 400px) {

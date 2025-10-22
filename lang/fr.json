@@ -34,7 +34,7 @@
     "loadFromJson": "Charger depuis JSON",
     "legalTitle": "Mentions Légales",
     "imprintTitle": "Mentions Légales",
-    "privacyPolicyLink": "Politique de Confidentialité",
+    "privacyPolicyLink": "Politique de Confidentialité & RGPD",
     "nfcFallback": "Le Web NFC n'est pas pris en charge par ce navigateur.",
     "updateAvailable": "Une nouvelle version est disponible !",
     "updateReload": "Recharger",
@@ -86,3 +86,4 @@
     "themeLight": "Thème Clair",
     "themeCustomer": "Thème Client"
 }
+

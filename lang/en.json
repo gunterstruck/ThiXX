@@ -34,7 +34,7 @@
     "loadFromJson": "Load from JSON",
     "legalTitle": "Imprint",
     "imprintTitle": "Imprint",
-    "privacyPolicyLink": "Privacy Policy",
+    "privacyPolicyLink": "Privacy Policy & GDPR",
     "nfcFallback": "Web NFC is not supported by this browser.",
     "updateAvailable": "A new version is available!",
     "updateReload": "Reload",
@@ -86,3 +86,4 @@
     "themeLight": "Light Theme",
     "themeCustomer": "Customer Theme"
 }
+

@@ -34,7 +34,7 @@
     "loadFromJson": "Aus JSON laden",
     "legalTitle": "Impressum",
     "imprintTitle": "Impressum",
-    "privacyPolicyLink": "DSGVO",
+    "privacyPolicyLink": "Datenschutzerklärung & DSGVO",
     "nfcFallback": "Web NFC wird von diesem Browser nicht unterstützt.",
     "updateAvailable": "Eine neue Version ist verfügbar!",
     "updateReload": "Neu laden",
@@ -86,3 +86,4 @@
     "themeLight": "Helles Design",
     "themeCustomer": "Kunden-Design"
 }
+
