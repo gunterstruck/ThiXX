@@ -12,12 +12,6 @@
 
     <script src="/ThiXX/assets/theme-bootstrap.js"></script>
     
-    <!-- ENTFERNT: Die folgenden Meta-Tags wurden entfernt, um die "Zum Home-Bildschirm"-Funktion auf iOS zu deaktivieren -->
-    <!-- <meta name="apple-mobile-web-app-capable" content="yes"> -->
-    <!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
-    <!-- <meta name="apple-mobile-web-app-title" content="ThiXX NFC"> -->
-    <!-- <link rel="apple-touch-icon" href="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png"> -->
-
     <meta name="theme-color" content="#FCFCFD">
 </head>
 <body>
@@ -29,14 +23,15 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <h1 class="logo">
-                  <span class="logo-orange">O.</span><span class="logo-gray">Thimm</span>
+                <!-- MODIFIED: Added 'othimm' class for specific responsive styling -->
+                <h1 class="logo othimm">
+                    <span class="logo-orange">O.</span><span class="logo-gray">Thimm</span>
                 </h1>
                 <div class="theme-switcher">
                     <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
                     <button class="theme-btn" data-theme="customer-brand" data-i18n-title="themeCustomer" aria-label="Kunden-Design">
-                        <img src="/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" alt="Kunden-Logo" width="29" height="29">
+                        <img src="/ThiXX/assets/icon-512.png" alt="Kunden-Logo" width="29" height="29">
                     </button>
                 </div>
             </div>
@@ -145,7 +140,6 @@
                     
                     <div class="legal-actions">
                         <div class="legal-links">
-                            <!-- MODIFIED: Updated the link to point to the new local file -->
                             <a href="/ThiXX/assets/datenschutz.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyPolicyLink"></a>
                         </div>
                         <button id="check-for-update-btn" class="btn" data-i18n="checkForUpdate"></button>
