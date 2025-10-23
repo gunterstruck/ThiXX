@@ -244,7 +244,8 @@ h1.logo {
 
 .file-operations { 
     display: flex; 
-    gap: 1rem; 
+    /* [ÄNDERUNG] Abstand zwischen Buttons auf 1.5rem erhöht */
+    gap: 1.5rem; 
     /* [KORREKTUR] margin-top entfernt */
     justify-content: center; 
     flex-wrap: wrap; 
@@ -563,8 +564,9 @@ footer { padding: 1.5rem 0; text-align: center; }
     .btn.doc-link-btn {
         white-space: normal;
         text-align: center;
-        padding: 0.85rem 1rem;
-        line-height: 1.3;
+        /* [ÄNDERUNG] Padding an .btn angepasst und line-height entfernt */
+        padding: 0.85rem 1.5rem;
+        /* line-height: 1.3; */
     }
     
     textarea,
@@ -601,7 +603,7 @@ footer { padding: 1.5rem 0; text-align: center; }
         padding: 0.85rem 1rem; 
         font-size: 0.95rem; 
     }
-    
+
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
