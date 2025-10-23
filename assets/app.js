@@ -109,9 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!processUrlParameters()) {
             setupReadTabInitialState();
             switchTab('read-tab');
-            // [ÄNDERUNG WUNSCHGEMÄSS] Container auch im initialen Ladezustand ausklappen
+            // [ÄNDERUNG WUNSCHGEMÄSS] Container im initialen Ladezustand (ohne Daten)
+            // voll ausklappen, damit das Overlay verschwindet.
             if (readResultContainer) {
-                autoExpandToFitScreen(readResultContainer);
+                autoExpandToFitScreen(readResultContainer); // Höhe berechnen für später
+                readResultContainer.classList.add('expanded');
+                readResultContainer.style.maxHeight = ''; // CSS-Klasse soll greifen
             }
         }
     }
@@ -248,16 +251,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if(rawDataOutput) rawDataOutput.value = window.location.href;
             if(readActions) readActions.classList.remove('hidden');
             switchTab('read-tab');
-            autoExpandToFitScreen(readResultContainer); 
+
+            // [ÄNDERUNG WUNSCHGEMÄSS] Da Daten geladen sind,
+            // Container dynamisch einklappen (NICHT voll ausklappen).
+            if (readResultContainer) {
+                readResultContainer.classList.remove('expanded');
+                autoExpandToFitScreen(readResultContainer);
+            }
+
             showMessage(t('messages.readSuccess'), 'ok');
-            history.replaceState(null, '', window.location.pathname); 
-            return true;
-        }
-
-        return false;
-    }
-
-    function getFormData() { const formData = new FormData(form); const data = {}; for (const [key, value] of formData.entries()) { if (String(value).trim()) data[key] = String(value).trim(); } if (!document.getElementById('has_PT100')?.checked) delete data['PT 100']; if (!document.getElementById('has_NiCr-Ni')?.checked) delete data['has_PT100']; delete data['has_NiCr-Ni']; return data; }
+            history.replaceState(null, '', window.location.pathname);
     function generateUrlFromForm() { const params = new URLSearchParams(); const formData = getFormData(); for (const [key, value] of Object.entries(formData)) { const shortKey = fieldMap[key]; if (shortKey) params.append(shortKey, value); } return `${CONFIG.BASE_URL}?${params.toString()}`; }
     function updatePayloadOnChange() { const writeTab = document.getElementById('write-tab'); if (writeTab?.classList.contains('active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
     function validateForm() { const errors = []; const voltageInput = form.elements['Spannung']; if(voltageInput) { const voltage = parseFloat(voltageInput.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } } const docUrlInput = form.elements['Dokumentation']; if(docUrlInput) { const docUrl = docUrlInput.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
@@ -317,7 +320,29 @@ document.addEventListener('DOMContentLoaded', () => {
             setNfcBadge('idle');
         }
         
-        if (tabId === 'write-tab') updatePayloadOnChange(); 
+        // [ÄNDERUNG WUNSCHGEMÄSS] Container-Status beim Tab-Wechsel verwalten
+        if (tabId === 'write-tab') {
+            updatePayloadOnChange();
+            // Schreib-Tab IMMER dynamisch einklappen
+            const writeFormContainer = document.getElementById('write-form-container');
+            if (writeFormContainer) {
+                writeFormContainer.classList.remove('expanded');
+                autoExpandToFitScreen(writeFormContainer);
+            }
+        } else if (tabId === 'read-tab') {
+            // Lese-Tab: Prüfen, ob Daten vorhanden sind
+            if (readResultContainer) {
+                if (appState.scannedDataObject) {
+                    // Daten sind da: dynamisch einklappen
+                    readResultContainer.classList.remove('expanded');
+                    autoExpandToFitScreen(readResultContainer);
+                } else {
+                    // Keine Daten da: voll ausklappen
+                    readResultContainer.classList.add('expanded');
+                    readResultContainer.style.maxHeight = '';
+                }
+            }
+        }
     }
 
     function showMessage(text, type = 'info', duration = 4000) { if(!messageBanner) return; messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
@@ -407,7 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         switchTab('write-tab'); 
-        autoExpandToFitScreen(document.getElementById('write-form-container'));
+        // [ÄNDERUNG] 'autoExpandToFitScreen' wird jetzt von switchTab() gehandhabt.
+        // autoExpandToFitScreen(document.getElementById('write-form-container'));
         showMessage(t('messages.copySuccess'), 'ok');
     }
     function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
@@ -446,12 +472,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // [ÄNDERUNG] Speichere die berechnete Höhe für das manuelle Zuklappen
         elementToExpand.dataset.autoHeight = `${targetHeight}px`;
         
-        // [ÄNDERUNG] Entferne die inline-Höhe, damit die CSS-Klasse greifen kann
-        elementToExpand.style.maxHeight = '';
+        // [ÄNDERUNG] Setze NUR die inline-Höhe für das "dynamische Einklappen".
+        // Die 'expanded' Klasse wird hier NICHT mehr verwaltet.
+        elementToExpand.style.maxHeight = `${targetHeight}px`;
         
-        // [ÄNDERUNG] Setze die Klasse "expanded", um den Container voll zu öffnen
-        // und den "Zum Erweitern tippen"-Hinweis auszublenden.
-        elementToExpand.classList.add('expanded');
+        // [ÄNDERUNG] Diese Zeilen werden entfernt, da die 'expanded'-Logik
+        // jetzt kontextabhängig (in main, switchTab, processUrl) gesteuert wird.
+        // elementToExpand.style.maxHeight = '';
+        // elementToExpand.classList.add('expanded');
     }
 
     function makeCollapsible(el) {
@@ -496,6 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
 
