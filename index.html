@@ -50,8 +50,10 @@
                     <div id="protocol-card" class="protocol-card">
                         <!-- Content wird von app.js eingefügt -->
                     </div>
-                    <div id="doc-link-container" class="doc-link-container"><!-- Content wird von app.js eingefügt --></div>
+                    
                     <div id="read-actions" class="read-actions-container hidden">
+                        <!-- [ÄNDERUNG] Doc-Link-Container hierher verschoben für einheitliches Spacing -->
+                        <div id="doc-link-container" class="doc-link-container"><!-- Content wird von app.js eingefügt --></div>
                         <button id="copy-to-form-btn" class="btn" data-i18n="copyToForm"></button>
                         <details class="raw-data-details">
                             <summary data-i18n="showRawData"></summary>
@@ -112,6 +114,16 @@
                         </div>
                     </form>
 
+                    <!-- [ÄNDERUNG] Reihenfolge getauscht -->
+                    <div class="file-operations">
+                         <!-- [ÄNDERUNG] data-i18n Schlüssel geändert -->
+                         <button id="save-json-btn" class="btn" data-i18n="saveFile"></button>
+                         <!-- [ÄNDERUNG] data-i18n Schlüssel geändert -->
+                         <label id="load-json-label" class="btn file-input-label" data-i18n="loadFile">
+                             <input type="file" id="load-json-input" accept=".json" class="visually-hidden">
+                         </label>
+                    </div>
+
                     <div id="payload-container">
                         <details class="raw-data-details">
                             <summary data-i18n="showRawData"></summary>
@@ -120,12 +132,14 @@
                         </details>
                     </div>
 
+                    <!-- [KORREKTUR] Dieser Block war doppelt und verursachte das Abstandsproblem. Er wird entfernt.
                     <div class="file-operations">
                          <button id="save-json-btn" class="btn" data-i18n="saveToJson"></button>
                          <label id="load-json-label" class="btn file-input-label" data-i18n="loadFromJson">
                              <input type="file" id="load-json-input" accept=".json" class="visually-hidden">
                          </label>
                     </div>
+                    -->
                     <div class="collapsible-overlay" data-i18n="collapsibleHint"></div>
                 </div>
             </div>
@@ -159,4 +173,6 @@
     <script src="/ThiXX/assets/app.js"></script>
 </body>
 </html>
+
+
 
