@@ -416,42 +416,42 @@ document.addEventListener('DOMContentLoaded', () => {
     function autoExpandToFitScreen(elementToExpand) {
         if (!elementToExpand) return;
 
-        requestAnimationFrame(() => {
-            const container = document.querySelector('.container');
-            if (!headerElement || !legalInfoContainer || !container) return;
+        // [ÄNDERUNG] 'requestAnimationFrame' entfernt, um die Ausführung sofort zu erzwingen
+        // Dies behebt das Timing-Problem auf iOS und beim Initialladen.
+        const container = document.querySelector('.container');
+        if (!headerElement || !legalInfoContainer || !container) return;
 
-            const headerHeight = headerElement.offsetHeight;
-            const tabsHeight = (tabsContainer && !tabsContainer.classList.contains('hidden')) ? tabsContainer.offsetHeight : 0;
-            
-            // [ÄNDERUNG WUNSCHGEMÄSS] Die Höhe des Impressums wird hier nicht mehr berücksichtigt,
-            // damit der Inhalts-Container (Protokoll/Formular) den gesamten verfügbaren Platz einnimmt
-            // und das Impressum nach unten aus dem sichtbaren Bereich schiebt.
-            // const legalHeight = legalInfoContainer.offsetHeight;
-            
-            const containerStyle = window.getComputedStyle(container);
-            const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
+        const headerHeight = headerElement.offsetHeight;
+        const tabsHeight = (tabsContainer && !tabsContainer.classList.contains('hidden')) ? tabsContainer.offsetHeight : 0;
+        
+        // [ÄNDERUNG WUNSCHGEMÄSS] Die Höhe des Impressums wird hier nicht mehr berücksichtigt,
+        // damit der Inhalts-Container (Protokoll/Formular) den gesamten verfügbaren Platz einnimmt
+        // und das Impressum nach unten aus dem sichtbaren Bereich schiebt.
+        // const legalHeight = legalInfoContainer.offsetHeight;
+        
+        const containerStyle = window.getComputedStyle(container);
+        const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
 
-            // [ÄNDERUNG WUNSCHGEMÄSS] legalHeight aus der Berechnung entfernt.
-            const otherElementsHeight = headerHeight + tabsHeight + containerPadding;
-            
-            const viewportHeight = window.innerHeight;
-            const availableHeight = viewportHeight - otherElementsHeight - CONFIG.SAFETY_BUFFER_PX;
+        // [ÄNDERUNG WUNSCHGEMÄSS] legalHeight aus der Berechnung entfernt.
+        const otherElementsHeight = headerHeight + tabsHeight + containerPadding;
+        
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - otherElementsHeight - CONFIG.SAFETY_BUFFER_PX;
 
-            const titleElement = elementToExpand.querySelector('h2');
-            const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;
+        const titleElement = elementToExpand.querySelector('h2');
+        const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;
 
-            const targetHeight = Math.max(availableHeight, minRequiredHeight);
+        const targetHeight = Math.max(availableHeight, minRequiredHeight);
 
-            // [ÄNDERUNG] Speichere die berechnete Höhe für das manuelle Zuklappen
-            elementToExpand.dataset.autoHeight = `${targetHeight}px`;
-            
-            // [ÄNDERUNG] Entferne die inline-Höhe, damit die CSS-Klasse greifen kann
-            elementToExpand.style.maxHeight = '';
-            
-            // [ÄNDERUNG] Setze die Klasse "expanded", um den Container voll zu öffnen
-            // und den "Zum Erweitern tippen"-Hinweis auszublenden.
-            elementToExpand.classList.add('expanded');
-        });
+        // [ÄNDERUNG] Speichere die berechnete Höhe für das manuelle Zuklappen
+        elementToExpand.dataset.autoHeight = `${targetHeight}px`;
+        
+        // [ÄNDERUNG] Entferne die inline-Höhe, damit die CSS-Klasse greifen kann
+        elementToExpand.style.maxHeight = '';
+        
+        // [ÄNDERUNG] Setze die Klasse "expanded", um den Container voll zu öffnen
+        // und den "Zum Erweitern tippen"-Hinweis auszublenden.
+        elementToExpand.classList.add('expanded');
     }
 
     function makeCollapsible(el) {
@@ -496,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
 
