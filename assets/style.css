@@ -440,7 +440,8 @@ footer { padding: 1.5rem 0; text-align: center; }
 .collapsible.expanded .collapsible-overlay { opacity: 0; pointer-events: none; }
 
 .doc-link-container {
-    padding: 1rem 0 0 0;
+    /* [KORREKTUR] Abstand entfernt, wird durch 'gap' des Parent geregelt */
+    padding: 0;
 }
 
 .btn.doc-link-btn {
