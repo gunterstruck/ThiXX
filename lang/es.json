@@ -40,6 +40,10 @@
     "updateAvailable": "¡Hay una nueva actualización disponible!",
     "updateReload": "Recargar",
     "placeholderRead": "Por favor, acerque una etiqueta NFC a su dispositivo para ver los datos aquí.",
+    "docOpenOffline": "Abrir documento sin conexión",
+    "docDownload": "Descargar y guardar documento sin conexión",
+    "docDownloadLater": "Documento no disponible sin conexión",
+    "docDownloadPending": "Descarga en la próxima conexión",
     "status": {
         "iosRead": "Acerque la etiqueta para leer",
         "startWriting": "Listo. Toque para escribir.",

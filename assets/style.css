@@ -235,10 +235,10 @@ h1.logo {
 .file-operations { 
     display: flex; 
     gap: 1rem; 
-    /* [ÄNDERUNG] margin-top entfernt, wird jetzt durch gap im parent gesteuert */
-    /* margin-top: 2rem; */
     justify-content: center; 
     flex-wrap: wrap; 
+    /* [ÄNDERUNG] Sorgt dafür, dass alle Flex-Items (Buttons, Labels) dieselbe Höhe haben */
+    align-items: stretch;
 }
 #copy-to-form-btn { width: 100%; margin-bottom: 0; }
 .file-operations .btn { flex: 1 1 220px; text-align: center; }
@@ -268,11 +268,44 @@ h2 { color: var(--text-color); margin-bottom: 0.5rem; padding-bottom: 0.75rem; b
 .protocol-card .placeholder-text { text-align: center; color: var(--light-text-color); padding: 2rem 1rem; font-style: italic; transition: opacity 0.3s ease; }
 
 .raw-data-details { margin-bottom: 0; }
-.raw-data-details summary { cursor: pointer; font-weight: 600; color: var(--light-text-color); margin-bottom: 0.75rem; padding: 0.75rem; background: var(--surface-light); border-radius: 8px; transition: all 0.2s ease; list-style: none; }
-.raw-data-details summary:hover { background: var(--surface-color); color: var(--text-color); }
+/* [ÄNDERUNG] Das <summary> (der klickbare Teil) wird jetzt wie ein .btn formatiert */
+.raw-data-details summary {
+    display: block; /* Wichtig für korrekte Darstellung */
+    padding: 1rem 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--surface-light);
+    color: var(--text-color);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    list-style: none; /* Pfeil entfernen */
+    text-align: left; /* Text linksbündig */
+    line-height: 1.6; /* Konsistente Höhe */
+}
+.raw-data-details summary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: var(--surface-color); 
+    color: var(--text-color);
+}
 .raw-data-details summary::-webkit-details-marker { display: none; }
-.raw-data-details summary::before { content: '▶'; display: inline-block; margin-right: 0.5rem; transition: transform 0.3s ease; }
+.raw-data-details summary::before { 
+    content: '▶'; 
+    display: inline-block; 
+    margin-right: 0.75rem; /* Mehr Abstand */
+    transition: transform 0.3s ease; 
+    font-size: 0.8rem; /* Pfeil etwas kleiner */
+}
 .raw-data-details[open] summary::before { transform: rotate(90deg); }
+/* [ÄNDERUNG] Abstand für den Inhalt der Details-Box */
+.raw-data-details > *:not(summary) {
+    margin-top: 1rem;
+}
 
 textarea, .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group input[type="url"] { width: 100%; padding: 0.9rem 1rem; border-radius: 12px; border: 1px solid var(--border-color); font-family: inherit; font-size: 1rem; background: var(--background-color); color: var(--text-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 textarea { min-height: 140px; font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 0.9rem; resize: vertical; }
@@ -509,5 +542,6 @@ footer { padding: 1.5rem 0; text-align: center; }
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
+
 
 
