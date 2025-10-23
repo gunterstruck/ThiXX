@@ -418,12 +418,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const headerHeight = headerElement.offsetHeight;
             const tabsHeight = (tabsContainer && !tabsContainer.classList.contains('hidden')) ? tabsContainer.offsetHeight : 0;
-            const legalHeight = legalInfoContainer.offsetHeight;
+            
+            // [ÄNDERUNG WUNSCHGEMÄSS] Die Höhe des Impressums wird hier nicht mehr berücksichtigt,
+            // damit der Inhalts-Container (Protokoll/Formular) den gesamten verfügbaren Platz einnimmt
+            // und das Impressum nach unten aus dem sichtbaren Bereich schiebt.
+            // const legalHeight = legalInfoContainer.offsetHeight;
             
             const containerStyle = window.getComputedStyle(container);
             const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
 
-            const otherElementsHeight = headerHeight + tabsHeight + legalHeight + containerPadding;
+            // [ÄNDERUNG WUNSCHGEMÄSS] legalHeight aus der Berechnung entfernt.
+            const otherElementsHeight = headerHeight + tabsHeight + containerPadding;
             
             const viewportHeight = window.innerHeight;
             const availableHeight = viewportHeight - otherElementsHeight - CONFIG.SAFETY_BUFFER_PX;
@@ -482,4 +487,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
