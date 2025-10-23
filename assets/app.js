@@ -261,6 +261,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showMessage(t('messages.readSuccess'), 'ok');
             history.replaceState(null, '', window.location.pathname);
+            return true; // [KORREKTUR] Fehlendes return true
+        }
+
+        return false; // [KORREKTUR] Fehlendes return false
+    } // [KORREKTUR] Fehlende schließende Klammer } für processUrlParameters
+
+    // [KORREKTUR] Die gesamte Funktion war verloren gegangen
+    function getFormData() {
+        const formData = new FormData(form);
+        const data = {};
+        for (const [key, value] of formData.entries()) {
+            if (String(value).trim()) data[key] = String(value).trim();
+        }
+        
+        // Checkbox-Werte nur hinzufügen, wenn sie nicht-null/leer sind
+        if (!document.getElementById('has_PT100')?.checked) {
+            delete data['PT 100'];
+        }
+        if (!document.getElementById('has_NiCr-Ni')?.checked) {
+             delete data['NiCr-Ni']; // [BUGFIX] War fälschlicherweise 'has_PT100'
+        }
+
+        // Checkbox-Hilfsfelder entfernen
+        delete data['has_PT100'];
+        delete data['has_NiCr-Ni'];
+        
+        return data;
+    }
+
     function generateUrlFromForm() { const params = new URLSearchParams(); const formData = getFormData(); for (const [key, value] of Object.entries(formData)) { const shortKey = fieldMap[key]; if (shortKey) params.append(shortKey, value); } return `${CONFIG.BASE_URL}?${params.toString()}`; }
     function updatePayloadOnChange() { const writeTab = document.getElementById('write-tab'); if (writeTab?.classList.contains('active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
     function validateForm() { const errors = []; const voltageInput = form.elements['Spannung']; if(voltageInput) { const voltage = parseFloat(voltageInput.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } } const docUrlInput = form.elements['Dokumentation']; if(docUrlInput) { const docUrl = docUrlInput.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
@@ -524,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
 
