@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         NFC_WRITE_TIMEOUT: 5000,
         MAX_WRITE_RETRIES: 3,
         BASE_URL: BASE_URL,
-        SAFETY_BUFFER_PX: 70 // Puffer für die System-Navigationsleiste
+        SAFETY_BUFFER_PX: 10 // Puffer für die System-Navigationsleiste
     };
 
     // --- Application State ---
@@ -442,10 +442,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const targetHeight = Math.max(availableHeight, minRequiredHeight);
 
-            elementToExpand.style.maxHeight = `${targetHeight}px`;
-            // Store the calculated auto-height for intelligent collapsing
+            // [ÄNDERUNG] Speichere die berechnete Höhe für das manuelle Zuklappen
             elementToExpand.dataset.autoHeight = `${targetHeight}px`;
-            elementToExpand.classList.remove('expanded');
+            
+            // [ÄNDERUNG] Entferne die inline-Höhe, damit die CSS-Klasse greifen kann
+            elementToExpand.style.maxHeight = '';
+            
+            // [ÄNDERUNG] Setze die Klasse "expanded", um den Container voll zu öffnen
+            // und den "Zum Erweitern tippen"-Hinweis auszublenden.
+            elementToExpand.classList.add('expanded');
         });
     }
 
@@ -491,5 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
