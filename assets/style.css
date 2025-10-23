@@ -143,6 +143,7 @@ header {
     justify-content: center;
     align-items: center;
     transition: all 0.3s ease;
+    /* [ÄNDERUNG WUNSCHGEMÄSS] 'opacity: 0.7;' entfernt, damit Icons immer voll sichtbar sind */
 }
 .theme-btn:hover { color: var(--text-color); }
 .theme-btn.active { color: var(--primary-color); transform: scale(1.1); background-color: transparent; box-shadow: none; }
