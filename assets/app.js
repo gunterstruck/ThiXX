@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         NFC_WRITE_TIMEOUT: 5000,
         MAX_WRITE_RETRIES: 3,
         BASE_URL: BASE_URL,
-        SAFETY_BUFFER_PX: 10 // Puffer für die System-Navigationsleiste
+        SAFETY_BUFFER_PX: 70 // Puffer für die System-Navigationsleiste
     };
 
     // --- Application State ---
@@ -491,4 +491,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
