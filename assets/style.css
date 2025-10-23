@@ -143,7 +143,7 @@ header {
     justify-content: center;
     align-items: center;
     transition: all 0.3s ease;
-    /* [ÄNDERUNG WUNSCHGEMÄSS] 'opacity: 0.7;' entfernt, damit Icons immer voll sichtbar sind */
+    /* [KORREKTUR] 'opacity: 0.7;' entfernt */
 }
 .theme-btn:hover { color: var(--text-color); }
 .theme-btn.active { color: var(--primary-color); transform: scale(1.1); background-color: transparent; box-shadow: none; }
@@ -212,16 +212,26 @@ h1.logo {
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 .tab-content.active { display: block; }
 
-.read-actions-container { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 1.5rem; 
-    /* [ÄNDERUNG] margin-top entfernt, wird jetzt durch gap im parent gesteuert */
-    /* margin-top: 1.5rem; */
-}
+.read-actions-container { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem; }
 #auto-write-hint { flex-basis: 100%; text-align: center; }
 
-.btn { padding: 1rem 2rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: var(--surface-light); color: var(--text-color); border: 1px solid var(--border-color); backdrop-filter: blur(10px); position: relative; overflow: hidden; }
+/* [KORREKTUR] Padding und line-height vereinheitlicht */
+.btn { 
+    padding: 0.9rem 1rem; 
+    border: none; 
+    border-radius: 12px; 
+    font-size: 1rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    background: var(--surface-light); 
+    color: var(--text-color); 
+    border: 1px solid var(--border-color); 
+    backdrop-filter: blur(10px); 
+    position: relative; 
+    overflow: hidden; 
+    line-height: 1.6;
+}
 .btn::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.1); transform: translate(-50%, -50%); transition: width 0.6s, height 0.6s; }
 :root[data-theme="thixx"] .btn::before, :root[data-theme="customer-brand"] .btn::before { background: rgba(0, 0, 0, 0.05); }
 .btn:hover::before { width: 300px; height: 300px; }
@@ -235,14 +245,58 @@ h1.logo {
 .file-operations { 
     display: flex; 
     gap: 1rem; 
+    /* [KORREKTUR] margin-top entfernt */
     justify-content: center; 
     flex-wrap: wrap; 
-    /* [ÄNDERUNG] Sorgt dafür, dass alle Flex-Items (Buttons, Labels) dieselbe Höhe haben */
     align-items: stretch;
 }
 #copy-to-form-btn { width: 100%; margin-bottom: 0; }
 .file-operations .btn { flex: 1 1 220px; text-align: center; }
-.file-input-label { display: inline-block; }
+
+/* [KORREKTUR] Label exakt wie .btn formatiert */
+.file-input-label { 
+    display: inline-block; 
+    padding: 0.9rem 1rem; 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px;  
+    font-size: 1rem;  
+    font-weight: 600;  
+    cursor: pointer;  
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);  
+    background: var(--surface-light);  
+    color: var(--text-color);  
+    backdrop-filter: blur(10px);  
+    position: relative;  
+    overflow: hidden;  
+    line-height: 1.6; 
+    text-align: center; 
+    flex: 1 1 220px; 
+}
+.file-input-label:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+.file-input-label::before { 
+    content: ''; 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    width: 0; 
+    height: 0; 
+    border-radius: 50%; 
+    background: rgba(255, 255, 255, 0.1); 
+    transform: translate(-50%, -50%); 
+    transition: width 0.6s, height 0.6s; 
+}
+.file-input-label:hover::before {
+     width: 300px; 
+     height: 300px; 
+}
+:root[data-theme="thixx"] .file-input-label::before, 
+:root[data-theme="customer-brand"] .file-input-label::before { 
+    background: rgba(0, 0, 0, 0.05); 
+}
+
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -268,24 +322,24 @@ h2 { color: var(--text-color); margin-bottom: 0.5rem; padding-bottom: 0.75rem; b
 .protocol-card .placeholder-text { text-align: center; color: var(--light-text-color); padding: 2rem 1rem; font-style: italic; transition: opacity 0.3s ease; }
 
 .raw-data-details { margin-bottom: 0; }
-/* [ÄNDERUNG] Das <summary> (der klickbare Teil) wird jetzt wie ein .btn formatiert */
+/* [KORREKTUR] <summary> exakt wie .btn formatiert */
 .raw-data-details summary {
-    display: block; /* Wichtig für korrekte Darstellung */
-    padding: 1rem 2rem;
+    display: block; 
+    padding: 0.9rem 1rem; 
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--surface-light);
-    color: var(--text-color);
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
-    list-style: none; /* Pfeil entfernen */
-    text-align: left; /* Text linksbündig */
-    line-height: 1.6; /* Konsistente Höhe */
+    border-radius: 12px; 
+    font-size: 1rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    background: var(--surface-light); 
+    color: var(--text-color); 
+    backdrop-filter: blur(10px); 
+    position: relative; 
+    overflow: hidden; 
+    list-style: none; 
+    text-align: left; 
+    line-height: 1.6;
 }
 .raw-data-details summary:hover {
     transform: translateY(-2px);
@@ -297,12 +351,11 @@ h2 { color: var(--text-color); margin-bottom: 0.5rem; padding-bottom: 0.75rem; b
 .raw-data-details summary::before { 
     content: '▶'; 
     display: inline-block; 
-    margin-right: 0.75rem; /* Mehr Abstand */
+    margin-right: 0.75rem; 
     transition: transform 0.3s ease; 
-    font-size: 0.8rem; /* Pfeil etwas kleiner */
+    font-size: 0.8rem;
 }
 .raw-data-details[open] summary::before { transform: rotate(90deg); }
-/* [ÄNDERUNG] Abstand für den Inhalt der Details-Box */
 .raw-data-details > *:not(summary) {
     margin-top: 1rem;
 }
@@ -311,7 +364,12 @@ textarea, .form-group input[type="text"], .form-group input[type="number"], .for
 textarea { min-height: 140px; font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 0.9rem; resize: vertical; }
 textarea:focus, .form-group input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--glow-color); background: var(--surface-color); }
 
-#nfc-write-form { display: flex; flex-direction: column; gap: 2rem; }
+/* [KORREKTUR] Vertikaler Abstand auf 1.5rem gesetzt */
+#nfc-write-form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.5rem; 
+}
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; align-items: end; }
 .form-group.full-width { grid-column: 1 / -1; }
 .form-group label, fieldset legend { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-color); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -381,8 +439,7 @@ footer { padding: 1.5rem 0; text-align: center; }
 .collapsible.expanded .collapsible-overlay { opacity: 0; pointer-events: none; }
 
 .doc-link-container {
-    /* [ÄNDERUNG] padding-top entfernt, wird jetzt durch gap im parent gesteuert */
-    /* padding: 1rem 0 0 0; */
+    padding: 1rem 0 0 0;
 }
 
 .btn.doc-link-btn {
@@ -501,6 +558,8 @@ footer { padding: 1.5rem 0; text-align: center; }
     fieldset legend { font-size: 0.85rem; }
     
     .btn { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
+    /* [KORREKTUR] Label-Styling an .btn angepasst */
+    .file-input-label { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
     .btn.doc-link-btn {
         white-space: normal;
         text-align: center;
@@ -537,11 +596,13 @@ footer { padding: 1.5rem 0; text-align: center; }
     .collapsible { max-height: 7.5rem; }
     .collapsible-overlay { font-size: 0.75rem; padding-bottom: 0.5rem; }
     
-    .raw-data-details summary { padding: 0.6rem; font-size: 0.9rem; }
+    /* [KORREKTUR] <summary> an .btn angepasst */
+    .raw-data-details summary { 
+        padding: 0.85rem 1rem; 
+        font-size: 0.95rem; 
+    }
     
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
-
-
 
