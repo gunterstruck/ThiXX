@@ -40,10 +40,10 @@
     "updateAvailable": "A new update is available!",
     "updateReload": "Reload",
     "placeholderRead": "Please hold an NFC tag to your device to display the data here.",
-    "docOpenOffline": "Open document offline",
-    "docDownload": "Download & save document offline",
-    "docDownloadLater": "Document not available offline",
-    "docDownloadPending": "Download on next connection",
+    "docOpenOffline": "Operating Manual",
+    "docDownload": "Operating Manual",
+    "docDownloadLater": "Operating Manual",
+    "docDownloadPending": "Operating Manual",
     "status": {
         "iosRead": "Hold tag to device to read",
         "startWriting": "Ready. Tap to write.",
@@ -85,4 +85,3 @@
     "themeLight": "Light Theme",
     "themeCustomer": "Customer Theme"
 }
-
