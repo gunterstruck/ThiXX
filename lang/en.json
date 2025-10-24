@@ -77,6 +77,7 @@
         "NetworkError": "Network error. Please check your connection.",
         "AbortError": "Operation aborted by user.",
         "WriteTimeoutError": "Write operation timed out.",
+        "ReadTimeoutError": "Scan operation timed out.",
         "unknown": "An unknown error occurred.",
         "invalidVoltage": "Voltage must be between 0 and 1000V.",
         "invalidDocUrl": "The documentation URL is invalid."
