@@ -24,6 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Design Templates ---
     const designs = {
         'thixx_standard': { appName: "ThiXX NFC Tool", short_name: "ThiXX", theme: "dark", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#f04e37", secondary: "#6c6b66" } },
+'peterpohl': { 
+    appName: "Peter Pohl NFC Tool", 
+    short_name: "Peter Pohl", 
+    theme: "customer-brand", 
+    lockTheme: false, 
+    icons: { 
+        icon192: "/ThiXX/assets/PP-192x192.png", 
+        icon512: "/ThiXX/assets/PP-512x512.png" 
+    }, 
+    brandColors: { 
+        primary: "#00457D", 
+        secondary: "#FFEC00" 
+    } 
+},
         'sigx': { appName: "THiXX NFC Tool", short_name: "THiXX", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png", icon512: "/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png" }, brandColors: { primary: "#5865F2", secondary: "#3d3d3d" } },
         'othimm': { appName: "O.Thimm NFC Tool", short_name: "O.Thimm", theme: "customer-brand", lockTheme: false, icons: { icon192: "/ThiXX/assets/icon-192.png", icon512: "/ThiXX/assets/icon-512.png" }, brandColors: { primary: "#d54b2a", secondary: "#6C6B66" } }
     };
