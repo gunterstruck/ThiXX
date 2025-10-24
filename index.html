@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 🟢 Theme Bootstrap: Muss als allererstes geladen werden -->
+  <script src="theme-bootstrap.js"></script>
     
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
     
@@ -24,7 +27,9 @@
         <header>
             <div class="header-content">
                 <!-- MODIFIED: Added 'othimm' class for specific responsive styling -->
-<h1 class="logo">Peter Pohl</h1>
+                <h1 class="logo othimm">
+                    <span class="logo-orange">O.</span><span class="logo-gray">Thimm</span>
+                </h1>
                 <div class="theme-switcher">
                     <button class="theme-btn" data-theme="dark" data-i18n-title="themeDark" aria-label="Dunkles Design">🌙</button>
                     <button class="theme-btn" data-theme="thixx" data-i18n-title="themeLight" aria-label="Helles Design">☀️</button>
