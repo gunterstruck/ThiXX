@@ -1,4 +1,4 @@
-const APP_CACHE_NAME = 'thixx-robust-v6-41'; // Version erhöht, um Update auszulösen
+const APP_CACHE_NAME = 'thixx-robust-v6-42'; // Version erhöht, um Update auszulösen
 const DOC_CACHE_NAME = 'thixx-docs-v1';
 
 /*

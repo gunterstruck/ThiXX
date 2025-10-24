@@ -42,7 +42,7 @@
     --primary-color: #f04e37;
     --primary-dark: #d84530;
     --primary-light: #f36f5d;
-    --secondary-color: #9ca3af;
+    --secondary-color: #9ca3af; /* Helles Grau für besseren Kontrast */
     --background-color: #0f172a;
     --surface-color: #1e293b;
     --surface-light: #334155;
