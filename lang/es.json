@@ -45,7 +45,7 @@
     "docDownloadLater": "Manual de instrucciones",
     "docDownloadPending": "Manual de instrucciones",
     "status": {
-        "iosRead": "Acerque la etiqueta para leer",
+        "iosRead": "Toque para leer y acerque la etiqueta",
         "startWriting": "Listo. Toque para escribir.",
         "startReading": "Acerque la etiqueta para leer",
         "unsupported": "NFC No Soportado",
@@ -84,3 +84,4 @@
     "themeLight": "Tema Claro",
     "themeCustomer": "Tema del Cliente"
 }
+

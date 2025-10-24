@@ -45,7 +45,7 @@
     "docDownloadLater": "Operating Manual",
     "docDownloadPending": "Operating Manual",
     "status": {
-        "iosRead": "Hold tag to device to read",
+        "iosRead": "Tap to read & hold tag to device",
         "startWriting": "Ready. Tap to write.",
         "startReading": "Hold tag to device to read",
         "unsupported": "NFC Not Supported",
@@ -85,3 +85,4 @@
     "themeLight": "Light Theme",
     "themeCustomer": "Customer Theme"
 }
+

@@ -45,7 +45,7 @@
     "docDownloadLater": "Mode d'emploi",
     "docDownloadPending": "Mode d'emploi",
     "status": {
-        "iosRead": "Approchez l'étiquette pour lire",
+        "iosRead": "Appuyez pour lire et approchez le tag",
         "startWriting": "Prêt. Appuyez pour écrire.",
         "startReading": "Approchez l'étiquette pour lire",
         "unsupported": "NFC non supporté",
@@ -84,3 +84,4 @@
     "themeLight": "Thème Clair",
     "themeCustomer": "Thème Client"
 }
+
