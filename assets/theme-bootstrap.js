@@ -15,7 +15,7 @@
 
     // --- 3️⃣ config.json direkt synchron laden
     const request = new XMLHttpRequest();
-    request.open('GET', '/ThiXX/config.json', false); // synchron, da sehr klein
+    request.open('GET', '/THiXX-OTH/config.json', false); // synchron, da sehr klein
     request.send(null);
 
     if (request.status === 200) {
@@ -24,7 +24,7 @@
         if (config && config.design) {
           // --- Design-Mapping (wie in app.js)
           const designThemes = {
-            'thixx_standard': 'thixx',
+            'thixx_standard': 'dark',
             'peterpohl': 'customer-brand',
             'sigx': 'customer-brand',
             'othimm': 'customer-brand'
