@@ -40,10 +40,10 @@
     "updateAvailable": "Ein neues Update ist verfügbar!",
     "updateReload": "Neu laden",
     "placeholderRead": "Bitte halten Sie einen NFC-Tag an Ihr Gerät, um die Daten hier anzuzeigen.",
-    "docOpenOffline": "Betriebsanleitung",
-    "docDownload": "Betriebsanleitung",
-    "docDownloadLater": "Betriebsanleitung",
-    "docDownloadPending": "Betriebsanleitung",
+    "docOpenOffline": "Dokument offline öffnen",
+    "docDownload": "Dokument herunterladen & offline speichern",
+    "docDownloadLater": "Dokument offline nicht verfügbar",
+    "docDownloadPending": "Download bei nächster Verbindung",
     "status": {
         "iosRead": "Zum Lesen Tag an Gerät halten",
         "startWriting": "Bereit. Zum Schreiben tippen.",
@@ -84,3 +84,4 @@
     "themeLight": "Helles Design",
     "themeCustomer": "Kunden-Design"
 }
+

@@ -40,10 +40,10 @@
     "updateAvailable": "Une nouvelle mise à jour est disponible !",
     "updateReload": "Recharger",
     "placeholderRead": "Veuillez approcher une étiquette NFC de votre appareil pour afficher les données ici.",
-    "docOpenOffline": "Mode d'emploi",
-    "docDownload": "Mode d'emploi",
-    "docDownloadLater": "Mode d'emploi",
-    "docDownloadPending": "Mode d'emploi",
+    "docOpenOffline": "Ouvrir le document hors ligne",
+    "docDownload": "Télécharger et enregistrer le document hors ligne",
+    "docDownloadLater": "Document non disponible hors ligne",
+    "docDownloadPending": "Téléchargement à la prochaine connexion",
     "status": {
         "iosRead": "Approchez l'étiquette pour lire",
         "startWriting": "Prêt. Appuyez pour écrire.",
@@ -59,7 +59,7 @@
         "scanToReadInfo": "Pour lire, approchez simplement l'étiquette de l'appareil. Aucun clic n'est nécessaire.",
         "writeAttempt": "Tentative d'écriture {attempt} sur {total}. Gardez le tag sur l'appareil...",
         "writeSuccess": "Tag NFC écrit avec succès !",
-        "readSuccess": "Données lues avec succès ! ",
+        "readSuccess": "Données lues avec succès !",
         "copySuccess": "Données copiées dans le formulaire.",
         "saveSuccess": "Données du formulaire enregistrées en tant que fichier.",
         "loadSuccess": "Données chargées depuis le fichier.",
@@ -84,3 +84,4 @@
     "themeLight": "Thème Clair",
     "themeCustomer": "Thème Client"
 }
+

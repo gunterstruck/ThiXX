@@ -212,13 +212,7 @@ h1.logo {
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 .tab-content.active { display: block; }
 
-.read-actions-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    /* [KORREKTUR] margin-top entfernt, da der Parent (#read-result) bereits 'gap: 1.5rem' verwendet. */
-    /* margin-top: 1.5rem; */ 
-}
+.read-actions-container { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem; }
 #auto-write-hint { flex-basis: 100%; text-align: center; }
 
 /* [KORREKTUR] Padding und line-height vereinheitlicht */
@@ -614,3 +608,4 @@ footer { padding: 1.5rem 0; text-align: center; }
     #legal-info { padding: 1.25rem; }
     .legal-content { font-size: 0.85rem; line-height: 1.6; }
 }
+
