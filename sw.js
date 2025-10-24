@@ -7,20 +7,20 @@ const DOC_CACHE_NAME = 'thixx-docs-v1';
  * auch wenn safeCacheAddAll einzelne Fehler abfängt.
  */
 const APP_ASSETS_TO_CACHE = [
-    '/THiXX-OTH/index.html',
-    '/THiXX-OTH/offline.html',
-    '/THiXX-OTH/assets/style.css',
-    '/THiXX-OTH/assets/app.js',
-    '/THiXX-OTH/assets/theme-bootstrap.js',
-    '/THiXX-OTH/config.json',
-    '/THiXX-OTH/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
-    '/THiXX-OTH/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
-    '/THiXX-OTH/assets/icon-192.png',
-    '/THiXX-OTH/assets/icon-512.png',
-    '/THiXX-OTH/lang/de.json',
-    '/THiXX-OTH/lang/en.json',
-    '/THiXX-OTH/lang/es.json',
-    '/THiXX-OTH/lang/fr.json'
+    '/ThiXX/index.html',
+    '/ThiXX/offline.html',
+    '/ThiXX/assets/style.css',
+    '/ThiXX/assets/app.js',
+    '/ThiXX/assets/theme-bootstrap.js',
+    '/ThiXX/config.json',
+    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_192x192.png',
+    '/ThiXX/assets/THiXX_Icon_Grau6C6B66_Transparent_512x512.png',
+    '/ThiXX/assets/icon-192.png',
+    '/ThiXX/assets/icon-512.png',
+    '/ThiXX/lang/de.json',
+    '/ThiXX/lang/en.json',
+    '/ThiXX/lang/es.json',
+    '/ThiXX/lang/fr.json'
 ];
 
 async function safeCacheAddAll(cache, urls) {
@@ -101,7 +101,7 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           } catch (error) {
             console.log('[Service Worker] Navigate fetch failed, falling back to offline page.');
-            return await caches.match('/THiXX-OTH/offline.html');
+            return await caches.match('/ThiXX/offline.html');
           }
         })());
         return;
