@@ -69,7 +69,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTranslations() { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); }); document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); }); document.title = t('appTitle'); }
 
     // --- Error Handling ---
-    class ErrorHandler { static handle(error, context = 'General') { const readableError = this.getReadableError(error); console.error(`[${context}]`, error); showMessage(readableError, 'err'); addLogEntry(`${context}: ${readableError}`, 'err'); return readableError; } static getReadableError(error) { const errorMap = { 'NotAllowedError': 'errors.NotAllowedError', 'NotSupportedError': 'errors.NotSupportedError', 'NotFoundError': 'errors.NotFoundError', 'NotReadableError': 'errors.NotReadableError', 'NetworkError': 'errors.NetworkError', 'AbortError': 'errors.AbortError', 'TimeoutError': 'errors.WriteTimeoutError' }; if (error.name === 'NetworkError' && generateUrlFromForm().length > CONFIG.MAX_PAYLOAD_SIZE) { return t('messages.payloadTooLarge'); } if (errorMap[error.name]) { return t(errorMap[error.name]); } return error.message || t('errors.unknown'); } }
+    class ErrorHandler { static handle(error, context = 'General') { const readableError = this.getReadableError(error); console.error(`[${context}]`, error); showMessage(readableError, 'err'); addLogEntry(`${context}: ${readableError}`, 'err'); return readableError; }
+        static getReadableError(error) {
+            const errorMap = {
+                'NotAllowedError': 'errors.NotAllowedError',
+                'NotSupportedError': 'errors.NotSupportedError',
+                'NotFoundError': 'errors.NotFoundError',
+                'NotReadableError': 'errors.NotReadableError',
+                'NetworkError': 'errors.NetworkError',
+                'AbortError': 'errors.AbortError',
+                'TimeoutError': error.message.includes('Scan') ? 'errors.ReadTimeoutError' : 'errors.WriteTimeoutError' // Unterscheidung Lese-/Schreib-Timeout
+            };
+            if (error.name === 'NetworkError' && generateUrlFromForm().length > CONFIG.MAX_PAYLOAD_SIZE) {
+                return t('messages.payloadTooLarge');
+            }
+            if (errorMap[error.name]) {
+                return t(errorMap[error.name]);
+            }
+            return error.message || t('errors.unknown');
+        }
+    }
 
     // --- App Initialization ---
     async function loadConfig() { try { const response = await fetch('/ThiXX/config.json'); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); return await response.json(); } catch (error) { console.warn('Config load failed, using default.', error); return { design: "default" }; } }
@@ -106,8 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkNfcSupport();
         initCollapsibles();
         
-        // [MODIFIZIERT] processUrlParameters() wird ohne Parameter aufgerufen,
-        // um den passiven Android-Scan (über window.location.search) zu verarbeiten.
         if (!processUrlParameters()) {
             setupReadTabInitialState();
             switchTab('read-tab');
@@ -189,21 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NFC Logic ---
     
-    /**
-     * [MODIFIZIERT FÜR iOS]
-     * Diese Funktion löst jetzt entweder einen Lese- oder einen Schreibvorgang aus.
-     * - Auf iOS: Startet *immer* einen Lese-Scan.
-     * - Auf Android: Startet einen Lese-Scan (im "Lesen"-Tab) oder einen Schreib-Vorgang (im "Schreiben"-Tab).
-     */
     async function handleNfcAction() {
         if (appState.isNfcActionActive || appState.isCooldownActive) return;
 
         const writeTab = document.getElementById('write-tab');
-        // Schreibmodus ist nur aktiv, wenn NICHT iOS UND der "Schreiben"-Tab aktiv ist.
         const isWriteMode = !isIOS() && writeTab?.classList.contains('active');
 
         appState.isNfcActionActive = true;
         appState.abortController = new AbortController();
+        
+        // [MODIFIZIERT] Timeout-Nachricht ist jetzt kontextabhängig
         appState.nfcTimeoutId = setTimeout(() => {
             if (appState.abortController && !appState.abortController.signal.aborted) {
                 const errorMsg = isWriteMode ? 'Write operation timed out.' : 'Scan operation timed out.';
@@ -228,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // --- LESE-LOGIK (iOS oder Android im "Lesen"-Tab) ---
                 setNfcBadge('scanning');
-                showMessage(t('status.scanning'), 'info', CONFIG.NFC_WRITE_TIMEOUT + 1000); // Nachricht etwas länger anzeigen
+                showMessage(t('status.scanning'), 'info', CONFIG.NFC_WRITE_TIMEOUT + 1000);
 
                 ndef.addEventListener('readingerror', () => {
                     ErrorHandler.handle(new Error(t('errors.NotReadableError')), 'NFCScan');
@@ -240,12 +252,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const record = message.records[0];
                     if (record && record.recordType === "url") {
                         const url = new URL(record.data);
-                        // Verarbeite die gelesenen URL-Parameter
                         if (processUrlParameters(url.searchParams)) {
                             setNfcBadge('success', t('messages.readSuccess'));
                             showMessage(t('messages.readSuccess'), 'ok');
                         } else {
-                            // URL war ungültig oder enthielt keine Daten
                             setupReadTabInitialState();
                             ErrorHandler.handle(new Error("Ungültiger Tag-Inhalt."), 'NFCScan');
                         }
@@ -253,11 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
                          ErrorHandler.handle(new Error("Keine URL auf Tag gefunden."), 'NFCScan');
                     }
                     
-                    abortNfcAction(); // Scan beenden
+                    abortNfcAction();
                     startCooldown();
                 });
 
-                // Scan starten
                 await ndef.scan({ signal: appState.abortController.signal });
             }
 
@@ -266,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.name !== 'AbortError') {
                 ErrorHandler.handle(error, 'NFCAction');
             } else if (error.message.includes('timed out')) {
+                 // Der TimeoutError wird jetzt mit der spezifischen Nachricht ("Scan..." oder "Write...") erstellt
                  const timeoutError = new DOMException(error.message, 'TimeoutError');
                  ErrorHandler.handle(timeoutError, 'NFCAction');
             }
@@ -275,19 +285,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function writeWithRetries(ndef, message) {
-        // ... (unverändert) ...
+        for (let attempt = 1; attempt <= CONFIG.MAX_WRITE_RETRIES; attempt++) {
+            try {
+                showMessage(t('messages.writeAttempt', { replace: { attempt, total: CONFIG.MAX_WRITE_RETRIES } }), 'info', CONFIG.NFC_WRITE_TIMEOUT);
+                await ndef.write(message, { signal: appState.abortController.signal });
+                clearTimeout(appState.nfcTimeoutId);
+                setNfcBadge('success', t('status.tagWritten'));
+                showMessage(t('messages.writeSuccess'), 'ok');
+        
+                const timeoutId = setTimeout(() => {
+                    if (appState.gracePeriodTimeoutId === timeoutId) {
+                        abortNfcAction();
+                        startCooldown();
+                    }
+                }, CONFIG.WRITE_SUCCESS_GRACE_PERIOD);
+                appState.gracePeriodTimeoutId = timeoutId;
+        
+                return;
+            } catch (error) {
+                console.warn(`Write attempt ${attempt} failed:`, error);
+                if (attempt === CONFIG.MAX_WRITE_RETRIES || ['TimeoutError', 'AbortError'].includes(error.name)) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
     }
 
     // --- Data Processing & Form Handling ---
 
-    /**
-     * [MODIFIZIERT FÜR iOS]
-     * Akzeptiert optional ein 'paramsOverride'-Objekt.
-     * - Wenn 'paramsOverride' vorhanden ist (vom iOS-Scan), werden diese Daten verarbeitet.
-     * - Wenn nicht (Standard), werden die Daten aus 'window.location.search' (vom Android-Scan) verarbeitet.
-     */
     function processUrlParameters(paramsOverride = null) {
-        // Override (iOS-Scan) oder window.location (Android-Scan) verwenden
         const params = paramsOverride || new URLSearchParams(window.location.search);
         const isFromWindowLocation = !paramsOverride;
 
@@ -303,13 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.scannedDataObject = data;
             displayParsedData(data);
             
-            // Rohdaten-URL anzeigen
             const rawUrl = isFromWindowLocation ? window.location.href : (CONFIG.BASE_URL + "?" + params.toString());
             if(rawDataOutput) rawDataOutput.value = rawUrl;
             
             if(readActions) readActions.classList.remove('hidden');
             
-            // Zum Lese-Tab wechseln (wichtig für iOS-Scan)
             switchTab('read-tab'); 
 
             if (readResultContainer) {
@@ -317,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoExpandToFitScreen(readResultContainer);
             }
 
-            // Nur die URL-Leiste bereinigen, wenn die Daten von dort kamen
             if (isFromWindowLocation) {
                 showMessage(t('messages.readSuccess'), 'ok');
                 history.replaceState(null, '', window.location.pathname);
@@ -329,83 +353,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getFormData() {
-        // ... (unverändert) ...
+        const formData = new FormData(form);
+        const data = {};
+        for (const [key, value] of formData.entries()) {
+            if (String(value).trim()) data[key] = String(value).trim();
+        }
+        
+        if (!document.getElementById('has_PT100')?.checked) {
+            delete data['PT 100'];
+        }
+        if (!document.getElementById('has_NiCr-Ni')?.checked) {
+             delete data['NiCr-Ni'];
+        }
+
+        delete data['has_PT100'];
+        delete data['has_NiCr-Ni'];
+        
+        return data;
     }
 
-    function generateUrlFromForm() { 
-        // ... (unverändert) ...
-    }
-    function updatePayloadOnChange() { 
-        // ... (unverändert) ...
-    }
-    function validateForm() { 
-        // ... (unverändert) ...
-    }
+    function generateUrlFromForm() { const params = new URLSearchParams(); const formData = getFormData(); for (const [key, value] of Object.entries(formData)) { const shortKey = fieldMap[key]; if (shortKey) params.append(shortKey, value); } return `${CONFIG.BASE_URL}?${params.toString()}`; }
+    function updatePayloadOnChange() { const writeTab = document.getElementById('write-tab'); if (writeTab?.classList.contains('active')) { const urlPayload = generateUrlFromForm(); payloadOutput.value = urlPayload; const byteCount = new TextEncoder().encode(urlPayload).length; payloadSize.textContent = `${byteCount} / ${CONFIG.MAX_PAYLOAD_SIZE} Bytes`; const isOverLimit = byteCount > CONFIG.MAX_PAYLOAD_SIZE; payloadSize.classList.toggle('limit-exceeded', isOverLimit); nfcStatusBadge.disabled = isOverLimit; } }
+    function validateForm() { const errors = []; const voltageInput = form.elements['Spannung']; if(voltageInput) { const voltage = parseFloat(voltageInput.value); if (voltage && (voltage < 0 || voltage > 1000)) { errors.push(t('errors.invalidVoltage')); } } const docUrlInput = form.elements['Dokumentation']; if(docUrlInput) { const docUrl = docUrlInput.value; if (docUrl && !isValidDocUrl(docUrl)) { errors.push(t('errors.invalidDocUrl')); } } const payloadByteSize = new TextEncoder().encode(generateUrlFromForm()).length; if (payloadByteSize > CONFIG.MAX_PAYLOAD_SIZE) { errors.push(t('messages.payloadTooLarge')); } return errors; }
 
     // --- Helper & State Functions ---
-    function startCooldown() { 
-        // ... (unverändert) ...
-    }
-    function abortNfcAction() { 
-        // ... (unverändert) ...
-    }
-    function addLogEntry(message, type = 'info') { 
-        // ... (unverändert) ...
-    }
-    function renderLog() { 
-        // ... (unverändert) ...
-    }
+    function startCooldown() { appState.isCooldownActive = true; setNfcBadge('cooldown'); setTimeout(() => { appState.isCooldownActive = false; if ('NDEFReader' in window) setNfcBadge('idle'); }, CONFIG.COOLDOWN_DURATION) }
+    function abortNfcAction() { clearTimeout(appState.nfcTimeoutId); if (appState.gracePeriodTimeoutId) { clearTimeout(appState.gracePeriodTimeoutId); appState.gracePeriodTimeoutId = null; } if (appState.abortController && !appState.abortController.signal.aborted) { appState.abortController.abort(new DOMException('User aborted', 'AbortError')); } appState.abortController = null; appState.isNfcActionActive = false; }
+    function addLogEntry(message, type = 'info') { const timestamp = new Date().toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' }); appState.eventLog.unshift({ timestamp, message, type }); if (appState.eventLog.length > CONFIG.MAX_LOG_ENTRIES) appState.eventLog.pop(); renderLog(); }
+    function renderLog() { if (!eventLogOutput) return; eventLogOutput.innerHTML = ''; appState.eventLog.forEach(entry => { const div = document.createElement('div'); div.className = `log-entry ${entry.type}`; const timestamp = document.createElement('span'); timestamp.className = 'log-timestamp'; timestamp.textContent = entry.timestamp; const message = document.createTextNode(` ${entry.message}`); div.appendChild(timestamp); div.appendChild(message); eventLogOutput.appendChild(div); }); }
 
     // --- Service Worker & Cache ---
-    async function isUrlCached(url) { 
-        // ... (unverändert) ...
-    }
-    async function handleDocButtonClick(event) { 
-        // ... (unverändert) ...
-    }
+    async function isUrlCached(url) { if (!('caches' in window)) return false; try { const cache = await caches.open('thixx-docs-v1'); const request = new Request(url, { mode: 'no-cors' }); const response = await cache.match(request); return !!response; } catch (error) { console.error("Cache check failed:", error); return false; } }
+    async function handleDocButtonClick(event) { const button = event.target; const url = button.dataset.url; if (navigator.onLine) { window.open(url, '_blank'); button.textContent = t('docOpenOffline'); button.onclick = () => window.open(url, '_blank'); if (navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({ action: 'cache-doc', url: url }); } } else { showMessage(t('docDownloadLater'), 'info'); button.textContent = t('docDownloadPending'); button.disabled = true; } }
 
     // --- UI/UX Functions ---
-    function updateManifest(design) { 
-        // ... (unverändert) ...
-    }
-    function applyTheme(themeName) { 
-        // ... (unverändert) ...
-    }
-    function setupReadTabInitialState() { 
-        // ... (unverändert) ...
-    }
-    function initCollapsibles() { 
-        // ... (unverändert) ...
-    }
+    function updateManifest(design) { const manifestLink = document.querySelector('link[rel="manifest"]'); if (!manifestLink) return; const oldHref = manifestLink.href; if (oldHref && oldHref.startsWith('blob:')) { URL.revokeObjectURL(oldHref); } const newManifest = { name: design.appName, short_name: design.short_name, start_url: "/ThiXX/index.html", scope: "/ThiXX/", display: "standalone", background_color: "#ffffff", theme_color: design.brandColors.primary || "#f04e37", orientation: "portrait-primary", icons: [{ src: design.icons.icon192, sizes: "192x192", type: "image/png" }, { src: design.icons.icon512, sizes: "512x512", type: "image/png" }] }; const blob = new Blob([JSON.stringify(newManifest)], { type: 'application/json' }); manifestLink.href = URL.createObjectURL(blob); }
+    function applyTheme(themeName) { const themeButtons = document.querySelectorAll('.theme-btn'); document.documentElement.setAttribute('data-theme', themeName); localStorage.setItem('thixx-theme', themeName); themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); }); const metaThemeColor = document.querySelector('meta[name="theme-color"]'); if (metaThemeColor) { const colors = { dark: '#0f172a', thixx: '#f8f9fa', 'customer-brand': '#FCFCFD' }; metaThemeColor.setAttribute('content', colors[themeName] || '#FCFCFD'); } }
+    function setupReadTabInitialState() { protocolCard.innerHTML = ''; const p = document.createElement('p'); p.className = 'placeholder-text'; p.textContent = t('placeholderRead'); protocolCard.appendChild(p); docLinkContainer.innerHTML = ''; if(readActions) readActions.classList.add('hidden'); }
+    function initCollapsibles() { document.querySelectorAll('.collapsible').forEach(el => makeCollapsible(el)) }
     
-    /**
-     * [MODIFIZIERT FÜR iOS]
-     * Stellt sicher, dass auf iOS der "Schreiben"-Tab ausgeblendet wird,
-     * aber der NFC-Button für das Lesen *aktiviert* bleibt.
-     */
     function checkNfcSupport() {
         const writeTabLink = document.querySelector('.tab-link[data-tab="write-tab"]');
 
         if ('NDEFReader' in window) {
-            // NFC wird generell unterstützt
             setNfcBadge('idle');
 
             if (isIOS()) {
-                // iOS: Nur Lesen unterstützen
-                if(tabsContainer) tabsContainer.classList.remove('hidden'); // Tabs anzeigen
-                if(copyToFormBtn) copyToFormBtn.classList.add('hidden'); // Kopieren-Button ausblenden
-                if (writeTabLink) writeTabLink.style.display = 'none'; // Schreiben-Tab ausblenden
+                if(tabsContainer) tabsContainer.classList.remove('hidden'); 
+                if(copyToFormBtn) copyToFormBtn.classList.add('hidden'); 
+                if (writeTabLink) writeTabLink.style.display = 'none'; 
                 
-                // WICHTIG: Sicherstellen, dass der Badge für das Lesen aktiviert ist
                 if(nfcStatusBadge) {
                     nfcStatusBadge.disabled = false;
-                    setNfcBadge('idle'); // Setzt den korrekten iOS-Text
+                    setNfcBadge('idle'); 
                 }
             }
-            // Android: Volle Unterstützung, nichts weiter tun.
 
         } else {
-            // NFC wird überhaupt nicht unterstützt (z.B. alter Browser)
             setNfcBadge('unsupported');
             if(nfcFallback) nfcFallback.classList.remove('hidden');
             if(nfcStatusBadge) nfcStatusBadge.disabled = true;
@@ -414,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchTab(tabId) { 
-        // [MODIFIZIERT] Abbruch-Logik leicht angepasst
         if (appState.isNfcActionActive && tabId !== 'read-tab') {
              abortNfcAction(); 
         }
@@ -454,22 +457,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showMessage(text, type = 'info', duration = 4000) { 
-        // ... (unverändert) ...
-    }
-    function setTodaysDate() { 
-        // ... (unverändert) ...
-    }
+    function showMessage(text, type = 'info', duration = 4000) { if(!messageBanner) return; messageBanner.textContent = text; messageBanner.className = 'message-banner'; messageBanner.classList.add(type); messageBanner.classList.remove('hidden'); setTimeout(() => messageBanner.classList.add('hidden'), duration); addLogEntry(text, type); }
+    function setTodaysDate() { const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0'); const dateInput = document.getElementById('am'); if (dateInput) dateInput.value = `${yyyy}-${mm}-${dd}` }
     
     function setNfcBadge(state, message = '') {
         if(!nfcStatusBadge) return;
         
-        // [MODIFIZIERT] Logik für isWriteMode berücksichtigt iOS
         const writeTab = document.getElementById('write-tab');
         const isWriteMode = !isIOS() && writeTab?.classList.contains('active');
 
         if (isIOS()) {
-            // Spezielle iOS-Logik: Zeigt immer den Lese-Status an
             const iosStates = {
                 idle: [t('status.iosRead'), 'info'],
                 scanning: [t('status.scanning'), 'info'],
@@ -484,7 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Standard Android / Desktop Logik
         const states = { 
             unsupported: [t('status.unsupported'), 'err'], 
             idle: [isWriteMode ? t('status.startWriting') : t('status.startReading'), 'info'],
@@ -510,8 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage(t('messages.noDataToCopy'), 'err'); 
             return;
         }
-        
-        // ... (Rest der Funktion unverändert) ...
+
         if(form) form.reset(); 
         setTodaysDate(); 
 
@@ -560,19 +555,74 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab('write-tab'); 
         showMessage(t('messages.copySuccess'), 'ok');
     }
-    function saveFormAsJson() { 
-        // ... (unverändert) ...
-    }
-    function loadJsonIntoForm(event) { 
-        // ... (unverändert) ...
-    }
+    function saveFormAsJson() { const data = getFormData(); const jsonString = JSON.stringify(data, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const today = new Date().toISOString().slice(0, 10); a.download = `thixx-${today}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => { URL.revokeObjectURL(url); }, 100); showMessage(t('messages.saveSuccess'), 'ok'); }
+    function loadJsonIntoForm(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); appState.scannedDataObject = data; populateFormFromScan(); showMessage(t('messages.loadSuccess'), 'ok') } catch (error) { const userMessage = error instanceof SyntaxError ? 'Die JSON-Datei hat ein ungültiges Format.' : error.message; ErrorHandler.handle(new Error(userMessage), 'LoadJSON'); } finally { event.target.value = null } }; reader.readAsText(file) }
     
     function autoExpandToFitScreen(elementToExpand) {
-        // ... (unverändert) ...
+        if (!elementToExpand) return;
+
+        const container = document.querySelector('.container');
+        if (!headerElement || !legalInfoContainer || !container) return;
+
+        const headerHeight = headerElement.offsetHeight;
+        const tabsHeight = (tabsContainer && !tabsContainer.classList.contains('hidden')) ? tabsContainer.offsetHeight : 0;
+        
+        const containerStyle = window.getComputedStyle(container);
+        const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
+
+        const otherElementsHeight = headerHeight + tabsHeight + containerPadding;
+        
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - otherElementsHeight - CONFIG.SAFETY_BUFFER_PX;
+
+        const titleElement = elementToExpand.querySelector('h2');
+        const minRequiredHeight = titleElement ? titleElement.offsetHeight + 60 : 100;
+
+        const targetHeight = Math.max(availableHeight, minRequiredHeight);
+
+        elementToExpand.dataset.autoHeight = `${targetHeight}px`;
+        
+        elementToExpand.style.maxHeight = `${targetHeight}px`;
     }
 
     function makeCollapsible(el) {
-        // ... (unverändert) ...
+        if (!el || el.dataset.collapsibleApplied) return;
+        el.dataset.collapsibleApplied = 'true';
+
+        const toggle = () => {
+            const isFullyExpanded = el.classList.contains('expanded');
+            
+            if (isFullyExpanded) {
+                el.classList.remove('expanded');
+                if (el.dataset.autoHeight) {
+                    el.style.maxHeight = el.dataset.autoHeight;
+                } else {
+                    el.style.maxHeight = '';
+                }
+            } else {
+                el.style.maxHeight = ''; 
+                el.classList.add('expanded');
+            }
+        };
+
+        const overlay = el.querySelector('.collapsible-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                el.style.maxHeight = ''; 
+                el.classList.add('expanded');
+            });
+        }
+
+        el.addEventListener('click', (e) => {
+            const interactiveTags = ['input', 'select', 'textarea', 'button', 'label', 'summary', 'details', 'a'];
+            if (interactiveTags.includes(e.target.tagName.toLowerCase()) || e.target.closest('.collapsible-overlay')) {
+                return;
+            }
+            toggle();
+        });
     }
 });
+
 
