@@ -45,7 +45,7 @@
     "docDownloadLater": "Betriebsanleitung",
     "docDownloadPending": "Betriebsanleitung",
     "status": {
-        "iosRead": "Zum Lesen tippen & Tag an Gerät halten",
+        "iosRead": "Zum Lesen Tag an Gerät halten",
         "startWriting": "Bereit. Zum Schreiben tippen.",
         "startReading": "Zum Lesen Tag an Gerät halten",
         "unsupported": "NFC nicht unterstützt",
@@ -76,7 +76,6 @@
         "NetworkError": "Netzwerkfehler. Bitte prüfen Sie die Verbindung.",
         "AbortError": "Vorgang vom Nutzer abgebrochen.",
         "WriteTimeoutError": "Schreibvorgang hat zu lange gedauert.",
-        "ReadTimeoutError": "Scan-Vorgang hat zu lange gedauert.",
         "unknown": "Ein unbekannter Fehler ist aufgetreten.",
         "invalidVoltage": "Spannung muss zwischen 0 und 1000V liegen.",
         "invalidDocUrl": "Die Dokumentations-URL ist ungültig."
@@ -85,4 +84,3 @@
     "themeLight": "Helles Design",
     "themeCustomer": "Kunden-Design"
 }
-

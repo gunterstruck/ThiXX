@@ -45,7 +45,7 @@
     "docDownloadLater": "Mode d'emploi",
     "docDownloadPending": "Mode d'emploi",
     "status": {
-        "iosRead": "Appuyez pour lire et approchez le tag",
+        "iosRead": "Approchez l'étiquette pour lire",
         "startWriting": "Prêt. Appuyez pour écrire.",
         "startReading": "Approchez l'étiquette pour lire",
         "unsupported": "NFC non supporté",
@@ -76,7 +76,6 @@
         "NetworkError": "Erreur réseau. Veuillez vérifier votre connexion.",
         "AbortError": "Opération annulée par l'utilisateur.",
         "WriteTimeoutError": "L'opération d'écriture a expiré.",
-        "ReadTimeoutError": "L'opération de scan a expiré.",
         "unknown": "Une erreur inconnue est survenue.",
         "invalidVoltage": "La tension doit être comprise entre 0 et 1000V.",
         "invalidDocUrl": "L'URL de la documentation est invalide."
@@ -85,4 +84,3 @@
     "themeLight": "Thème Clair",
     "themeCustomer": "Thème Client"
 }
-
