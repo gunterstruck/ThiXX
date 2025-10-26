@@ -40,10 +40,10 @@
 
 /* Customer Brand Theme */
 :root[data-theme="customer-brand"] {
-    --primary-color: #d54b2a;
-    --primary-dark: #B03D23;
-    --primary-light: #E56B51;
-    --secondary-color: #6C6B66;
+    --primary-color: var(--primary-color-override, #d54b2a);
+    --primary-dark: var(--primary-dark-override, #B03D23);
+    --primary-light: var(--primary-light-override, #E56B51);
+    --secondary-color: var(--secondary-color-override, #6C6B66);
     --background-color: #FCFCFD;
     --surface-color: #FFFFFF;
     --surface-light: #f0f0f0;
@@ -58,11 +58,6 @@
     --body-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
-/* Override from JS config */
-:root {
-    --primary-color: var(--primary-color-override, var(--primary-color));
-    --secondary-color: var(--secondary-color-override, var(--secondary-color));
-}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
