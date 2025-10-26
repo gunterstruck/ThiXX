@@ -6,7 +6,14 @@
  * → Kein Flackern mehr beim Laden!
  */
 (function() {
+
+
   try {
+
+
+    // --- 0️⃣ SCOPE DEFINITION (WICHTIG: Muss mit index.html übereinstimmen!)
+    const SCOPE = '/THiXX/'; // ← HIER ANPASSEN für verschiedene Deployments
+
     // --- 1️⃣ Alte lokale Themes entfernen
     localStorage.removeItem('thixx-theme');
 
