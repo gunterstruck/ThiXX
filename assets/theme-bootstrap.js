@@ -24,7 +24,7 @@
         if (config && config.design) {
           // --- Design-Mapping (wie in app.js)
           const designThemes = {
-            'thixx_standard': 'dark',
+            'thixx_standard': 'customer-brand', // 🔴 FIX: Geändert von 'dark'
             'peterpohl': 'customer-brand',
             'sigx': 'customer-brand',
             'othimm': 'customer-brand'
