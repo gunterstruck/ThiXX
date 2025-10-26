@@ -6,13 +6,12 @@
  * → Kein Flackern mehr beim Laden!
  */
 (function() {
-
-
   try {
 
 
     // --- 0️⃣ SCOPE DEFINITION (WICHTIG: Muss mit index.html übereinstimmen!)
-    const SCOPE = '/THiXX/'; // ← HIER ANPASSEN für verschiedene Deployments
+    const SCOPE = '/ThiXX/'; // ← ThiXX Branding Deployment
+
 
     // --- 1️⃣ Alte lokale Themes entfernen
     localStorage.removeItem('thixx-theme');
@@ -53,7 +52,7 @@
     let selectedDesign = designs['thixx_standard']; // Fallback
 
     const request = new XMLHttpRequest();
-    request.open('GET', '/ThiXX/config.json', false); // synchron
+    request.open('GET', SCOPE + 'config.json', false); // synchron
     request.send(null);
 
     if (request.status === 200) {
@@ -89,6 +88,10 @@
       }
     }
 
+    // --- 6️⃣ Transitions aktivieren (ANTI-FLICKER!)
+    // Nach dem Theme-Setup Klasse hinzufügen, damit CSS-Transitions aktiv werden
+    document.documentElement.classList.add('theme-loaded');
+
     // --- Hilfsfunktion: Farbe aufhellen/abdunkeln
     function adjustColor(color, percent) {
       try {
@@ -114,5 +117,6 @@
   } catch (e) {
     console.error('Theme initialization failed:', e);
     document.documentElement.setAttribute('data-theme', 'customer-brand');
+    document.documentElement.classList.add('theme-loaded');
   }
 })();
